@@ -150,13 +150,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         twilioCallSid: null
       });
 
-      // Initiate Twilio call
-      const callbackUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/api/calls/webhook`;
+      // Initiate Twilio call - use Replit domain for webhooks
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
+        `https://${process.env.REPLIT_DEV_DOMAIN}` : 
+        'https://your-repl-name.your-username.replit.dev';
+      
+      const callbackUrl = `${baseUrl}/api/calls/webhook`;
       
       try {
         const twilioCallSid = await twilioService.makeCall({
           to: patient.phoneNumber,
-          url: `${process.env.BASE_URL || 'http://localhost:5000'}/api/calls/twiml/${call.id}`,
+          url: `${baseUrl}/api/calls/twiml/${call.id}`,
           statusCallback: callbackUrl
         });
 

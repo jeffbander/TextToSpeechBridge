@@ -85,7 +85,7 @@ export class MemStorage implements IStorage {
       },
       {
         name: "David Chen",
-        phoneNumber: "+1-555-0125",
+        phoneNumber: "+15551234567", // This will be updated with a real number for testing
         email: "david.chen@email.com",
         condition: "Hypertension Follow-up",
         lastDischarge: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
