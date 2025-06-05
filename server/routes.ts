@@ -277,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process speech input from Twilio
+  // Process speech input from Twilio - Simplified version without AI
   app.post("/api/calls/process-speech", async (req, res) => {
     try {
       const { SpeechResult, CallSid } = req.body;
@@ -320,108 +320,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      try {
-        // Analyze patient response
-        const analysis = await openaiService.analyzePatientResponse(
-          SpeechResult,
-          patient.condition,
-          transcriptHistory
-        );
-
-        // Generate appropriate AI response
-        const aiResponse = await openaiService.generateFollowUpResponse(
-          analysis,
-          patient.condition
-        );
-
-        // Add AI response to transcript
-        transcriptHistory.push({
-          speaker: 'ai',
-          text: aiResponse,
-          timestamp: new Date()
-        });
-
-        // Update call record
-        await storage.updateCall(call.id, {
-          transcript: JSON.stringify(transcriptHistory),
-          aiAnalysis: analysis as any,
-          alertLevel: analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high' ? 'urgent' : 
-                     analysis.urgencyLevel === 'medium' ? 'warning' : 'none'
-        });
-
-        // Create alert if needed
-        if (analysis.escalateToProvider) {
-          const alert = await storage.createAlert({
-            patientId: call.patientId,
-            callId: call.id,
-            type: analysis.urgencyLevel === 'critical' ? 'urgent' : 'warning',
-            message: analysis.summary
-          });
-
-          // Send email notification for urgent cases
-          if (analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high') {
-            try {
-              await sendGridService.sendUrgentAlert({
-                to: process.env.ALERT_EMAIL || 'provider@cardiocare.ai',
-                patientName: patient.name,
-                concern: analysis.concerns.join(', '),
-                urgencyLevel: analysis.urgencyLevel,
-                callSummary: analysis.summary,
-                patientPhone: patient.phoneNumber
-              });
-            } catch (emailError) {
-              console.error('Email sending failed:', emailError);
-              // Continue processing even if email fails
-            }
-          }
-
-          broadcastUpdate('alertCreated', { alert, patient });
-        }
-
-        // Continue conversation or end call
-        let twimlResponse: string;
-        if (analysis.urgencyLevel === 'critical') {
-          twimlResponse = `${aiResponse} A healthcare provider will contact you shortly. Please stay by your phone. Goodbye.`;
-        } else if (analysis.nextQuestions.length === 0) {
-          twimlResponse = `${aiResponse} Thank you for your time. Take care and have a great day. Goodbye.`;
-        } else {
-          twimlResponse = `${aiResponse} ${analysis.nextQuestions[0]}`;
-        }
-
-        res.type('text/xml');
-        res.send(twilioService.generateTwiML(twimlResponse));
-
-      } catch (aiError) {
-        console.error('OpenAI processing failed:', aiError);
-        
-        // Simple health check questions when AI is unavailable
-        const patientResponses = transcriptHistory.filter(t => t.speaker === 'patient').length;
-        let fallbackResponse: string;
-        
-        if (patientResponses === 1) {
-          fallbackResponse = "Thank you for sharing that. Have you been taking your medications as prescribed?";
-        } else if (patientResponses === 2) {
-          fallbackResponse = "Good. Are you experiencing any pain, shortness of breath, or other concerning symptoms?";
-        } else if (patientResponses === 3) {
-          fallbackResponse = "I understand. Have you been following your discharge instructions and attending follow-up appointments?";
-        } else {
-          fallbackResponse = "Thank you for your responses. Please continue taking care of yourself. A healthcare provider will contact you if needed. Have a great day. Goodbye.";
-        }
-        
-        // Update transcript with fallback
-        transcriptHistory.push({
-          speaker: 'ai',
-          text: fallbackResponse,
-          timestamp: new Date()
-        });
-
-        await storage.updateCall(call.id, {
-          transcript: JSON.stringify(transcriptHistory)
-        });
-
-        res.type('text/xml');
-        res.send(twilioService.generateTwiML(fallbackResponse));
+      // Simple health check questions without AI processing
+      const patientResponses = transcriptHistory.filter(t => t.speaker === 'patient').length;
+      let response: string;
+      
+      if (patientResponses === 1) {
+        response = "Thank you for sharing that. Have you been taking your medications as prescribed?";
+      } else if (patientResponses === 2) {
+        response = "Good. Are you experiencing any pain, shortness of breath, or other concerning symptoms?";
+      } else if (patientResponses === 3) {
+        response = "I understand. Have you been following your discharge instructions and attending follow-up appointments?";
+      } else {
+        response = "Thank you for your responses. Please continue taking care of yourself. A healthcare provider will contact you if needed. Have a great day. Goodbye.";
       }
+      
+      // Add response to transcript
+      transcriptHistory.push({
+        speaker: 'ai',
+        text: response,
+        timestamp: new Date()
+      });
+
+      // Update call record
+      await storage.updateCall(call.id, {
+        transcript: JSON.stringify(transcriptHistory),
+        alertLevel: 'none'
+      });
+
+      // Broadcast real-time update
+      broadcastUpdate('callUpdated', { 
+        callId: call.id, 
+        transcript: transcriptHistory 
+      });
+
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML(response));
 
       // Broadcast real-time update
       broadcastUpdate('callUpdated', { 
