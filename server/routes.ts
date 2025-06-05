@@ -453,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
 
           results.push({ patientId, callId: call.id, status: 'initiated' });
-        } catch (error) {
+        } catch (error: any) {
           results.push({ patientId, status: 'failed', error: error.message });
         }
       }

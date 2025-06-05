@@ -73,8 +73,11 @@ export class MemStorage implements IStorage {
   async createPatient(insertPatient: InsertPatient): Promise<Patient> {
     const id = this.currentPatientId++;
     const patient: Patient = { 
-      ...insertPatient, 
+      ...insertPatient,
       id,
+      email: insertPatient.email ?? null,
+      lastDischarge: insertPatient.lastDischarge ?? null,
+      riskLevel: insertPatient.riskLevel ?? "low",
       createdAt: new Date()
     };
     this.patients.set(id, patient);
@@ -103,8 +106,14 @@ export class MemStorage implements IStorage {
   async createCall(insertCall: InsertCall): Promise<Call> {
     const id = this.currentCallId++;
     const call: Call = { 
-      ...insertCall, 
+      ...insertCall,
       id,
+      duration: insertCall.duration ?? null,
+      outcome: insertCall.outcome ?? null,
+      transcript: insertCall.transcript ?? null,
+      aiAnalysis: insertCall.aiAnalysis ?? null,
+      alertLevel: insertCall.alertLevel ?? null,
+      twilioCallSid: insertCall.twilioCallSid ?? null,
       startedAt: new Date(),
       completedAt: null
     };
@@ -163,8 +172,9 @@ export class MemStorage implements IStorage {
   async createAlert(insertAlert: InsertAlert): Promise<Alert> {
     const id = this.currentAlertId++;
     const alert: Alert = { 
-      ...insertAlert, 
+      ...insertAlert,
       id,
+      callId: insertAlert.callId ?? null,
       resolved: false,
       createdAt: new Date()
     };

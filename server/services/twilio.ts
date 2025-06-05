@@ -4,11 +4,32 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const phoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
-if (!accountSid || !authToken || !phoneNumber) {
-  throw new Error('Twilio credentials must be provided in environment variables');
-}
+// Initialize client only if credentials are valid
+let client: ReturnType<typeof twilio> | null = null;
 
-const client = twilio(accountSid, authToken);
+const initializeTwilioClient = () => {
+  if (!accountSid || !authToken || !phoneNumber) {
+    console.warn('Twilio credentials not provided. Call functionality will be disabled.');
+    return false;
+  }
+  
+  if (!accountSid.startsWith('AC')) {
+    console.warn('Invalid Twilio Account SID format. Must start with "AC".');
+    return false;
+  }
+  
+  try {
+    client = twilio(accountSid, authToken);
+    console.log('Twilio client initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize Twilio client:', error);
+    return false;
+  }
+};
+
+// Try to initialize on module load
+initializeTwilioClient();
 
 export interface CallOptions {
   to: string;
@@ -18,42 +39,54 @@ export interface CallOptions {
 }
 
 export class TwilioService {
+  private ensureClientInitialized(): void {
+    if (!client) {
+      throw new Error('Twilio client not initialized. Please check your Twilio credentials.');
+    }
+  }
+
   async makeCall(options: CallOptions): Promise<string> {
+    this.ensureClientInitialized();
+    
     try {
-      const call = await client.calls.create({
+      const call = await client!.calls.create({
         to: options.to,
-        from: phoneNumber,
+        from: phoneNumber!,
         url: options.url,
         statusCallback: options.statusCallback,
         statusCallbackEvent: options.statusCallbackEvent || ['initiated', 'ringing', 'answered', 'completed'],
       });
       
       return call.sid;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Twilio call error:', error);
       throw new Error(`Failed to initiate call: ${error.message}`);
     }
   }
 
   async getCallStatus(callSid: string) {
+    this.ensureClientInitialized();
+    
     try {
-      const call = await client.calls(callSid).fetch();
+      const call = await client!.calls(callSid).fetch();
       return {
         status: call.status,
         duration: call.duration,
         startTime: call.startTime,
         endTime: call.endTime,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Twilio call status error:', error);
       throw new Error(`Failed to get call status: ${error.message}`);
     }
   }
 
   async endCall(callSid: string): Promise<void> {
+    this.ensureClientInitialized();
+    
     try {
-      await client.calls(callSid).update({ status: 'completed' });
-    } catch (error) {
+      await client!.calls(callSid).update({ status: 'completed' });
+    } catch (error: any) {
       console.error('Twilio end call error:', error);
       throw new Error(`Failed to end call: ${error.message}`);
     }
