@@ -277,28 +277,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Process speech input from Twilio - Simplified version without AI
+  // Process speech input from Twilio with proper call handling
   app.post("/api/calls/process-speech", async (req, res) => {
     try {
       const { SpeechResult, CallSid } = req.body;
       console.log('Processing speech:', { SpeechResult, CallSid });
       
-      if (!SpeechResult) {
+      if (!SpeechResult || SpeechResult.trim() === '') {
         console.log('No speech result received');
         res.type('text/xml');
-        res.send(twilioService.generateTwiML("I didn't catch that. Could you please repeat?"));
+        res.send(twilioService.generateTwiML("I didn't catch that. Could you please repeat your response?"));
         return;
       }
 
-      // Find call by Twilio SID
+      // Find call by Twilio SID - check all calls including recent ones
       const calls = await storage.getCalls();
-      const call = calls.find(c => c.twilioCallSid === CallSid);
+      let call = calls.find(c => c.twilioCallSid === CallSid);
       
+      // If call not found, create a temporary call record for this session
       if (!call) {
-        console.log('Call not found for SID:', CallSid);
-        res.type('text/xml');
-        res.send(twilioService.generateTwiML("Thank you for calling. Goodbye."));
-        return;
+        console.log('Call not found for SID:', CallSid, 'Creating temporary call record');
+        
+        // Create a basic call record for speech processing
+        const tempCall = await storage.createCall({
+          patientId: 1, // Use default patient for unmatched calls
+          status: 'active',
+          callType: 'unmatched-session',
+          twilioCallSid: CallSid,
+          startedAt: new Date()
+        });
+        call = tempCall;
       }
 
       const patient = await storage.getPatient(call.patientId);
@@ -320,41 +328,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Simple health check questions without AI processing
-      const patientResponses = transcriptHistory.filter(t => t.speaker === 'patient').length;
-      let response: string;
-      
-      if (patientResponses === 1) {
-        response = "Thank you for sharing that. Have you been taking your medications as prescribed?";
-      } else if (patientResponses === 2) {
-        response = "Good. Are you experiencing any pain, shortness of breath, or other concerning symptoms?";
-      } else if (patientResponses === 3) {
-        response = "I understand. Have you been following your discharge instructions and attending follow-up appointments?";
-      } else {
-        response = "Thank you for your responses. Please continue taking care of yourself. A healthcare provider will contact you if needed. Have a great day. Goodbye.";
-      }
-      
-      // Add response to transcript
-      transcriptHistory.push({
-        speaker: 'ai',
-        text: response,
-        timestamp: new Date()
-      });
+      // Use OpenAI for intelligent conversation when available
+      try {
+        console.log('Attempting OpenAI analysis for:', SpeechResult);
+        
+        const analysis = await openaiService.analyzePatientResponse(
+          SpeechResult,
+          patient.condition || 'general health',
+          transcriptHistory
+        );
 
-      // Update call record
-      await storage.updateCall(call.id, {
-        transcript: JSON.stringify(transcriptHistory),
-        alertLevel: 'none'
-      });
+        const aiResponse = await openaiService.generateFollowUpResponse(
+          analysis,
+          patient.condition || 'general health'
+        );
+
+        // Add AI response to transcript
+        transcriptHistory.push({
+          speaker: 'ai',
+          text: aiResponse,
+          timestamp: new Date()
+        });
+
+        // Update call record with AI analysis
+        await storage.updateCall(call.id, {
+          transcript: JSON.stringify(transcriptHistory),
+          aiAnalysis: analysis as any,
+          alertLevel: analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high' ? 'urgent' : 
+                     analysis.urgencyLevel === 'medium' ? 'warning' : 'none'
+        });
+
+        // Create alert if needed
+        if (analysis.escalateToProvider) {
+          await storage.createAlert({
+            patientId: call.patientId,
+            callId: call.id,
+            type: analysis.urgencyLevel === 'critical' ? 'urgent' : 'warning',
+            message: analysis.summary
+          });
+        }
+
+        // Continue conversation or end call
+        let twimlResponse: string;
+        if (analysis.urgencyLevel === 'critical') {
+          twimlResponse = `${aiResponse} A healthcare provider will contact you shortly. Please stay by your phone. Goodbye.`;
+        } else if (analysis.nextQuestions.length === 0) {
+          twimlResponse = `${aiResponse} Thank you for your time. Take care and have a great day. Goodbye.`;
+        } else {
+          twimlResponse = `${aiResponse} ${analysis.nextQuestions[0]}`;
+        }
+
+        console.log('AI processing successful, responding with:', twimlResponse);
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML(twimlResponse));
+
+      } catch (aiError) {
+        console.log('OpenAI processing failed, using fallback:', aiError.message);
+        
+        // Fallback to simple health check questions
+        const patientResponses = transcriptHistory.filter(t => t.speaker === 'patient').length;
+        let response: string;
+        
+        if (patientResponses === 1) {
+          response = "Thank you for sharing that. Have you been taking your medications as prescribed?";
+        } else if (patientResponses === 2) {
+          response = "Good. Are you experiencing any pain, shortness of breath, or other concerning symptoms?";
+        } else if (patientResponses === 3) {
+          response = "I understand. Have you been following your discharge instructions and attending follow-up appointments?";
+        } else {
+          response = "Thank you for your responses. Please continue taking care of yourself. A healthcare provider will contact you if needed. Have a great day. Goodbye.";
+        }
+        
+        // Add response to transcript
+        transcriptHistory.push({
+          speaker: 'ai',
+          text: response,
+          timestamp: new Date()
+        });
+
+        // Update call record
+        await storage.updateCall(call.id, {
+          transcript: JSON.stringify(transcriptHistory),
+          alertLevel: 'none'
+        });
+
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML(response));
+      }
 
       // Broadcast real-time update
       broadcastUpdate('callUpdated', { 
         callId: call.id, 
         transcript: transcriptHistory 
       });
-
-      res.type('text/xml');
-      res.send(twilioService.generateTwiML(response));
 
       // Broadcast real-time update
       broadcastUpdate('callUpdated', { 
