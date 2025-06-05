@@ -302,9 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const tempCall = await storage.createCall({
           patientId: 1, // Use default patient for unmatched calls
           status: 'active',
-          callType: 'unmatched-session',
-          twilioCallSid: CallSid,
-          startedAt: new Date()
+          twilioCallSid: CallSid
         });
         call = tempCall;
       }
