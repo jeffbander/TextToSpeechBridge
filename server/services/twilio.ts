@@ -92,21 +92,33 @@ export class TwilioService {
     }
   }
 
-  generateTwiML(message: string): string {
+  generateTwiML(message: string, shouldRecord: boolean = true): string {
     // Use the correct Replit domain for speech processing webhook
     const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
       `https://${process.env.REPLIT_DEV_DOMAIN}` : 
       'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
     
     const speechProcessingUrl = `${baseUrl}/api/calls/process-speech`;
+    const recordingUrl = `${baseUrl}/api/calls/recording`;
     
-    return `<?xml version="1.0" encoding="UTF-8"?>
-    <Response>
-      <Say voice="alice">${message}</Say>
-      <Gather input="speech" action="${speechProcessingUrl}" method="POST" speechTimeout="auto">
-        <Say voice="alice">Please respond after the beep.</Say>
-      </Gather>
-    </Response>`;
+    if (shouldRecord) {
+      return `<?xml version="1.0" encoding="UTF-8"?>
+      <Response>
+        <Say voice="alice">${message}</Say>
+        <Record action="${recordingUrl}" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
+          <Say voice="alice">Please speak your response after the beep, and press pound when finished.</Say>
+        </Record>
+        <Say voice="alice">Thank you. Please hold while I process your response.</Say>
+      </Response>`;
+    } else {
+      return `<?xml version="1.0" encoding="UTF-8"?>
+      <Response>
+        <Say voice="alice">${message}</Say>
+        <Gather input="speech" action="${speechProcessingUrl}" method="POST" speechTimeout="auto" speechModel="experimental_conversations">
+          <Say voice="alice">Please respond after the beep.</Say>
+        </Gather>
+      </Response>`;
+    }
   }
 }
 

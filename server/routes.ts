@@ -277,6 +277,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Handle voice recordings from Twilio calls
+  app.post("/api/calls/recording", async (req, res) => {
+    try {
+      const { CallSid, RecordingUrl, RecordingDuration } = req.body;
+      console.log('Recording received:', { CallSid, RecordingUrl, RecordingDuration });
+
+      // Find the active call
+      const calls = await storage.getCalls();
+      const call = calls.find(c => c.twilioCallSid === CallSid && c.status === 'active');
+      
+      if (!call) {
+        console.log('Call not found for recording SID:', CallSid);
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Thank you for calling. Goodbye.", false));
+        return;
+      }
+
+      // Store recording URL for processing
+      await storage.updateCall(call.id, {
+        transcript: JSON.stringify([{ 
+          speaker: 'patient', 
+          recordingUrl: RecordingUrl,
+          duration: RecordingDuration,
+          timestamp: new Date()
+        }])
+      });
+
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML("Thank you for your response. Please hold while I analyze your information.", false));
+    } catch (error: any) {
+      console.error('Recording processing error:', error);
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML("Thank you for calling. Goodbye.", false));
+    }
+  });
+
+  // Handle transcription callbacks from Twilio
+  app.post("/api/calls/transcription", async (req, res) => {
+    try {
+      const { CallSid, TranscriptionText, RecordingUrl } = req.body;
+      console.log('Transcription received:', { CallSid, TranscriptionText, RecordingUrl });
+
+      if (!TranscriptionText || TranscriptionText.trim() === '') {
+        console.log('No transcription text received');
+        res.status(200).send('OK');
+        return;
+      }
+
+      // Find call by Twilio SID
+      const calls = await storage.getCalls();
+      const call = calls.find(c => c.twilioCallSid === CallSid);
+      
+      if (!call) {
+        console.log('Call not found for transcription SID:', CallSid);
+        res.status(200).send('OK');
+        return;
+      }
+
+      const patient = await storage.getPatient(call.patientId);
+      if (!patient) {
+        console.log('Patient not found for call:', call.id);
+        res.status(200).send('OK');
+        return;
+      }
+
+      // Parse existing transcript
+      const transcriptHistory = call.transcript ? 
+        JSON.parse(call.transcript) as any[] : [];
+
+      // Add patient response to transcript
+      transcriptHistory.push({
+        speaker: 'patient',
+        text: TranscriptionText,
+        recordingUrl: RecordingUrl,
+        timestamp: new Date()
+      });
+
+      // Process with AI
+      try {
+        console.log('Processing transcription with AI:', TranscriptionText);
+        
+        const analysis = await openaiService.analyzePatientResponse(
+          TranscriptionText,
+          patient.condition || 'general health',
+          transcriptHistory
+        );
+
+        const aiResponse = await openaiService.generateFollowUpResponse(
+          analysis,
+          patient.condition || 'general health'
+        );
+
+        // Add AI response to transcript
+        transcriptHistory.push({
+          speaker: 'ai',
+          text: aiResponse,
+          timestamp: new Date()
+        });
+
+        // Update call record with AI analysis
+        await storage.updateCall(call.id, {
+          transcript: JSON.stringify(transcriptHistory),
+          aiAnalysis: analysis as any,
+          alertLevel: analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high' ? 'urgent' : 
+                     analysis.urgencyLevel === 'medium' ? 'warning' : 'none'
+        });
+
+        // Create alert if needed
+        if (analysis.escalateToProvider) {
+          await storage.createAlert({
+            patientId: call.patientId,
+            callId: call.id,
+            type: analysis.urgencyLevel === 'critical' ? 'urgent' : 'warning',
+            message: analysis.summary
+          });
+        }
+
+        // Broadcast real-time update
+        broadcastUpdate('callUpdated', { 
+          callId: call.id, 
+          transcript: transcriptHistory,
+          analysis: analysis
+        });
+
+        console.log('Transcription processed successfully with AI analysis');
+
+      } catch (aiError: any) {
+        console.log('AI processing failed for transcription:', aiError.message);
+        
+        // Update with basic transcript
+        await storage.updateCall(call.id, {
+          transcript: JSON.stringify(transcriptHistory),
+          alertLevel: 'none'
+        });
+      }
+
+      res.status(200).send('OK');
+    } catch (error: any) {
+      console.error('Transcription processing error:', error);
+      res.status(200).send('OK');
+    }
+  });
+
   // Process speech input from Twilio with proper call handling
   app.post("/api/calls/process-speech", async (req, res) => {
     try {
