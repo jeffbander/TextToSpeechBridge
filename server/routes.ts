@@ -1,0 +1,468 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import { storage } from "./storage";
+import { twilioService } from "./services/twilio";
+import { openaiService } from "./services/openai";
+import { sendGridService } from "./services/sendgrid";
+import { insertPatientSchema, insertCallSchema, insertScheduledCallSchema, insertAlertSchema } from "@shared/schema";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  const httpServer = createServer(app);
+
+  // WebSocket server for real-time updates
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  const activeConnections = new Set<WebSocket>();
+
+  wss.on('connection', (ws) => {
+    activeConnections.add(ws);
+    
+    ws.on('close', () => {
+      activeConnections.delete(ws);
+    });
+  });
+
+  function broadcastUpdate(type: string, data: any) {
+    const message = JSON.stringify({ type, data });
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(message);
+      }
+    });
+  }
+
+  // Dashboard stats endpoint
+  app.get("/api/dashboard/stats", async (req, res) => {
+    try {
+      const patients = await storage.getPatients();
+      const calls = await storage.getCalls();
+      const activeCalls = await storage.getActiveCalls();
+      const alerts = await storage.getUnresolvedAlerts();
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const callsToday = calls.filter(call => 
+        call.startedAt && call.startedAt >= today
+      ).length;
+      
+      const completedToday = calls.filter(call => 
+        call.status === 'completed' && 
+        call.startedAt && call.startedAt >= today
+      ).length;
+      
+      const successRate = callsToday > 0 ? (completedToday / callsToday * 100).toFixed(1) : '0.0';
+      
+      res.json({
+        callsToday,
+        urgentAlerts: alerts.filter(a => a.type === 'urgent').length,
+        successRate: parseFloat(successRate),
+        activePatients: patients.length,
+        activeCalls: activeCalls.length,
+        pendingCalls: (await storage.getPendingScheduledCalls()).length
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Get active calls with patient info
+  app.get("/api/calls/active", async (req, res) => {
+    try {
+      const activeCalls = await storage.getActiveCalls();
+      const patients = await storage.getPatients();
+      
+      const callsWithPatients = activeCalls.map(call => {
+        const patient = patients.find(p => p.id === call.patientId);
+        return {
+          ...call,
+          patientName: patient?.name || 'Unknown',
+          phoneNumber: patient?.phoneNumber || '',
+          condition: patient?.condition || ''
+        };
+      });
+      
+      res.json(callsWithPatients);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch active calls" });
+    }
+  });
+
+  // Get recent calls
+  app.get("/api/calls/recent", async (req, res) => {
+    try {
+      const calls = await storage.getCalls();
+      const patients = await storage.getPatients();
+      
+      const recentCalls = calls
+        .filter(call => call.status !== 'active')
+        .sort((a, b) => (b.startedAt?.getTime() || 0) - (a.startedAt?.getTime() || 0))
+        .slice(0, 20)
+        .map(call => {
+          const patient = patients.find(p => p.id === call.patientId);
+          return {
+            ...call,
+            patientName: patient?.name || 'Unknown',
+            phoneNumber: patient?.phoneNumber || '',
+            condition: patient?.condition || ''
+          };
+        });
+      
+      res.json(recentCalls);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recent calls" });
+    }
+  });
+
+  // Start a new call
+  app.post("/api/calls/start", async (req, res) => {
+    try {
+      const { patientId, callType } = req.body;
+      
+      const patient = await storage.getPatient(patientId);
+      if (!patient) {
+        return res.status(404).json({ message: "Patient not found" });
+      }
+
+      // Check for existing active calls
+      const activeCalls = await storage.getActiveCallsByPatientId(patientId);
+      if (activeCalls.length > 0) {
+        return res.status(400).json({ message: "Patient already has an active call" });
+      }
+
+      // Generate AI script for the call
+      const script = await openaiService.generateCallScript(
+        patient.name, 
+        patient.condition, 
+        callType
+      );
+
+      // Create call record
+      const call = await storage.createCall({
+        patientId,
+        status: 'active',
+        outcome: null,
+        transcript: '',
+        aiAnalysis: null,
+        alertLevel: 'none',
+        duration: null,
+        twilioCallSid: null
+      });
+
+      // Initiate Twilio call
+      const callbackUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/api/calls/webhook`;
+      
+      try {
+        const twilioCallSid = await twilioService.makeCall({
+          to: patient.phoneNumber,
+          url: `${process.env.BASE_URL || 'http://localhost:5000'}/api/calls/twiml/${call.id}`,
+          statusCallback: callbackUrl
+        });
+
+        await storage.updateCall(call.id, { twilioCallSid });
+        
+        broadcastUpdate('callStarted', { call: { ...call, patientName: patient.name } });
+        
+        res.json({ 
+          success: true, 
+          callId: call.id, 
+          twilioSid: twilioCallSid,
+          script 
+        });
+      } catch (twilioError) {
+        await storage.updateCall(call.id, { status: 'failed' });
+        throw twilioError;
+      }
+    } catch (error) {
+      console.error('Start call error:', error);
+      res.status(500).json({ message: "Failed to start call" });
+    }
+  });
+
+  // End a call
+  app.post("/api/calls/:id/end", async (req, res) => {
+    try {
+      const callId = parseInt(req.params.id);
+      const call = await storage.getCall(callId);
+      
+      if (!call) {
+        return res.status(404).json({ message: "Call not found" });
+      }
+
+      if (call.twilioCallSid) {
+        await twilioService.endCall(call.twilioCallSid);
+      }
+
+      const duration = call.startedAt ? 
+        Math.floor((Date.now() - call.startedAt.getTime()) / 1000) : 0;
+
+      await storage.updateCall(callId, { 
+        status: 'completed',
+        duration,
+        completedAt: new Date()
+      });
+
+      broadcastUpdate('callEnded', { callId });
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to end call" });
+    }
+  });
+
+  // TwiML endpoint for handling calls
+  app.get("/api/calls/twiml/:id", async (req, res) => {
+    try {
+      const callId = parseInt(req.params.id);
+      const call = await storage.getCall(callId);
+      
+      if (!call) {
+        return res.status(404).send("Call not found");
+      }
+
+      const patient = await storage.getPatient(call.patientId);
+      if (!patient) {
+        return res.status(404).send("Patient not found");
+      }
+
+      const script = await openaiService.generateCallScript(
+        patient.name,
+        patient.condition,
+        'initial'
+      );
+
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML(script));
+    } catch (error) {
+      console.error('TwiML generation error:', error);
+      res.status(500).send("Failed to generate TwiML");
+    }
+  });
+
+  // Process speech input from Twilio
+  app.post("/api/calls/process-speech", async (req, res) => {
+    try {
+      const { SpeechResult, CallSid } = req.body;
+      
+      if (!SpeechResult) {
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("I didn't catch that. Could you please repeat?"));
+        return;
+      }
+
+      // Find call by Twilio SID
+      const calls = await storage.getCalls();
+      const call = calls.find(c => c.twilioCallSid === CallSid);
+      
+      if (!call) {
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Thank you for calling. Goodbye."));
+        return;
+      }
+
+      const patient = await storage.getPatient(call.patientId);
+      if (!patient) {
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Thank you for calling. Goodbye."));
+        return;
+      }
+
+      // Parse existing transcript
+      const transcriptHistory = call.transcript ? 
+        JSON.parse(call.transcript) as any[] : [];
+
+      // Add patient response to transcript
+      transcriptHistory.push({
+        speaker: 'patient',
+        text: SpeechResult,
+        timestamp: new Date()
+      });
+
+      // Analyze patient response
+      const analysis = await openaiService.analyzePatientResponse(
+        SpeechResult,
+        patient.condition,
+        transcriptHistory
+      );
+
+      // Generate appropriate AI response
+      const aiResponse = await openaiService.generateFollowUpResponse(
+        analysis,
+        patient.condition
+      );
+
+      // Add AI response to transcript
+      transcriptHistory.push({
+        speaker: 'ai',
+        text: aiResponse,
+        timestamp: new Date()
+      });
+
+      // Update call record
+      await storage.updateCall(call.id, {
+        transcript: JSON.stringify(transcriptHistory),
+        aiAnalysis: analysis as any,
+        alertLevel: analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high' ? 'urgent' : 
+                   analysis.urgencyLevel === 'medium' ? 'warning' : 'none'
+      });
+
+      // Create alert if needed
+      if (analysis.escalateToProvider) {
+        const alert = await storage.createAlert({
+          patientId: call.patientId,
+          callId: call.id,
+          type: analysis.urgencyLevel === 'critical' ? 'urgent' : 'warning',
+          message: analysis.summary
+        });
+
+        // Send email notification for urgent cases
+        if (analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high') {
+          await sendGridService.sendUrgentAlert({
+            to: process.env.ALERT_EMAIL || 'provider@cardiocare.ai',
+            patientName: patient.name,
+            concern: analysis.concerns.join(', '),
+            urgencyLevel: analysis.urgencyLevel,
+            callSummary: analysis.summary,
+            patientPhone: patient.phoneNumber
+          });
+        }
+
+        broadcastUpdate('alertCreated', { alert, patient });
+      }
+
+      // Continue conversation or end call
+      let twimlResponse: string;
+      if (analysis.urgencyLevel === 'critical') {
+        twimlResponse = `${aiResponse} A healthcare provider will contact you shortly. Please stay by your phone. Goodbye.`;
+      } else if (analysis.nextQuestions.length === 0) {
+        twimlResponse = `${aiResponse} Thank you for your time. Take care and have a great day. Goodbye.`;
+      } else {
+        twimlResponse = `${aiResponse} ${analysis.nextQuestions[0]}`;
+      }
+
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML(twimlResponse));
+
+      // Broadcast real-time update
+      broadcastUpdate('callUpdated', { 
+        callId: call.id, 
+        transcript: transcriptHistory, 
+        analysis 
+      });
+
+    } catch (error) {
+      console.error('Speech processing error:', error);
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML("I'm having technical difficulties. A nurse will call you back. Goodbye."));
+    }
+  });
+
+  // Get urgent alerts
+  app.get("/api/alerts/urgent", async (req, res) => {
+    try {
+      const alerts = await storage.getUnresolvedAlerts();
+      const patients = await storage.getPatients();
+      
+      const alertsWithPatients = alerts.map(alert => {
+        const patient = patients.find(p => p.id === alert.patientId);
+        return {
+          ...alert,
+          patientName: patient?.name || 'Unknown',
+          phoneNumber: patient?.phoneNumber || ''
+        };
+      });
+      
+      res.json(alertsWithPatients);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch urgent alerts" });
+    }
+  });
+
+  // Get scheduled calls
+  app.get("/api/calls/scheduled", async (req, res) => {
+    try {
+      const scheduledCalls = await storage.getPendingScheduledCalls();
+      const patients = await storage.getPatients();
+      
+      const callsWithPatients = scheduledCalls.map(call => {
+        const patient = patients.find(p => p.id === call.patientId);
+        return {
+          ...call,
+          patientName: patient?.name || 'Unknown',
+          phoneNumber: patient?.phoneNumber || ''
+        };
+      });
+      
+      res.json(callsWithPatients);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch scheduled calls" });
+    }
+  });
+
+  // Add new patient
+  app.post("/api/patients", async (req, res) => {
+    try {
+      const validatedData = insertPatientSchema.parse(req.body);
+      const patient = await storage.createPatient(validatedData);
+      res.json(patient);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid patient data" });
+    }
+  });
+
+  // Schedule a call
+  app.post("/api/calls/schedule", async (req, res) => {
+    try {
+      const validatedData = insertScheduledCallSchema.parse(req.body);
+      const scheduledCall = await storage.createScheduledCall(validatedData);
+      res.json(scheduledCall);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid scheduled call data" });
+    }
+  });
+
+  // Batch call initiation
+  app.post("/api/calls/batch", async (req, res) => {
+    try {
+      const { patientIds, callType } = req.body;
+      
+      if (!Array.isArray(patientIds) || patientIds.length === 0) {
+        return res.status(400).json({ message: "Patient IDs array required" });
+      }
+
+      const results = [];
+      
+      for (const patientId of patientIds) {
+        try {
+          const patient = await storage.getPatient(patientId);
+          if (!patient) continue;
+
+          const activeCalls = await storage.getActiveCallsByPatientId(patientId);
+          if (activeCalls.length > 0) continue;
+
+          const call = await storage.createCall({
+            patientId,
+            status: 'active',
+            outcome: null,
+            transcript: '',
+            aiAnalysis: null,
+            alertLevel: 'none',
+            duration: null,
+            twilioCallSid: null
+          });
+
+          results.push({ patientId, callId: call.id, status: 'initiated' });
+        } catch (error) {
+          results.push({ patientId, status: 'failed', error: error.message });
+        }
+      }
+
+      res.json({ results, total: results.length });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to start batch calls" });
+    }
+  });
+
+  return httpServer;
+}

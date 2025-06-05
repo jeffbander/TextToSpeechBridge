@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 250 50% 98%; /* #FAFAFA */
+  --foreground: 220 14% 4%; /* Dark text */
+  --muted: 210 40% 98%; /* Light gray */
+  --muted-foreground: 215 16% 47%; /* Medium gray */
+  --popover: 0 0% 100%; /* White */
+  --popover-foreground: 220 14% 4%;
+  --card: 0 0% 100%; /* White */
+  --card-foreground: 220 14% 4%;
+  --border: 220 13% 91%; /* Light border */
+  --input: 220 13% 91%;
+  --primary: 207 90% 54%; /* Medical blue #1976D2 */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 98%;
+  --secondary-foreground: 222 84% 5%;
+  --accent: 210 40% 98%;
+  --accent-foreground: 222 84% 5%;
+  --destructive: 0 84% 60%; /* Error red #F44336 */
+  --destructive-foreground: 210 40% 98%;
+  --ring: 207 90% 54%;
+  --radius: 0.5rem;
+  
+  /* Custom medical theme colors */
+  --medical-blue: 207 90% 54%; /* #1976D2 */
+  --medical-blue-dark: 211 92% 46%; /* #1565C0 */
+  --medical-blue-light: 210 100% 95%; /* #E3F2FD */
+  --success: 122 39% 49%; /* #4CAF50 */
+  --warning: 36 100% 50%; /* #FF9800 */
+  --error: 4 90% 58%; /* #F44336 */
+  --surface: 0 0% 100%; /* White */
+}
+
+.dark {
+  --background: 222 84% 5%;
+  --foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --popover: 222 84% 5%;
+  --popover-foreground: 210 40% 98%;
+  --card: 222 84% 5%;
+  --card-foreground: 210 40% 98%;
+  --border: 217 33% 17%;
+  --input: 217 33% 17%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 222 84% 5%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+  --ring: 212 95% 68%;
+  
+  /* Dark mode medical colors */
+  --medical-blue: 207 90% 54%;
+  --medical-blue-dark: 211 92% 46%;
+  --medical-blue-light: 217 33% 17%;
+  --success: 122 39% 49%;
+  --warning: 36 100% 50%;
+  --error: 4 90% 58%;
+  --surface: 222 84% 5%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Custom utility classes for medical theme */
+  .text-medical-blue {
+    color: hsl(var(--medical-blue));
+  }
+  
+  .bg-medical-blue {
+    background-color: hsl(var(--medical-blue));
+  }
+  
+  .bg-medical-blue-dark {
+    background-color: hsl(var(--medical-blue-dark));
+  }
+  
+  .bg-medical-blue-light {
+    background-color: hsl(var(--medical-blue-light));
+  }
+  
+  .border-medical-blue {
+    border-color: hsl(var(--medical-blue));
+  }
+  
+  .text-success {
+    color: hsl(var(--success));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  
+  .text-error {
+    color: hsl(var(--error));
+  }
+  
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  
+  .bg-error {
+    background-color: hsl(var(--error));
+  }
+  
+  .bg-surface {
+    background-color: hsl(var(--surface));
+  }
+  
+  .border-success {
+    border-color: hsl(var(--success));
+  }
+  
+  .border-warning {
+    border-color: hsl(var(--warning));
+  }
+  
+  .border-error {
+    border-color: hsl(var(--error));
+  }
+}
+
+/* Loading animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Real-time status indicators */
+.status-indicator {
+  position: relative;
+}
+
+.status-indicator::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.live::before {
+  background-color: hsl(var(--success));
+}
+
+.status-indicator.urgent::before {
+  background-color: hsl(var(--error));
+}
+
+.status-indicator.warning::before {
+  background-color: hsl(var(--warning));
+}
+
+/* Scrollbar styling */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
