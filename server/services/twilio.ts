@@ -93,10 +93,17 @@ export class TwilioService {
   }
 
   generateTwiML(message: string): string {
+    // Use the correct Replit domain for speech processing webhook
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
+      `https://${process.env.REPLIT_DEV_DOMAIN}` : 
+      'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
+    
+    const speechProcessingUrl = `${baseUrl}/api/calls/process-speech`;
+    
     return `<?xml version="1.0" encoding="UTF-8"?>
     <Response>
       <Say voice="alice">${message}</Say>
-      <Gather input="speech" action="/api/calls/process-speech" method="POST" speechTimeout="auto">
+      <Gather input="speech" action="${speechProcessingUrl}" method="POST" speechTimeout="auto">
         <Say voice="alice">Please respond after the beep.</Say>
       </Gather>
     </Response>`;
