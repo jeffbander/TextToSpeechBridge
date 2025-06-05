@@ -215,6 +215,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test OpenAI endpoint
+  app.post("/api/test-openai", async (req, res) => {
+    try {
+      const { text } = req.body;
+      const analysis = await openaiService.analyzePatientResponse(
+        text,
+        "general health",
+        []
+      );
+      res.json({ success: true, analysis });
+    } catch (error) {
+      console.error('OpenAI test failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message || 'OpenAI API not working'
+      });
+    }
+  });
+
   // TwiML endpoint for handling calls
   app.get("/api/calls/twiml/:id", async (req, res) => {
     try {
@@ -222,25 +241,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const call = await storage.getCall(callId);
       
       if (!call) {
-        return res.status(404).send("Call not found");
+        console.log('Call not found:', callId);
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Hello, this is CardioCare calling for a health check. How are you feeling today?"));
+        return;
       }
 
       const patient = await storage.getPatient(call.patientId);
       if (!patient) {
-        return res.status(404).send("Patient not found");
+        console.log('Patient not found for call:', call.id);
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Hello, this is CardioCare calling for a health check. How are you feeling today?"));
+        return;
       }
 
-      const script = await openaiService.generateCallScript(
-        patient.name,
-        patient.condition,
-        'initial'
-      );
-
-      res.type('text/xml');
-      res.send(twilioService.generateTwiML(script));
+      try {
+        const script = await openaiService.generateCallScript(
+          patient.name,
+          patient.condition,
+          'initial'
+        );
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML(script));
+      } catch (aiError) {
+        console.error('OpenAI script generation failed:', aiError);
+        // Use fallback script when OpenAI fails
+        const fallbackScript = `Hello ${patient.name}, this is CardioCare calling for your health check. How are you feeling today? Are you experiencing any symptoms or concerns?`;
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML(fallbackScript));
+      }
     } catch (error) {
       console.error('TwiML generation error:', error);
-      res.status(500).send("Failed to generate TwiML");
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML("Hello, this is CardioCare calling for a health check. How are you feeling today?"));
     }
   });
 
@@ -361,8 +394,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (aiError) {
         console.error('OpenAI processing failed:', aiError);
         
-        // Fallback response when AI processing fails
-        const fallbackResponse = `Thank you for sharing that with me. I understand you said: "${SpeechResult}". Let me ask you another question - have you been taking your medications as prescribed?`;
+        // Simple health check questions when AI is unavailable
+        const patientResponses = transcriptHistory.filter(t => t.speaker === 'patient').length;
+        let fallbackResponse: string;
+        
+        if (patientResponses === 1) {
+          fallbackResponse = "Thank you for sharing that. Have you been taking your medications as prescribed?";
+        } else if (patientResponses === 2) {
+          fallbackResponse = "Good. Are you experiencing any pain, shortness of breath, or other concerning symptoms?";
+        } else if (patientResponses === 3) {
+          fallbackResponse = "I understand. Have you been following your discharge instructions and attending follow-up appointments?";
+        } else {
+          fallbackResponse = "Thank you for your responses. Please continue taking care of yourself. A healthcare provider will contact you if needed. Have a great day. Goodbye.";
+        }
         
         // Update transcript with fallback
         transcriptHistory.push({
