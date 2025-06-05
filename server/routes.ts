@@ -248,8 +248,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/calls/process-speech", async (req, res) => {
     try {
       const { SpeechResult, CallSid } = req.body;
+      console.log('Processing speech:', { SpeechResult, CallSid });
       
       if (!SpeechResult) {
+        console.log('No speech result received');
         res.type('text/xml');
         res.send(twilioService.generateTwiML("I didn't catch that. Could you please repeat?"));
         return;
@@ -260,6 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const call = calls.find(c => c.twilioCallSid === CallSid);
       
       if (!call) {
+        console.log('Call not found for SID:', CallSid);
         res.type('text/xml');
         res.send(twilioService.generateTwiML("Thank you for calling. Goodbye."));
         return;
@@ -267,6 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const patient = await storage.getPatient(call.patientId);
       if (!patient) {
+        console.log('Patient not found for call:', call.id);
         res.type('text/xml');
         res.send(twilioService.generateTwiML("Thank you for calling. Goodbye."));
         return;
@@ -283,70 +287,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Analyze patient response
-      const analysis = await openaiService.analyzePatientResponse(
-        SpeechResult,
-        patient.condition,
-        transcriptHistory
-      );
+      try {
+        // Analyze patient response
+        const analysis = await openaiService.analyzePatientResponse(
+          SpeechResult,
+          patient.condition,
+          transcriptHistory
+        );
 
-      // Generate appropriate AI response
-      const aiResponse = await openaiService.generateFollowUpResponse(
-        analysis,
-        patient.condition
-      );
+        // Generate appropriate AI response
+        const aiResponse = await openaiService.generateFollowUpResponse(
+          analysis,
+          patient.condition
+        );
 
-      // Add AI response to transcript
-      transcriptHistory.push({
-        speaker: 'ai',
-        text: aiResponse,
-        timestamp: new Date()
-      });
-
-      // Update call record
-      await storage.updateCall(call.id, {
-        transcript: JSON.stringify(transcriptHistory),
-        aiAnalysis: analysis as any,
-        alertLevel: analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high' ? 'urgent' : 
-                   analysis.urgencyLevel === 'medium' ? 'warning' : 'none'
-      });
-
-      // Create alert if needed
-      if (analysis.escalateToProvider) {
-        const alert = await storage.createAlert({
-          patientId: call.patientId,
-          callId: call.id,
-          type: analysis.urgencyLevel === 'critical' ? 'urgent' : 'warning',
-          message: analysis.summary
+        // Add AI response to transcript
+        transcriptHistory.push({
+          speaker: 'ai',
+          text: aiResponse,
+          timestamp: new Date()
         });
 
-        // Send email notification for urgent cases
-        if (analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high') {
-          await sendGridService.sendUrgentAlert({
-            to: process.env.ALERT_EMAIL || 'provider@cardiocare.ai',
-            patientName: patient.name,
-            concern: analysis.concerns.join(', '),
-            urgencyLevel: analysis.urgencyLevel,
-            callSummary: analysis.summary,
-            patientPhone: patient.phoneNumber
+        // Update call record
+        await storage.updateCall(call.id, {
+          transcript: JSON.stringify(transcriptHistory),
+          aiAnalysis: analysis as any,
+          alertLevel: analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high' ? 'urgent' : 
+                     analysis.urgencyLevel === 'medium' ? 'warning' : 'none'
+        });
+
+        // Create alert if needed
+        if (analysis.escalateToProvider) {
+          const alert = await storage.createAlert({
+            patientId: call.patientId,
+            callId: call.id,
+            type: analysis.urgencyLevel === 'critical' ? 'urgent' : 'warning',
+            message: analysis.summary
           });
+
+          // Send email notification for urgent cases
+          if (analysis.urgencyLevel === 'critical' || analysis.urgencyLevel === 'high') {
+            try {
+              await sendGridService.sendUrgentAlert({
+                to: process.env.ALERT_EMAIL || 'provider@cardiocare.ai',
+                patientName: patient.name,
+                concern: analysis.concerns.join(', '),
+                urgencyLevel: analysis.urgencyLevel,
+                callSummary: analysis.summary,
+                patientPhone: patient.phoneNumber
+              });
+            } catch (emailError) {
+              console.error('Email sending failed:', emailError);
+              // Continue processing even if email fails
+            }
+          }
+
+          broadcastUpdate('alertCreated', { alert, patient });
         }
 
-        broadcastUpdate('alertCreated', { alert, patient });
-      }
+        // Continue conversation or end call
+        let twimlResponse: string;
+        if (analysis.urgencyLevel === 'critical') {
+          twimlResponse = `${aiResponse} A healthcare provider will contact you shortly. Please stay by your phone. Goodbye.`;
+        } else if (analysis.nextQuestions.length === 0) {
+          twimlResponse = `${aiResponse} Thank you for your time. Take care and have a great day. Goodbye.`;
+        } else {
+          twimlResponse = `${aiResponse} ${analysis.nextQuestions[0]}`;
+        }
 
-      // Continue conversation or end call
-      let twimlResponse: string;
-      if (analysis.urgencyLevel === 'critical') {
-        twimlResponse = `${aiResponse} A healthcare provider will contact you shortly. Please stay by your phone. Goodbye.`;
-      } else if (analysis.nextQuestions.length === 0) {
-        twimlResponse = `${aiResponse} Thank you for your time. Take care and have a great day. Goodbye.`;
-      } else {
-        twimlResponse = `${aiResponse} ${analysis.nextQuestions[0]}`;
-      }
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML(twimlResponse));
 
-      res.type('text/xml');
-      res.send(twilioService.generateTwiML(twimlResponse));
+      } catch (aiError) {
+        console.error('OpenAI processing failed:', aiError);
+        
+        // Fallback response when AI processing fails
+        const fallbackResponse = `Thank you for sharing that with me. I understand you said: "${SpeechResult}". Let me ask you another question - have you been taking your medications as prescribed?`;
+        
+        // Update transcript with fallback
+        transcriptHistory.push({
+          speaker: 'ai',
+          text: fallbackResponse,
+          timestamp: new Date()
+        });
+
+        await storage.updateCall(call.id, {
+          transcript: JSON.stringify(transcriptHistory)
+        });
+
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML(fallbackResponse));
+      }
 
       // Broadcast real-time update
       broadcastUpdate('callUpdated', { 
