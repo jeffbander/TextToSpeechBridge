@@ -422,13 +422,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcript: transcriptHistory 
       });
 
-      // Broadcast real-time update
-      broadcastUpdate('callUpdated', { 
-        callId: call.id, 
-        transcript: transcriptHistory, 
-        analysis 
-      });
-
     } catch (error) {
       console.error('Speech processing error:', error);
       res.type('text/xml');
