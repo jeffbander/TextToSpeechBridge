@@ -1,8 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { PlayCircle, StopCircle, Phone, MessageSquare, Clock, User } from "lucide-react";
+import { PlayCircle, Phone, MessageSquare, Clock, User } from "lucide-react";
 import { useState } from "react";
 
 interface CallLogsProps {
@@ -66,7 +65,7 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
           Call Logs & Transcripts
         </CardTitle>
         <CardDescription>
-          Detailed conversation logs with AI analysis and voice recordings
+          Detailed conversation logs with full transcripts, AI analysis, and voice recordings
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -134,7 +133,7 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
                       {/* Conversation Transcript */}
                       {transcript.length > 0 && (
                         <div>
-                          <h4 className="font-medium mb-2">Conversation Transcript</h4>
+                          <h4 className="font-medium mb-2">Full Conversation Transcript</h4>
                           <div className="space-y-2 max-h-60 overflow-y-auto bg-muted p-3 rounded">
                             {transcript.map((entry: any, index: number) => (
                               <div key={index} className="flex gap-3">
@@ -162,10 +161,15 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
                                     </div>
                                   )}
                                   {entry.recordingUrl && (
-                                    <Button variant="outline" size="sm" className="mt-1">
-                                      <PlayCircle className="h-3 w-3 mr-1" />
+                                    <a 
+                                      href={entry.recordingUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-1"
+                                    >
+                                      <PlayCircle className="h-3 w-3" />
                                       Play Recording
-                                    </Button>
+                                    </a>
                                   )}
                                 </div>
                               </div>
@@ -178,7 +182,7 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
                       {call.aiAnalysis && (
                         <div>
                           <h4 className="font-medium mb-2">AI Health Analysis</h4>
-                          <div className="bg-muted p-3 rounded space-y-2">
+                          <div className="bg-muted p-3 rounded space-y-3">
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <span className="text-sm font-medium">Urgency Level:</span>
@@ -194,19 +198,12 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
                               </div>
                             </div>
                             
-                            {call.aiAnalysis.summary && (
-                              <div>
-                                <span className="text-sm font-medium">Summary:</span>
-                                <p className="text-sm mt-1">{call.aiAnalysis.summary}</p>
-                              </div>
-                            )}
-
                             {call.aiAnalysis.symptoms && call.aiAnalysis.symptoms.length > 0 && (
                               <div>
-                                <span className="text-sm font-medium">Identified Symptoms:</span>
+                                <span className="text-sm font-medium">Reported Symptoms:</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {call.aiAnalysis.symptoms.map((symptom: string, index: number) => (
-                                    <Badge key={index} variant="outline" className="text-xs">
+                                  {call.aiAnalysis.symptoms.map((symptom: string, idx: number) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">
                                       {symptom}
                                     </Badge>
                                   ))}
@@ -216,10 +213,10 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
 
                             {call.aiAnalysis.concerns && call.aiAnalysis.concerns.length > 0 && (
                               <div>
-                                <span className="text-sm font-medium">Concerns:</span>
+                                <span className="text-sm font-medium">Patient Concerns:</span>
                                 <div className="flex flex-wrap gap-1 mt-1">
-                                  {call.aiAnalysis.concerns.map((concern: string, index: number) => (
-                                    <Badge key={index} variant="destructive" className="text-xs">
+                                  {call.aiAnalysis.concerns.map((concern: string, idx: number) => (
+                                    <Badge key={idx} variant="destructive" className="text-xs">
                                       {concern}
                                     </Badge>
                                   ))}
@@ -227,28 +224,52 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
                               </div>
                             )}
 
+                            {call.aiAnalysis.summary && (
+                              <div>
+                                <span className="text-sm font-medium">Summary:</span>
+                                <p className="text-sm mt-1 bg-background p-2 rounded border">{call.aiAnalysis.summary}</p>
+                              </div>
+                            )}
+
                             {call.aiAnalysis.nextQuestions && call.aiAnalysis.nextQuestions.length > 0 && (
                               <div>
                                 <span className="text-sm font-medium">Suggested Follow-up Questions:</span>
-                                <ul className="list-disc list-inside text-sm mt-1 space-y-1">
-                                  {call.aiAnalysis.nextQuestions.map((question: string, index: number) => (
-                                    <li key={index}>{question}</li>
+                                <ul className="text-sm mt-1 space-y-1">
+                                  {call.aiAnalysis.nextQuestions.map((question: string, idx: number) => (
+                                    <li key={idx} className="bg-background p-2 rounded border">
+                                      • {question}
+                                    </li>
                                   ))}
                                 </ul>
                               </div>
                             )}
+
+                            <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                              <div>
+                                <span className="text-sm font-medium">Escalate to Provider:</span>
+                                <Badge variant={call.aiAnalysis.escalateToProvider ? 'destructive' : 'secondary'} className="ml-2">
+                                  {call.aiAnalysis.escalateToProvider ? 'Yes' : 'No'}
+                                </Badge>
+                              </div>
+                              <div>
+                                <span className="text-sm font-medium">Call ID:</span>
+                                <span className="ml-2 text-sm font-mono">{call.id}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
 
                       {/* Call Metadata */}
                       <div>
-                        <h4 className="font-medium mb-2">Call Details</h4>
+                        <h4 className="font-medium mb-2">Call Technical Details</h4>
                         <div className="bg-muted p-3 rounded text-sm space-y-1">
+                          <div><strong>Call ID:</strong> {call.id}</div>
                           <div><strong>Twilio Call SID:</strong> {call.twilioCallSid || 'N/A'}</div>
                           <div><strong>Started:</strong> {call.startedAt ? new Date(call.startedAt).toLocaleString() : 'N/A'}</div>
                           <div><strong>Completed:</strong> {call.completedAt ? new Date(call.completedAt).toLocaleString() : 'In Progress'}</div>
                           <div><strong>Outcome:</strong> {call.outcome || 'Pending'}</div>
+                          <div><strong>Patient Condition:</strong> {call.condition || 'Not specified'}</div>
                         </div>
                       </div>
                     </div>
