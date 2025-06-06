@@ -754,41 +754,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/calls/twiml/:callId", async (req, res) => {
     try {
       const callId = parseInt(req.params.callId);
-      console.log('TWIML ENDPOINT:', callId, 'Method:', req.method, 'IP:', req.ip);
+      console.log('🎬 TWIML ENDPOINT CALLED FOR CALL ID:', callId);
       
       const call = await storage.getCall(callId);
       if (!call) {
-        console.log('Call not found for TwiML:', callId);
+        console.log('❌ CALL NOT FOUND FOR TWIML:', callId);
         res.type('text/xml');
         res.send(twilioService.generateTwiML("Sorry, we couldn't locate your call information. Goodbye."));
         return;
       }
 
+      console.log('✅ CALL FOUND:', {
+        id: call.id,
+        status: call.status,
+        customPromptExists: !!call.customPrompt,
+        customPromptLength: call.customPrompt?.length || 0
+      });
+
       const patient = await storage.getPatient(call.patientId);
       if (!patient) {
-        console.log('Patient not found for call:', callId);
+        console.log('❌ PATIENT NOT FOUND FOR CALL:', callId);
         res.type('text/xml');
         res.send(twilioService.generateTwiML("Sorry, we couldn't locate your patient information. Goodbye."));
         return;
       }
 
-      // Debug: Log complete call object to diagnose custom prompt retrieval
-      console.log('🔍 FULL CALL OBJECT:', JSON.stringify({
-        id: call.id,
-        patientId: call.patientId,
-        customPrompt: call.customPrompt,
-        hasCustomPrompt: !!call.customPrompt
-      }));
+      console.log('✅ PATIENT FOUND:', patient.name);
       
-      // Check if this call has a custom prompt stored in the dedicated field
+      // Use custom prompt if available, otherwise generate standard script
       let script;
       
-      // Use custom prompt if available
       if (call.customPrompt && call.customPrompt.trim()) {
         script = call.customPrompt;
-        console.log('🎯 USING CUSTOM PROMPT:', script);
+        console.log('🎯 USING CUSTOM PROMPT FROM DATABASE');
+        console.log('📝 CUSTOM SCRIPT:', script.substring(0, 100) + '...');
       } else {
-        console.log('⚠️ NO CUSTOM PROMPT FOUND, USING AI GENERATION');
+        console.log('🤖 GENERATING AI SCRIPT - NO CUSTOM PROMPT FOUND');
         const voiceProfile = voiceConfigManager.getProfileForCondition(patient.condition);
         script = await openaiService.generateCallScript(
           patient.name,
@@ -796,6 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'initial',
           voiceProfile.personality
         );
+        console.log('📝 AI GENERATED SCRIPT:', script.substring(0, 100) + '...');
       }
 
       // Initialize transcript with AI greeting
