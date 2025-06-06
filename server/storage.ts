@@ -68,7 +68,7 @@ export class MemStorage implements IStorage {
     // Single test patient with real phone number
     const testPatient = {
       name: "Test Patient",
-      phoneNumber: "+16465565559",
+      phoneNumber: "+19179035489",
       email: "test@example.com",
       condition: "Health Check",
       lastDischarge: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
