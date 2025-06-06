@@ -186,6 +186,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create call record with custom prompt stored temporarily in transcript
       const callData = customPrompt ? { customPrompt } : {};
+      console.log('💾 STORING CUSTOM PROMPT IN CALL RECORD:', customPrompt ? 'YES' : 'NO');
+      if (customPrompt) {
+        console.log('📝 CUSTOM PROMPT TEXT:', customPrompt);
+        console.log('🗄️ CALL DATA TO STORE:', JSON.stringify(callData));
+      }
+      
       const call = await storage.createCall({
         patientId,
         status: 'active',
@@ -771,6 +777,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // or if we need to generate a standard script
       let script;
       
+      console.log('🔍 CHECKING FOR CUSTOM PROMPT...');
+      console.log('📋 CALL TRANSCRIPT FIELD:', call.transcript);
+      console.log('📋 TRANSCRIPT STARTS WITH {:', call.transcript && call.transcript.startsWith('{'));
+      
       // Try to get custom prompt from call record (if stored during creation)
       if (call.transcript && call.transcript.startsWith('{')) {
         try {
@@ -780,6 +790,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (e) {
           console.log('❌ Failed to parse custom prompt:', e);
         }
+      } else {
+        console.log('⚠️ NO CUSTOM PROMPT FOUND, USING AI GENERATION');
       }
       
       // If no custom prompt, generate standard AI script
@@ -805,7 +817,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcript: JSON.stringify(transcript)
       });
 
-      console.log('TWIML SENT:', script.length, 'bytes to Twilio');
+      console.log('🎤 OUTGOING PROMPT/GREETING:', script);
+      console.log('📦 TWIML SENT:', script.length, 'bytes to Twilio');
       
       res.type('text/xml');
       res.send(twilioService.generateTwiML(script));
