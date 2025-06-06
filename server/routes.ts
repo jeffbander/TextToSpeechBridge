@@ -9,6 +9,11 @@ import { insertPatientSchema, insertCallSchema, insertScheduledCallSchema, inser
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Health check endpoint for public accessibility
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  });
 
   // WebSocket server for real-time updates
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });

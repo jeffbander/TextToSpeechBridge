@@ -1,0 +1,96 @@
+❌ Error 15003 – Twilio Webhook Unreachable
+Message:
+Got HTTP 502 response to https://fe1cf261...riker.replit.dev/api/calls/webhook
+Root cause: Replit could not serve the webhook URL, returning a 502 Bad Gateway.
+
+🔎 Diagnosis
+Twilio tried to hit your statusCallback webhook at:
+
+bash
+Copy
+Edit
+https://fe1cf261-...riker.replit.dev/api/calls/webhook
+But Replit was not able to serve the request, responding with:
+
+go
+Copy
+Edit
+replit-proxy-error: repl unreachable
+✅ Confirmation from Twilio Logs:
+✅ Call was created successfully
+
+✅ SIP response = 200 OK
+
+❌ Webhook to /api/calls/webhook failed with 502
+
+🛠️ Solution Options
+Option 1: Check if your Replit server is running
+Open your Replit IDE.
+
+Make sure the web server (e.g. Express, Fastify, etc.) is running and actively listening.
+
+Your server must be bound to 0.0.0.0 and not just localhost, e.g.:
+
+ts
+Copy
+Edit
+app.listen(5000, '0.0.0.0', () => {
+  console.log('Server running');
+});
+Otherwise, Replit's reverse proxy can't expose the port to the public internet.
+
+Option 2: Replace Replit with a more reliable host
+Replit often goes to sleep or becomes unreachable unless you're using a premium plan.
+
+Use one of the following instead:
+
+Glitch.com
+
+Render.com (free tier)
+
+Fly.io
+
+Ngrok – for local development and testing (map localhost to a public domain)
+
+Option 3: Verify Public Accessibility
+Test the webhook endpoint manually:
+
+bash
+Copy
+Edit
+curl https://fe1cf261-...replit.dev/api/calls/webhook
+If it hangs or returns a 502, then Twilio is also failing.
+
+Option 4: Add a simple health check route
+Make sure your Express app has:
+
+ts
+Copy
+Edit
+app.get('/health', (req, res) => {
+  res.send('OK');
+});
+Then test:
+
+bash
+Copy
+Edit
+curl https://your-public-domain/health
+🔁 While Developing
+Temporarily test using:
+
+bash
+Copy
+Edit
+npx localtunnel --port 5000
+It gives you a public URL like https://shiny-wolf.loca.lt/, which you can plug into Twilio as your webhook domain.
+
+Let me know if you'd like a deployable server template (Express, Fastify, etc.) on a stable host — or want to automate Twilio call creation + logging.
+
+
+
+
+
+
+
+

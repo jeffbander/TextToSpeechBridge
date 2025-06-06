@@ -37,6 +37,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Health check endpoint for public accessibility - must be before Vite setup
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  });
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
