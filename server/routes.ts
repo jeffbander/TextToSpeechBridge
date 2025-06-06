@@ -558,26 +558,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Continue conversation:', shouldContinue);
 
-      // If conversation should continue, send TwiML to continue the call
+      // Implement conversational continuation using TwiML redirection
       if (shouldContinue) {
-        // Redirect call to continue with next question
         const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
           `https://${process.env.REPLIT_DEV_DOMAIN}` : 
           'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
         
         try {
-          // Use Twilio client to update the call with new instructions
-          await twilioService.getCallStatus(CallSid); // Verify call is still active
+          // Verify call is still active and update with redirection
+          await twilioService.getCallStatus(CallSid);
           
-          // Store the next question for the continuation endpoint
-          await storage.updateCall(call.id, {
-            transcript: JSON.stringify(transcriptHistory),
-            status: 'active'
+          // Use Twilio's call modification to redirect to continuation endpoint
+          const redirectUrl = `${baseUrl}/api/calls/continue/${call.id}`;
+          
+          // Update the active call to redirect to the continuation URL
+          const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+          await twilioClient.calls(CallSid).update({
+            url: redirectUrl,
+            method: 'POST'
           });
           
-          console.log('Call continuation prepared');
+          console.log('Call redirected to continuation endpoint:', redirectUrl);
+          
         } catch (error) {
-          console.log('Call may have ended, marking as completed');
+          console.log('Call redirection failed, call may have ended');
           await storage.updateCall(call.id, { 
             status: 'completed',
             completedAt: new Date()
@@ -901,6 +905,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('TwiML generation error:', error);
       res.type('text/xml');
       res.send(twilioService.generateTwiML("We're experiencing technical difficulties. Goodbye."));
+    }
+  });
+
+  // Conversation continuation endpoint - enables multi-turn conversations
+  app.post("/api/calls/continue/:callId", async (req, res) => {
+    try {
+      const callId = parseInt(req.params.callId);
+      console.log('🔄 CONVERSATION CONTINUATION - CALL ID:', callId);
+      
+      const call = await storage.getCall(callId);
+      if (!call) {
+        console.log('❌ NO CALL FOUND FOR CONTINUATION');
+        res.type('text/xml');
+        res.send(twilioService.generateConversationalTwiML("Thank you for calling. Goodbye.", callId, false));
+        return;
+      }
+
+      if (call.status !== 'active') {
+        console.log('📞 CALL NO LONGER ACTIVE');
+        res.type('text/xml');
+        res.send(twilioService.generateConversationalTwiML("Thank you for your time today. Goodbye.", callId, false));
+        return;
+      }
+
+      // Get the latest AI response from transcript
+      const transcriptHistory = call.transcript ? 
+        JSON.parse(call.transcript) as any[] : [];
+      
+      const lastAiResponse = transcriptHistory
+        .filter(entry => entry.speaker === 'ai')
+        .pop();
+
+      if (!lastAiResponse) {
+        console.log('❌ NO AI RESPONSE FOUND, USING FALLBACK');
+        res.type('text/xml');
+        res.send(twilioService.generateConversationalTwiML("How are you feeling today?", callId, true));
+        return;
+      }
+
+      const nextQuestion = lastAiResponse.text;
+      console.log('🗣️ NEXT AI QUESTION:', nextQuestion.substring(0, 50) + '...');
+      
+      // Determine if this should be the final question
+      const conversationTurn = transcriptHistory.filter(entry => entry.speaker === 'patient').length;
+      const shouldContinue = conversationTurn < 4 && 
+                           !nextQuestion.toLowerCase().includes('goodbye') &&
+                           !nextQuestion.toLowerCase().includes('take care');
+      
+      res.type('text/xml');
+      res.send(twilioService.generateConversationalTwiML(nextQuestion, callId, shouldContinue));
+      
+    } catch (error) {
+      console.error('❌ Continuation error:', error);
+      res.type('text/xml');
+      res.send(twilioService.generateConversationalTwiML("How can I help you today?", parseInt(req.params.callId), true));
     }
   });
 

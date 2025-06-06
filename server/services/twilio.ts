@@ -99,7 +99,7 @@ export class TwilioService {
     }
   }
 
-  generateTwiML(message: string, shouldRecord: boolean = true, voiceConfig?: VoiceConfig): string {
+  generateTwiML(message: string, shouldRecord: boolean = true, voiceConfig?: VoiceConfig, callId?: number): string {
     // Use the correct Replit domain for speech processing webhook
     const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
       `https://${process.env.REPLIT_DEV_DOMAIN}` : 
@@ -120,12 +120,37 @@ export class TwilioService {
   <Record action="${recordingUrl}" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
     <Say voice="${voice}">Please speak your response after the beep, and press pound when finished.</Say>
   </Record>
-  <Say voice="${voice}">Thank you. Please hold while I process your response.</Say>
 </Response>`;
     } else {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="${voice}">${cleanMessage}</Say>
+</Response>`;
+    }
+  }
+
+  // Enhanced method for conversational TwiML with automatic continuation
+  generateConversationalTwiML(message: string, callId: number, shouldContinue: boolean = true): string {
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
+      `https://${process.env.REPLIT_DEV_DOMAIN}` : 
+      'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
+    
+    const voice = 'alice';
+    const cleanMessage = message.replace(/[<>&"']/g, '');
+    
+    if (shouldContinue) {
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="${voice}">${cleanMessage}</Say>
+  <Record action="${baseUrl}/api/calls/recording" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
+    <Say voice="${voice}">Please respond after the beep.</Say>
+  </Record>
+</Response>`;
+    } else {
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="${voice}">${cleanMessage}</Say>
+  <Hangup/>
 </Response>`;
     }
   }
