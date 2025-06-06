@@ -27,6 +27,7 @@ export const calls = pgTable("calls", {
   transcript: text("transcript"),
   aiAnalysis: jsonb("ai_analysis"), // GPT analysis of call
   alertLevel: text("alert_level"), // none, warning, urgent
+  customPrompt: text("custom_prompt"), // Store custom prompt separately
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   twilioCallSid: text("twilio_call_sid"),

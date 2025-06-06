@@ -184,23 +184,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      // Create call record with custom prompt stored temporarily in transcript
-      const callData = customPrompt ? { customPrompt } : {};
+      // Create call record with custom prompt stored in dedicated field
       console.log('💾 STORING CUSTOM PROMPT IN CALL RECORD:', customPrompt ? 'YES' : 'NO');
       if (customPrompt) {
         console.log('📝 CUSTOM PROMPT TEXT:', customPrompt);
-        console.log('🗄️ CALL DATA TO STORE:', JSON.stringify(callData));
       }
       
       const call = await storage.createCall({
         patientId,
         status: 'active',
         outcome: null,
-        transcript: customPrompt ? JSON.stringify(callData) : '',
+        transcript: '',
         aiAnalysis: null,
         alertLevel: 'none',
         duration: null,
-        twilioCallSid: null
+        twilioCallSid: null,
+        customPrompt: customPrompt || null
       });
 
       // Initiate Twilio call - use current Replit domain for webhooks
