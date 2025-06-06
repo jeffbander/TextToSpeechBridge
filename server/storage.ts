@@ -147,13 +147,15 @@ export class MemStorage implements IStorage {
   async createCall(insertCall: InsertCall): Promise<Call> {
     const id = this.currentCallId++;
     const call: Call = { 
-      ...insertCall,
       id,
+      patientId: insertCall.patientId,
+      status: insertCall.status,
       duration: insertCall.duration ?? null,
       outcome: insertCall.outcome ?? null,
       transcript: insertCall.transcript ?? null,
       aiAnalysis: insertCall.aiAnalysis ?? null,
       alertLevel: insertCall.alertLevel ?? null,
+      customPrompt: insertCall.customPrompt ?? null,
       twilioCallSid: insertCall.twilioCallSid ?? null,
       startedAt: new Date(),
       completedAt: null

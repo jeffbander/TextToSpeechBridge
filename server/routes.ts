@@ -772,23 +772,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Check if this call has a custom prompt stored in the transcript field temporarily
-      // or if we need to generate a standard script
+      // Check if this call has a custom prompt stored in the dedicated field
       let script;
       
       console.log('🔍 CHECKING FOR CUSTOM PROMPT...');
-      console.log('📋 CALL TRANSCRIPT FIELD:', call.transcript);
-      console.log('📋 TRANSCRIPT STARTS WITH {:', call.transcript && call.transcript.startsWith('{'));
+      console.log('📋 CALL CUSTOM PROMPT FIELD:', call.customPrompt);
       
-      // Try to get custom prompt from call record (if stored during creation)
-      if (call.transcript && call.transcript.startsWith('{')) {
-        try {
-          const callData = JSON.parse(call.transcript);
-          script = callData.customPrompt;
-          console.log('🎯 USING CUSTOM PROMPT:', script);
-        } catch (e) {
-          console.log('❌ Failed to parse custom prompt:', e);
-        }
+      // Use custom prompt if available
+      if (call.customPrompt) {
+        script = call.customPrompt;
+        console.log('🎯 USING CUSTOM PROMPT:', script);
       } else {
         console.log('⚠️ NO CUSTOM PROMPT FOUND, USING AI GENERATION');
       }
