@@ -42,15 +42,17 @@ app.use((req, res, next) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
   });
 
-  // Critical TwiML webhook handler - must be before Vite setup
-  app.get('/api/calls/twiml/:id', (req, res) => {
-    console.log('🎯 CRITICAL TwiML ENDPOINT HIT - Call ID:', req.params.id);
-    console.log('📞 Request origin:', req.get('User-Agent'));
-    console.log('🌐 Request IP:', req.ip);
+  // Critical TwiML webhook handler - isolated and simplified
+  app.all('/api/calls/twiml/:id', (req, res) => {
+    const callId = req.params.id;
+    console.log('TWIML ENDPOINT:', callId, 'Method:', req.method, 'IP:', req.ip);
     
-    res.set({
+    // Force proper headers for Twilio
+    res.writeHead(200, {
       'Content-Type': 'text/xml; charset=utf-8',
-      'Cache-Control': 'no-cache'
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     });
     
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -62,8 +64,8 @@ app.use((req, res, next) => {
   <Say voice="alice">Thank you. Please hold while I process your response.</Say>
 </Response>`;
     
-    console.log('✅ Sending TwiML response:', twiml.length, 'bytes');
-    res.send(twiml);
+    console.log('TWIML SENT:', twiml.length, 'bytes to Twilio');
+    res.end(twiml);
   });
 
   // Critical: Register API routes before Vite to prevent HTML responses
