@@ -245,73 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // TwiML endpoint for handling calls
-  app.get("/api/calls/twiml/:id", async (req, res) => {
-    console.log('🔥 TWILIO HIT THE TWIML ENDPOINT for call ID:', req.params.id);
-    console.log('🔗 Request from:', req.ip);
-    console.log('📋 Request headers:', req.headers);
-    console.log('❓ Request query:', req.query);
-    
-    try {
-      const callId = parseInt(req.params.id);
-      console.log('Parsed call ID:', callId);
-      
-      const call = await storage.getCall(callId);
-      console.log('Found call:', call ? 'YES' : 'NO');
-      
-      if (!call) {
-        console.log('ERROR: Call not found for ID:', callId);
-        res.type('text/xml');
-        res.send(twilioService.generateTwiML("Hello, this is CardioCare calling for a health check. How are you feeling today?", true));
-        return;
-      }
-
-      const patient = await storage.getPatient(call.patientId);
-      console.log('Found patient:', patient ? 'YES' : 'NO');
-      
-      if (!patient) {
-        console.log('ERROR: Patient not found for call:', call.id);
-        res.type('text/xml');
-        res.send(twilioService.generateTwiML("Hello, this is CardioCare calling for a health check. How are you feeling today?", true));
-        return;
-      }
-
-      console.log('Attempting OpenAI script generation for patient:', patient.name);
-      try {
-        const script = await openaiService.generateCallScript(
-          patient.name,
-          patient.condition || 'general health',
-          'initial'
-        );
-        console.log('SUCCESS: Generated script for call:', callId);
-        console.log('Script content:', script);
-        res.type('text/xml');
-        const twiml = twilioService.generateTwiML(script, true);
-        console.log('Generated TwiML:', twiml);
-        res.send(twiml);
-      } catch (aiError: any) {
-        console.error('ERROR: OpenAI script generation failed:', aiError);
-        console.error('Error message:', aiError.message);
-        console.error('Error stack:', aiError.stack);
-        
-        // Use fallback script when OpenAI fails
-        const fallbackScript = `Hello ${patient.name}, this is CardioCare calling for your health check. How are you feeling today? Please speak your response after the beep and press pound when finished.`;
-        console.log('Using fallback script for call:', callId);
-        res.type('text/xml');
-        const fallbackTwiml = twilioService.generateTwiML(fallbackScript, true);
-        console.log('Fallback TwiML:', fallbackTwiml);
-        res.send(fallbackTwiml);
-      }
-    } catch (error: any) {
-      console.error('CRITICAL ERROR in TwiML generation:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      res.type('text/xml');
-      const errorTwiml = twilioService.generateTwiML("Hello, this is CardioCare calling for a health check. How are you feeling today? Please speak your response after the beep and press pound when finished.", true);
-      console.log('Error recovery TwiML:', errorTwiml);
-      res.send(errorTwiml);
-    }
-  });
+  // TwiML endpoint removed - now handled in server/index.ts to prevent routing conflicts
 
   // Handle voice recordings from Twilio calls
   app.post("/api/calls/recording", async (req, res) => {

@@ -42,6 +42,30 @@ app.use((req, res, next) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
   });
 
+  // Critical TwiML webhook handler - must be before Vite setup
+  app.get('/api/calls/twiml/:id', (req, res) => {
+    console.log('🎯 CRITICAL TwiML ENDPOINT HIT - Call ID:', req.params.id);
+    console.log('📞 Request origin:', req.get('User-Agent'));
+    console.log('🌐 Request IP:', req.ip);
+    
+    res.set({
+      'Content-Type': 'text/xml; charset=utf-8',
+      'Cache-Control': 'no-cache'
+    });
+    
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice">Hello, this is CardioCare calling for your health check. How are you feeling today?</Say>
+  <Record action="https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/recording" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/transcription">
+    <Say voice="alice">Please speak your response after the beep, and press pound when finished.</Say>
+  </Record>
+  <Say voice="alice">Thank you. Please hold while I process your response.</Say>
+</Response>`;
+    
+    console.log('✅ Sending TwiML response:', twiml.length, 'bytes');
+    res.send(twiml);
+  });
+
   // Critical: Register API routes before Vite to prevent HTML responses
   const server = await registerRoutes(app);
 
