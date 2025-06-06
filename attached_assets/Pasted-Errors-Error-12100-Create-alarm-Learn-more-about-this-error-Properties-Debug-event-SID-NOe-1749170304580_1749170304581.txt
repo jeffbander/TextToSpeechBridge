@@ -1,0 +1,267 @@
+Errors
+Error - 12100
+Create alarm
+Learn more about this error
+Properties
+Debug event SID
+
+NOeb59a8b1a799f63076e3e918fcc106cd
+
+Service SID
+
+--
+
+Resource SID
+
+CA500111417a93f6b0b6ee20226be275d4
+
+Timestamp
+
+12:37am UTC 2025-Jun-06
+
+Message
+
+Document parse failure
+
+Error Description
+Possible Solutions
+Possible Causes
+Request Inspector
+URL
+
+https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/twiml/1
+
+Product
+
+Programmable Voice
+
+Timestamp
+
+2025-06-06 00:37:50
+
+HTTP status
+
+200
+
+Post
+
+Expand All
+
+Replay request
+
+Clear
+Request
+URL
+https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/twiml/1
+
+Parameters
+
+Show raw data
+Called
+
++16465565559
+
+ToState
+
+NY
+
+CallerCountry
+
+US
+
+Direction
+
+outbound-api
+
+CallerState
+
+ToZip
+
+10018
+
+StirStatus
+
+C
+
+CallSid
+
+CA500111417a93f6b0b6ee...
+
+To
+
++16465565559
+
+CallerZip
+
+ToCountry
+
+US
+
+StirVerstat
+
+TN-Validation-Passed-C
+
+CalledZip
+
+10018
+
+ApiVersion
+
+2010-04-01
+
+CalledCity
+
+NEW YORK
+
+CallStatus
+
+in-progress
+
+From
+
++18555291116
+
+AccountSid
+
+ACe0ce8e004ba0147d5b9d...
+
+CalledCountry
+
+US
+
+CallerCity
+
+ToCity
+
+NEW YORK
+
+FromCountry
+
+US
+
+Caller
+
++18555291116
+
+FromCity
+
+CalledState
+
+NY
+
+FromZip
+
+FromState
+
+Message text
+
+Show raw data
+Msg
+
+Document parse failure
+
+line
+
+1
+
+parserMessage
+
+DOCTYPE is disallowed when the feature "http://apache.org/xml/features/disallow-doctype-decl" set...
+
+ErrorCode
+
+12100
+
+cols
+
+10
+
+LogLevel
+
+ERROR
+
+url
+
+https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/twiml/1
+
+Response
+Headers
+x-envoy-upstream-service-time
+
+104
+
+x-twilio-webhookinsights
+
+req_sent_at=1749170270649,resp_rcv_at=1749170270680
+
+Server
+
+envoy
+
+x-robots-tag
+
+none, noindex, noarchive, nofollow, nositelinkssearchbox, no...
+
+x-powered-by
+
+Express
+
+Vary
+
+Origin
+
+Content-Length
+
+43551
+
+replit-cluster
+
+riker
+
+Date
+
+Fri, 06 Jun 2025 00:37:50 GMT
+
+x-twilio-webhookattempt
+
+1
+
+Content-Type
+
+text/html; charset=utf-8
+
+Body
+
+Show raw data
+
+Copy response body
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script type="module">
+import { createHotContext } from "/@vite/client";
+const hot = createHotContext("/__dummy__runtime-error-plugin");
+
+function sendError(error) {
+  if (!(error instanceof Error)) {
+    error = new Error("(unknown runtime error)");
+  }
+  const serialized = {
+    message: error.message,
+    stack: error.stack,
+  };
+  hot.send("runtime-error-plugin:error", serialized);
+}
+
+window.addEventListener("error", (evt) => {
+  sendError(evt.error);
+});
+
+window.addEventListener("unhandledrejection", (evt) => {
+  sendError(evt.reason);
+});
+</script>
+
+    <script type="module">
+import RefreshRuntime from "/@react-refresh"
+RefreshRuntime.in...
