@@ -776,8 +776,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const callData = JSON.parse(call.transcript);
           script = callData.customPrompt;
+          console.log('🎯 USING CUSTOM PROMPT:', script);
         } catch (e) {
-          // Not JSON, treat as regular transcript
+          console.log('❌ Failed to parse custom prompt:', e);
         }
       }
       
