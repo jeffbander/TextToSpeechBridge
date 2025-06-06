@@ -764,11 +764,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      console.log('✅ CALL FOUND:', {
+      console.log('✅ CALL FOUND - CUSTOM PROMPT CHECK:', {
         id: call.id,
-        status: call.status,
-        customPromptExists: !!call.customPrompt,
-        customPromptLength: call.customPrompt?.length || 0
+        hasCustomPrompt: !!call.customPrompt,
+        customPromptPreview: call.customPrompt ? call.customPrompt.substring(0, 50) + '...' : 'none'
       });
 
       const patient = await storage.getPatient(call.patientId);
@@ -779,25 +778,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      console.log('✅ PATIENT FOUND:', patient.name);
-      
-      // Use custom prompt if available, otherwise generate standard script
+      // FIXED: Use custom prompt first, then fallback to default
       let script;
       
-      if (call.customPrompt && call.customPrompt.trim()) {
-        script = call.customPrompt;
-        console.log('🎯 USING CUSTOM PROMPT FROM DATABASE');
-        console.log('📝 CUSTOM SCRIPT:', script.substring(0, 100) + '...');
+      if (call.customPrompt) {
+        script = call.customPrompt.trim();
+        console.log('🎯 SUCCESS: Using custom prompt');
       } else {
-        console.log('🤖 GENERATING AI SCRIPT - NO CUSTOM PROMPT FOUND');
-        const voiceProfile = voiceConfigManager.getProfileForCondition(patient.condition);
-        script = await openaiService.generateCallScript(
-          patient.name,
-          patient.condition,
-          'initial',
-          voiceProfile.personality
-        );
-        console.log('📝 AI GENERATED SCRIPT:', script.substring(0, 100) + '...');
+        console.log('🔄 Fallback: Using default script');
+        // EDIT THIS LINE TO CHANGE THE DEFAULT PROMPT:
+        script = "Hello, this is CardioCare calling for your health check. How are you feeling today?";
+        
+        // Alternative default prompts you can use:
+        // script = "Hi there, this is your CardioCare assistant calling to check on your recovery progress.";
+        // script = "Good day, this is CardioCare following up on your recent visit. How can I help you today?";
+        // script = "Hello, this is your healthcare team at CardioCare. I'm calling to ensure you're doing well.";
       }
 
       // Initialize transcript with AI greeting
