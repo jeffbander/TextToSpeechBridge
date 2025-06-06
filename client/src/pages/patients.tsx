@@ -174,8 +174,8 @@ export default function Patients() {
               Manage patient records and contact information
             </p>
           </div>
-        
-        <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
+          
+          <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -487,6 +487,7 @@ export default function Patients() {
             </Card>
           ))
         )}
+        </div>
       </div>
     </div>
   );

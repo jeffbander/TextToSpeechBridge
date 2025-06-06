@@ -682,16 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add new patient
-  app.post("/api/patients", async (req, res) => {
-    try {
-      const validatedData = insertPatientSchema.parse(req.body);
-      const patient = await storage.createPatient(validatedData);
-      res.json(patient);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid patient data" });
-    }
-  });
+
 
   // Schedule a call
   app.post("/api/calls/schedule", async (req, res) => {
