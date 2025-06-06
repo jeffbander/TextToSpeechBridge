@@ -65,158 +65,20 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeSampleData() {
-    // Sample patients
-    const samplePatients = [
-      {
-        name: "Robert Johnson",
-        phoneNumber: "+16465565559",
-        email: "robert.johnson@email.com",
-        condition: "Post-Cardiac Surgery",
-        lastDischarge: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-        riskLevel: "medium"
-      },
-      {
-        name: "Maria Santos",
-        phoneNumber: "+1-555-0124",
-        email: "maria.santos@email.com", 
-        condition: "CHF Management",
-        lastDischarge: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-        riskLevel: "high"
-      },
-      {
-        name: "David Chen",
-        phoneNumber: "+15551234567", // This will be updated with a real number for testing
-        email: "david.chen@email.com",
-        condition: "Hypertension Follow-up",
-        lastDischarge: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
-        riskLevel: "low"
-      },
-      {
-        name: "Sarah Williams",
-        phoneNumber: "+1-555-0126", 
-        email: "sarah.williams@email.com",
-        condition: "Diabetes Management",
-        lastDischarge: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-        riskLevel: "medium"
-      },
-      {
-        name: "Michael Brown",
-        phoneNumber: "+1-555-0127",
-        email: "michael.brown@email.com",
-        condition: "Post-Stroke Care",
-        lastDischarge: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-        riskLevel: "high"
-      }
-    ];
+    // Single test patient with real phone number
+    const testPatient = {
+      name: "Test Patient",
+      phoneNumber: "+16465565559",
+      email: "test@example.com",
+      condition: "Health Check",
+      lastDischarge: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+      riskLevel: "low"
+    };
 
-    // Create patients
-    for (const patientData of samplePatients) {
-      await this.createPatient(patientData);
-    }
+    // Create only the test patient
+    await this.createPatient(testPatient);
 
-    // Create some sample recent calls
-    const recentCalls = [
-      {
-        patientId: 1,
-        status: "completed",
-        duration: 180,
-        outcome: "routine",
-        transcript: JSON.stringify([
-          { speaker: "ai", text: "Hello Mr. Johnson, this is your CardioCare follow-up assistant. How are you feeling today?", timestamp: new Date() },
-          { speaker: "patient", text: "I'm doing well, thank you. Just some minor soreness from the surgery.", timestamp: new Date() },
-          { speaker: "ai", text: "That's normal for this stage of recovery. Are you taking your medications as prescribed?", timestamp: new Date() },
-          { speaker: "patient", text: "Yes, I'm taking everything as directed.", timestamp: new Date() }
-        ]),
-        aiAnalysis: {
-          urgencyLevel: "low",
-          symptoms: ["minor soreness"],
-          concerns: [],
-          followUpRequired: false,
-          escalateToProvider: false,
-          summary: "Patient recovering well from cardiac surgery, minor expected soreness, good medication compliance"
-        },
-        alertLevel: "none",
-        twilioCallSid: "CA1234567890abcdef1234567890abcdef"
-      },
-      {
-        patientId: 2,
-        status: "completed", 
-        duration: 240,
-        outcome: "escalated",
-        transcript: JSON.stringify([
-          { speaker: "ai", text: "Hello Mrs. Santos, this is your CardioCare follow-up assistant. How are you feeling today?", timestamp: new Date() },
-          { speaker: "patient", text: "I've been having more trouble breathing and my ankles are really swollen.", timestamp: new Date() },
-          { speaker: "ai", text: "I'm concerned about these symptoms. Have you been taking your water pills as prescribed?", timestamp: new Date() },
-          { speaker: "patient", text: "I ran out yesterday and haven't been able to get to the pharmacy.", timestamp: new Date() }
-        ]),
-        aiAnalysis: {
-          urgencyLevel: "high",
-          symptoms: ["shortness of breath", "ankle swelling"],
-          concerns: ["medication non-compliance", "CHF exacerbation"],
-          followUpRequired: true,
-          escalateToProvider: true,
-          summary: "CHF patient with worsening symptoms and medication non-compliance - requires immediate provider contact"
-        },
-        alertLevel: "urgent",
-        twilioCallSid: "CA2234567890abcdef1234567890abcdef"
-      }
-    ];
-
-    // Create recent calls
-    for (const callData of recentCalls) {
-      const call = await this.createCall(callData);
-      // Mark as completed
-      await this.updateCall(call.id, { 
-        completedAt: new Date(Date.now() - Math.random() * 2 * 60 * 60 * 1000) // Within last 2 hours
-      });
-    }
-
-    // Create some scheduled calls
-    const scheduledCallsData = [
-      {
-        patientId: 3,
-        scheduledTime: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
-        callType: "post-discharge"
-      },
-      {
-        patientId: 4,
-        scheduledTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-        callType: "medication-check"
-      },
-      {
-        patientId: 5,
-        scheduledTime: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours from now
-        callType: "routine"
-      }
-    ];
-
-    // Create scheduled calls
-    for (const scheduleData of scheduledCallsData) {
-      await this.createScheduledCall(scheduleData);
-    }
-
-    // Create some urgent alerts
-    const urgentAlerts = [
-      {
-        patientId: 2,
-        callId: 2,
-        type: "urgent",
-        message: "Patient reports worsening CHF symptoms and medication non-compliance"
-      },
-      {
-        patientId: 5,
-        callId: null,
-        type: "warning", 
-        message: "Patient missed last two scheduled calls"
-      }
-    ];
-
-    // Create alerts
-    for (const alertData of urgentAlerts) {
-      await this.createAlert(alertData);
-    }
-
-    console.log('Sample patient data initialized successfully');
+    console.log('Test patient data initialized successfully');
   }
 
   // Patients
