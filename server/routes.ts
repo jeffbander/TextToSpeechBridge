@@ -402,11 +402,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transcript: JSON.stringify(transcriptHistory)
       });
 
-      console.log('💭 Waiting for transcription to continue conversation...');
+      console.log('💭 Processing recording and preparing for immediate response...');
       
-      // Transcription will trigger the conversational flow
+      // Generate immediate holding response while waiting for transcription
       res.type('text/xml');
-      res.send(twilioService.generateTwiML("Thank you. Please hold while I process your response.", false));
+      res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice">Thank you. Please hold while I analyze your response.</Say>
+  <Pause length="3"/>
+  <Redirect>${req.protocol}://${req.get('host')}/api/calls/continue/${call.id}</Redirect>
+</Response>`);
     } catch (error: any) {
       console.error('❌ Recording processing error:', error);
       res.type('text/xml');
@@ -542,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Update call with conversation continuation
+      // Update call with conversation state
       await storage.updateCall(call.id, {
         transcript: JSON.stringify(transcriptHistory),
         status: shouldContinue ? 'active' : 'completed',
@@ -556,38 +561,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: shouldContinue ? 'active' : 'completed'
       });
 
+      console.log('Conversation analysis complete. Next question prepared:', nextQuestion.substring(0, 50));
       console.log('Continue conversation:', shouldContinue);
-
-      // Implement conversational continuation using TwiML redirection
-      if (shouldContinue) {
-        const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
-          `https://${process.env.REPLIT_DEV_DOMAIN}` : 
-          'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
-        
-        try {
-          // Verify call is still active and update with redirection
-          await twilioService.getCallStatus(CallSid);
-          
-          // Use Twilio's call modification to redirect to continuation endpoint
-          const redirectUrl = `${baseUrl}/api/calls/continue/${call.id}`;
-          
-          // Update the active call to redirect to the continuation URL
-          const twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-          await twilioClient.calls(CallSid).update({
-            url: redirectUrl,
-            method: 'POST'
-          });
-          
-          console.log('Call redirected to continuation endpoint:', redirectUrl);
-          
-        } catch (error) {
-          console.log('Call redirection failed, call may have ended');
-          await storage.updateCall(call.id, { 
-            status: 'completed',
-            completedAt: new Date()
-          });
-        }
-      }
 
       res.status(200).send('OK');
     } catch (error: any) {
