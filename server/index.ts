@@ -42,31 +42,7 @@ app.use((req, res, next) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
   });
 
-  // Critical TwiML webhook handler - isolated and simplified
-  app.all('/api/calls/twiml/:id', (req, res) => {
-    const callId = req.params.id;
-    console.log('TWIML ENDPOINT:', callId, 'Method:', req.method, 'IP:', req.ip);
-    
-    // Force proper headers for Twilio
-    res.writeHead(200, {
-      'Content-Type': 'text/xml; charset=utf-8',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-    
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say voice="alice">Hello, this is CardioCare calling for your health check. How are you feeling today?</Say>
-  <Record action="https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/recording" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/transcription">
-    <Say voice="alice">Please speak your response after the beep, and press pound when finished.</Say>
-  </Record>
-  <Say voice="alice">Thank you. Please hold while I process your response.</Say>
-</Response>`;
-    
-    console.log('TWIML SENT:', twiml.length, 'bytes to Twilio');
-    res.end(twiml);
-  });
+
 
   // Critical: Register API routes before Vite to prevent HTML responses
   const server = await registerRoutes(app);
