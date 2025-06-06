@@ -42,21 +42,7 @@ app.use((req, res, next) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
   });
 
-  // TwiML endpoint must be registered before Vite to avoid HTML responses
-  app.get('/api/calls/twiml/:id', (req, res) => {
-    console.log('🔥 TWILIO HIT THE TWIML ENDPOINT for call ID:', req.params.id);
-    res.type('text/xml');
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-    <Response>
-      <Say voice="alice">Hello, this is CardioCare calling for your health check. How are you feeling today? Please speak your response after the beep and press pound when finished.</Say>
-      <Record action="https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/recording" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev/api/calls/transcription">
-        <Say voice="alice">Please speak your response after the beep, and press pound when finished.</Say>
-      </Record>
-      <Say voice="alice">Thank you. Please hold while I process your response.</Say>
-    </Response>`;
-    res.send(twiml);
-  });
-
+  // Critical: Register API routes before Vite to prevent HTML responses
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
