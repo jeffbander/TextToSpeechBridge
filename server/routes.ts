@@ -772,22 +772,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
+      // Debug: Log complete call object to diagnose custom prompt retrieval
+      console.log('🔍 FULL CALL OBJECT:', JSON.stringify({
+        id: call.id,
+        patientId: call.patientId,
+        customPrompt: call.customPrompt,
+        hasCustomPrompt: !!call.customPrompt
+      }));
+      
       // Check if this call has a custom prompt stored in the dedicated field
       let script;
       
-      console.log('🔍 CHECKING FOR CUSTOM PROMPT...');
-      console.log('📋 CALL CUSTOM PROMPT FIELD:', call.customPrompt);
-      
       // Use custom prompt if available
-      if (call.customPrompt) {
+      if (call.customPrompt && call.customPrompt.trim()) {
         script = call.customPrompt;
         console.log('🎯 USING CUSTOM PROMPT:', script);
       } else {
         console.log('⚠️ NO CUSTOM PROMPT FOUND, USING AI GENERATION');
-      }
-      
-      // If no custom prompt, generate standard AI script
-      if (!script) {
         const voiceProfile = voiceConfigManager.getProfileForCondition(patient.condition);
         script = await openaiService.generateCallScript(
           patient.name,
