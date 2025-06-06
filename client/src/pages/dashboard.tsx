@@ -6,6 +6,7 @@ import RecentCalls from "@/components/dashboard/recent-calls";
 import UrgentAlerts from "@/components/dashboard/urgent-alerts";
 import ScheduledCalls from "@/components/dashboard/scheduled-calls";
 import QuickActions from "@/components/dashboard/quick-actions";
+import CallLogs from "@/components/dashboard/call-logs";
 import LiveCallModal from "@/components/modals/live-call-modal";
 import { Heart, Bell, User, Volume2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,27 +20,27 @@ export default function Dashboard() {
   // Subscribe to real-time updates
   useWebSocket();
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: ['/api/dashboard/stats'],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const { data: activeCalls = [], isLoading: activeCallsLoading } = useQuery({
+  const { data: activeCalls = [], isLoading: activeCallsLoading } = useQuery<any[]>({
     queryKey: ['/api/calls/active'],
     refetchInterval: 5000, // Refresh every 5 seconds
   });
 
-  const { data: recentCalls = [], isLoading: recentCallsLoading } = useQuery({
+  const { data: recentCalls = [], isLoading: recentCallsLoading } = useQuery<any[]>({
     queryKey: ['/api/calls/recent'],
     refetchInterval: 10000,
   });
 
-  const { data: urgentAlerts = [], isLoading: alertsLoading } = useQuery({
+  const { data: urgentAlerts = [], isLoading: alertsLoading } = useQuery<any[]>({
     queryKey: ['/api/alerts/urgent'],
     refetchInterval: 5000,
   });
 
-  const { data: scheduledCalls = [], isLoading: scheduledLoading } = useQuery({
+  const { data: scheduledCalls = [], isLoading: scheduledLoading } = useQuery<any[]>({
     queryKey: ['/api/calls/scheduled'],
     refetchInterval: 10000,
   });
@@ -101,6 +102,10 @@ export default function Dashboard() {
               calls={activeCalls} 
               isLoading={activeCallsLoading}
               onListenToCall={handleListenToCall}
+            />
+            <CallLogs 
+              calls={[...activeCalls, ...recentCalls]} 
+              isLoading={activeCallsLoading || recentCallsLoading}
             />
             <RecentCalls 
               calls={recentCalls} 
