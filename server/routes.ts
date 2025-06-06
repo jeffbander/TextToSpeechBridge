@@ -158,11 +158,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const callbackUrl = `${baseUrl}/api/calls/webhook`;
       
       try {
+        const webhookUrl = `${baseUrl}/api/calls/twiml/${call.id}`;
+        console.log('🚀 INITIATING TWILIO CALL with webhook URL:', webhookUrl);
+        console.log('📞 Calling patient:', patient.phoneNumber);
+        
         const twilioCallSid = await twilioService.makeCall({
           to: patient.phoneNumber,
-          url: `${baseUrl}/api/calls/twiml/${call.id}`,
+          url: webhookUrl,
           statusCallback: callbackUrl
         });
+        
+        console.log('✅ Twilio call created with SID:', twilioCallSid);
 
         await storage.updateCall(call.id, { twilioCallSid });
         
@@ -236,9 +242,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // TwiML endpoint for handling calls
   app.get("/api/calls/twiml/:id", async (req, res) => {
-    console.log('TwiML endpoint called for call ID:', req.params.id);
-    console.log('Request headers:', req.headers);
-    console.log('Request query:', req.query);
+    console.log('🔥 TWILIO HIT THE TWIML ENDPOINT for call ID:', req.params.id);
+    console.log('🔗 Request from:', req.ip);
+    console.log('📋 Request headers:', req.headers);
+    console.log('❓ Request query:', req.query);
     
     try {
       const callId = parseInt(req.params.id);
