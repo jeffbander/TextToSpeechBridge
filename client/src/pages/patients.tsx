@@ -220,7 +220,7 @@ export default function Patients() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="patient@example.com" {...field} />
+                          <Input placeholder="patient@example.com" {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
