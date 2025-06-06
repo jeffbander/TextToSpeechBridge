@@ -754,46 +754,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/calls/twiml/:callId", async (req, res) => {
     try {
       const callId = parseInt(req.params.callId);
-      console.log('🎬 TWIML ENDPOINT CALLED FOR CALL ID:', callId);
+      console.log('🎬 TWIML ENDPOINT - CALL ID:', callId);
       
       const call = await storage.getCall(callId);
       if (!call) {
-        console.log('❌ CALL NOT FOUND FOR TWIML:', callId);
+        console.log('❌ NO CALL FOUND');
         res.type('text/xml');
         res.send(twilioService.generateTwiML("Sorry, we couldn't locate your call information. Goodbye."));
         return;
       }
 
-      console.log('✅ CALL FOUND - CUSTOM PROMPT CHECK:', {
-        id: call.id,
-        hasCustomPrompt: !!call.customPrompt,
-        customPromptPreview: call.customPrompt ? call.customPrompt.substring(0, 50) + '...' : 'none'
-      });
+      console.log('📞 CALL FOUND:', call.id);
+      console.log('🗂️ CUSTOM PROMPT EXISTS:', !!call.customPrompt);
+      console.log('📝 CUSTOM PROMPT LENGTH:', call.customPrompt?.length || 0);
 
       const patient = await storage.getPatient(call.patientId);
       if (!patient) {
-        console.log('❌ PATIENT NOT FOUND FOR CALL:', callId);
+        console.log('❌ NO PATIENT FOUND');
         res.type('text/xml');
         res.send(twilioService.generateTwiML("Sorry, we couldn't locate your patient information. Goodbye."));
         return;
       }
 
-      // FIXED: Use custom prompt first, then fallback to default
+      console.log('👤 PATIENT FOUND:', patient.name);
+
       let script;
       
-      if (call.customPrompt) {
+      if (call.customPrompt && call.customPrompt.trim()) {
         script = call.customPrompt.trim();
-        console.log('🎯 SUCCESS: Using custom prompt');
+        console.log('🎯 USING CUSTOM PROMPT');
+        console.log('📄 FIRST 50 CHARS:', script.substring(0, 50));
       } else {
-        console.log('🔄 Fallback: Using default script');
-        // EDIT THIS LINE TO CHANGE THE DEFAULT PROMPT:
         script = "Hello, this is CardioCare calling for your health check. How are you feeling today?";
-        
-        // Alternative default prompts you can use:
-        // script = "Hi there, this is your CardioCare assistant calling to check on your recovery progress.";
-        // script = "Good day, this is CardioCare following up on your recent visit. How can I help you today?";
-        // script = "Hello, this is your healthcare team at CardioCare. I'm calling to ensure you're doing well.";
+        console.log('🔄 USING DEFAULT PROMPT');
       }
+
+      console.log('🎤 FINAL SCRIPT LENGTH:', script.length);
 
       // Initialize transcript with AI greeting
       const transcript = [{
