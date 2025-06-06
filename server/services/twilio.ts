@@ -110,13 +110,13 @@ export class TwilioService {
     // Use enhanced neural voice for more natural speech
     const voice = voiceConfig?.voice || 'Polly.Joanna-Neural';
     
-    // Enhanced SSML for natural speech patterns
-    const naturalMessage = this.formatWithSSML(message);
+    // Clean message to avoid any XML conflicts
+    const cleanMessage = message.replace(/[<>&"']/g, '');
     
     if (shouldRecord) {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${naturalMessage}</Say>
+  <Say voice="${voice}">${cleanMessage}</Say>
   <Record action="${recordingUrl}" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
     <Say voice="${voice}">Please share your response after the beep. When you're finished, just pause for a moment or press the pound key.</Say>
   </Record>
@@ -124,7 +124,7 @@ export class TwilioService {
     } else {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${this.formatWithSSML(message)}</Say>
+  <Say voice="${voice}">${cleanMessage}</Say>
 </Response>`;
     }
   }
@@ -137,10 +137,12 @@ export class TwilioService {
     
     const voice = 'Polly.Joanna-Neural';
     
+    const cleanMessage = message.replace(/[<>&"']/g, '');
+    
     if (shouldContinue) {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${this.formatWithSSML(message)}</Say>
+  <Say voice="${voice}">${cleanMessage}</Say>
   <Record action="${baseUrl}/api/calls/recording" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
     <Say voice="${voice}">Please respond after the beep.</Say>
   </Record>
@@ -148,7 +150,7 @@ export class TwilioService {
     } else {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${this.formatWithSSML(message)}</Say>
+  <Say voice="${voice}">${cleanMessage}</Say>
   <Hangup/>
 </Response>`;
     }
