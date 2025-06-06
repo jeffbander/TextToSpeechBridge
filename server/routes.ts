@@ -5,6 +5,8 @@ import { storage } from "./storage";
 import { twilioService } from "./services/twilio";
 import { openaiService } from "./services/openai";
 import { sendGridService } from "./services/sendgrid";
+import { voiceConfigManager } from "./services/voice-config";
+import { promptManager } from "./services/prompt-manager";
 import { insertPatientSchema, insertCallSchema, insertScheduledCallSchema, insertAlertSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {

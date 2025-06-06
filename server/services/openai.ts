@@ -22,11 +22,34 @@ export interface CallTranscription {
 }
 
 export class OpenAIService {
-  async generateCallScript(patientName: string, condition: string, callType: string): Promise<string> {
+  async generateCallScript(
+    patientName: string, 
+    condition: string, 
+    callType: string,
+    voicePersonality?: { tone: string; pace: string; formality: string }
+  ): Promise<string> {
     try {
-      const prompt = `You are a virtual health assistant for CardioCare. Generate an initial greeting and opening questions for a ${callType} call with ${patientName} who has ${condition}. 
+      const personality = voicePersonality || { tone: 'empathetic', pace: 'normal', formality: 'conversational' };
       
-      Be professional, empathetic, and focused on gathering key health information. Ask about symptoms, medication adherence, and any concerns. Keep responses concise and clear.
+      const prompt = `You are a CardioCare virtual health assistant. Generate a ${personality.tone} and ${personality.formality} greeting for ${patientName} with ${condition}.
+
+      Voice Personality Guidelines:
+      - Tone: ${personality.tone} (adjust warmth and clinical approach accordingly)
+      - Pace: ${personality.pace} (affect sentence structure and complexity)
+      - Formality: ${personality.formality} (adjust language register)
+      
+      Clinical Focus Areas:
+      - Primary condition: ${condition}
+      - Call type: ${callType}
+      - Patient name: ${patientName}
+      
+      Requirements:
+      1. Start with personalized greeting using patient name
+      2. Reference their specific condition naturally
+      3. Ask 1-2 focused questions about current symptoms or well-being
+      4. Use natural, conversational language appropriate for voice delivery
+      5. Keep total response under 150 words for voice clarity
+      6. Include transition phrases for natural speech flow
       
       Format: Return only the spoken greeting and first question.`;
 
