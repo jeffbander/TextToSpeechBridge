@@ -7,7 +7,9 @@ import UrgentAlerts from "@/components/dashboard/urgent-alerts";
 import ScheduledCalls from "@/components/dashboard/scheduled-calls";
 import QuickActions from "@/components/dashboard/quick-actions";
 import LiveCallModal from "@/components/modals/live-call-modal";
-import { Heart, Bell, User } from "lucide-react";
+import { Heart, Bell, User, Volume2, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import { useState } from "react";
 
 export default function Dashboard() {
@@ -67,6 +69,12 @@ export default function Dashboard() {
               </nav>
             </div>
             <div className="flex items-center space-x-4">
+              <Link href="/voice-settings">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Volume2 className="h-4 w-4" />
+                  Voice Settings
+                </Button>
+              </Link>
               <button className="relative p-2 text-gray-400 hover:text-gray-500">
                 <Bell className="h-6 w-6" />
                 {urgentAlerts.length > 0 && (

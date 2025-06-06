@@ -46,7 +46,7 @@ export default function VoiceSettings() {
   const [testResult, setTestResult] = useState<any>(null);
 
   // Fetch voice profiles
-  const { data: profiles = [], isLoading: profilesLoading } = useQuery({
+  const { data: profiles = [], isLoading: profilesLoading } = useQuery<VoiceProfile[]>({
     queryKey: ['/api/voice/profiles'],
     enabled: true
   });
@@ -54,10 +54,13 @@ export default function VoiceSettings() {
   // Test prompt generation
   const testPromptMutation = useMutation({
     mutationFn: async (data: TestPromptData) => {
-      return apiRequest('/api/prompts/test', {
+      const response = await fetch('/api/prompts/test', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
+      if (!response.ok) throw new Error('Failed to generate prompt');
+      return response.json();
     },
     onSuccess: (result) => {
       setTestResult(result);
