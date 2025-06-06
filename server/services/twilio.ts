@@ -107,24 +107,24 @@ export class TwilioService {
     
     const recordingUrl = `${baseUrl}/api/calls/recording`;
     
-    // Use basic voice that Twilio supports reliably
-    const voice = voiceConfig?.voice || 'alice';
+    // Use enhanced neural voice for more natural speech
+    const voice = voiceConfig?.voice || 'Polly.Joanna-Neural';
     
-    // Clean message to avoid XML/SSML conflicts
-    const cleanMessage = message.replace(/[<>&"']/g, '');
+    // Enhanced SSML for natural speech patterns
+    const naturalMessage = this.formatWithSSML(message);
     
     if (shouldRecord) {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${cleanMessage}</Say>
+  <Say voice="${voice}">${naturalMessage}</Say>
   <Record action="${recordingUrl}" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
-    <Say voice="${voice}">Please speak your response after the beep, and press pound when finished.</Say>
+    <Say voice="${voice}"><speak><prosody rate="medium" pitch="medium">Please share your response after the beep. When you're finished, just pause for a moment or press the pound key.</prosody></speak></Say>
   </Record>
 </Response>`;
     } else {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${cleanMessage}</Say>
+  <Say voice="${voice}">${this.formatWithSSML(message)}</Say>
 </Response>`;
     }
   }
@@ -135,24 +135,38 @@ export class TwilioService {
       `https://${process.env.REPLIT_DEV_DOMAIN}` : 
       'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
     
-    const voice = 'alice';
-    const cleanMessage = message.replace(/[<>&"']/g, '');
+    const voice = 'Polly.Joanna-Neural';
     
     if (shouldContinue) {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${cleanMessage}</Say>
+  <Say voice="${voice}">${this.formatWithSSML(message)}</Say>
   <Record action="${baseUrl}/api/calls/recording" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
-    <Say voice="${voice}">Please respond after the beep.</Say>
+    <Say voice="${voice}"><speak><prosody rate="medium" pitch="medium">Please respond after the beep.</prosody></speak></Say>
   </Record>
 </Response>`;
     } else {
       return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="${voice}">${cleanMessage}</Say>
+  <Say voice="${voice}">${this.formatWithSSML(message)}</Say>
   <Hangup/>
 </Response>`;
     }
+  }
+
+  // Format messages with SSML for natural speech patterns
+  private formatWithSSML(message: string): string {
+    // Clean message first
+    const cleanMessage = message.replace(/[<>&"']/g, '');
+    
+    // Add natural pauses and prosody for healthcare conversations
+    return `<speak>
+      <prosody rate="medium" pitch="medium">
+        <break time="0.3s"/>
+        ${cleanMessage}
+        <break time="0.5s"/>
+      </prosody>
+    </speak>`;
   }
 }
 
