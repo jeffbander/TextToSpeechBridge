@@ -7,6 +7,11 @@ export const patients = pgTable("patients", {
   name: text("name").notNull(),
   phoneNumber: text("phone_number").notNull(),
   email: text("email"),
+  dateOfBirth: text("date_of_birth").notNull(),
+  mrn: text("mrn").notNull(), // Medical Record Number
+  gender: text("gender").notNull(),
+  address: text("address").notNull(),
+  systemId: text("system_id").notNull(),
   condition: text("condition").notNull(), // CHF, Post-Surgery, etc.
   lastDischarge: timestamp("last_discharge"),
   riskLevel: text("risk_level").notNull().default("low"), // low, medium, high

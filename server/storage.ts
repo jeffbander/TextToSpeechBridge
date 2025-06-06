@@ -65,17 +65,38 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeSampleData() {
-    // Patient with user's actual phone number
+    // Jennifer Abe patient data
+    const jenniferAbe = {
+      name: "Abe, Jennifer",
+      phoneNumber: "(929) 530-9452",
+      email: null, // Missing email as specified
+      dateOfBirth: "3/20/1986",
+      mrn: "H406522",
+      gender: "Female",
+      address: "440 Berry St Apt 2M, Brooklyn, New York, 11249",
+      systemId: "Abe_Jennifer__03_20_1986",
+      condition: "Cardiology Follow-up",
+      lastDischarge: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      riskLevel: "medium"
+    };
+
+    // Test patient with user's actual phone number
     const testPatient = {
       name: "Test Patient",
       phoneNumber: "+16465565559",
       email: "test@example.com",
+      dateOfBirth: "1/1/1990",
+      mrn: "T123456",
+      gender: "Other",
+      address: "123 Test St, Test City, NY, 10001",
+      systemId: "Test_Patient__01_01_1990",
       condition: "Health Check",
       lastDischarge: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
       riskLevel: "low"
     };
 
-    // Create only the test patient
+    // Create both patients
+    await this.createPatient(jenniferAbe);
     await this.createPatient(testPatient);
 
     console.log('Test patient data initialized successfully');

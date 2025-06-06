@@ -39,6 +39,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // Patient endpoints
+  app.get("/api/patients", async (req, res) => {
+    try {
+      const patients = await storage.getPatients();
+      res.json(patients);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch patients" });
+    }
+  });
+
+  app.post("/api/patients", async (req, res) => {
+    try {
+      const result = insertPatientSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid patient data", 
+          errors: result.error.errors 
+        });
+      }
+      
+      const patient = await storage.createPatient(result.data);
+      broadcastUpdate('patient_created', patient);
+      res.status(201).json(patient);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create patient" });
+    }
+  });
+
   // Dashboard stats endpoint
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
