@@ -8,7 +8,7 @@ import ScheduledCalls from "@/components/dashboard/scheduled-calls";
 import QuickActions from "@/components/dashboard/quick-actions";
 import CallLogs from "@/components/dashboard/call-logs";
 import LiveCallModal from "@/components/modals/live-call-modal";
-import { Heart, Bell, User, Volume2, Settings } from "lucide-react";
+import { Heart, Bell, User, Volume2, Settings, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -80,6 +80,12 @@ export default function Dashboard() {
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
                   <Volume2 className="h-4 w-4" />
                   Voice Settings
+                </Button>
+              </Link>
+              <Link href="/realtime">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+                  <Bot className="h-4 w-4 text-blue-600" />
+                  GPT-4o Real-time
                 </Button>
               </Link>
               <button className="relative p-2 text-gray-400 hover:text-gray-500">

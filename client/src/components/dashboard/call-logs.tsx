@@ -136,7 +136,7 @@ export default function CallLogs({ calls, isLoading }: CallLogsProps) {
                           <h4 className="font-medium mb-2">Full Conversation Transcript</h4>
                           <div className="space-y-2 max-h-60 overflow-y-auto bg-muted p-3 rounded">
                             {transcript.map((entry: any, index: number) => (
-                              <div key={index} className="flex gap-3">
+                              <div key={`${call.id}-transcript-${index}`} className="flex gap-3">
                                 <div className="flex-shrink-0">
                                   {entry.speaker === 'ai' ? (
                                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">

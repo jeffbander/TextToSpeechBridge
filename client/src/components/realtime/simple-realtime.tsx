@@ -172,11 +172,15 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         </div>
 
         <div className="text-xs text-muted-foreground space-y-1 bg-muted p-4 rounded">
-          <h4 className="font-medium">Real-time Features:</h4>
-          <p>• Live voice conversation with GPT-4o</p>
-          <p>• Natural speech recognition and synthesis</p>
-          <p>• Healthcare-specific conversation prompts</p>
-          <p>• Real-time audio streaming via WebSocket</p>
+          <h4 className="font-medium">Implementation Status:</h4>
+          <p>✓ Real-time session API endpoints functional</p>
+          <p>✓ OpenAI real-time API connection established</p>
+          <p>✓ WebSocket infrastructure configured</p>
+          <p>⚠ Requires OpenAI real-time API beta access</p>
+          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+            <p className="font-medium">Note:</p>
+            <p>GPT-4o real-time preview requires beta API access from OpenAI. Contact OpenAI support to enable real-time API features for your account.</p>
+          </div>
         </div>
       </CardContent>
     </Card>
