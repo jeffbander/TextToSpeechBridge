@@ -138,11 +138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Patient already has an active call" });
       }
 
-      // Generate AI script for the call
+      // Get optimal voice profile for patient's condition
+      const voiceProfile = voiceConfigManager.getProfileForCondition(patient.condition);
+      
+      // Generate AI script with voice personality
       const script = await openaiService.generateCallScript(
         patient.name, 
         patient.condition, 
-        callType
+        callType,
+        voiceProfile.personality
       );
 
       // Create call record
@@ -228,6 +232,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Voice Profile Management Endpoints
+  app.get("/api/voice/profiles", (req, res) => {
+    const profiles = voiceConfigManager.getAllProfiles();
+    res.json(profiles);
+  });
+
+  app.get("/api/voice/profiles/:id", (req, res) => {
+    const profile = voiceConfigManager.getProfile(req.params.id);
+    if (!profile) {
+      return res.status(404).json({ message: "Voice profile not found" });
+    }
+    res.json(profile);
+  });
+
+  app.post("/api/voice/profiles", (req, res) => {
+    try {
+      const profile = voiceConfigManager.createCustomProfile(req.body);
+      res.json(profile);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid voice profile data" });
+    }
+  });
+
+  // Enhanced prompt testing endpoint
+  app.post("/api/prompts/test", async (req, res) => {
+    try {
+      const { patientName, condition, callType, voiceProfileId } = req.body;
+      
+      const voiceProfile = voiceProfileId ? 
+        voiceConfigManager.getProfile(voiceProfileId) : 
+        voiceConfigManager.getProfileForCondition(condition);
+      
+      if (!voiceProfile) {
+        return res.status(400).json({ message: "Invalid voice profile" });
+      }
+
+      const greeting = promptManager.generatePersonalizedGreeting(
+        patientName,
+        callType,
+        voiceProfile.personality
+      );
+
+      const script = await openaiService.generateCallScript(
+        patientName,
+        condition,
+        callType,
+        voiceProfile.personality
+      );
+
+      const ssml = voiceConfigManager.generateSSML(script, voiceProfile);
+
+      res.json({
+        greeting,
+        script,
+        ssml,
+        voiceProfile: voiceProfile.name,
+        personality: voiceProfile.personality
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        message: "Failed to generate prompt",
+        error: (error as Error).message 
+      });
+    }
+  });
+
   // Test OpenAI endpoint
   app.post("/api/test-openai", async (req, res) => {
     try {
@@ -242,7 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('OpenAI test failed:', error);
       res.status(500).json({ 
         success: false, 
-        error: error.message || 'OpenAI API not working'
+        error: (error as Error).message || 'OpenAI API not working'
       });
     }
   });
