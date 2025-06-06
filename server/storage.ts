@@ -69,7 +69,7 @@ export class MemStorage implements IStorage {
     const samplePatients = [
       {
         name: "Robert Johnson",
-        phoneNumber: "+1-555-0123",
+        phoneNumber: "+16465565559",
         email: "robert.johnson@email.com",
         condition: "Post-Cardiac Surgery",
         lastDischarge: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
