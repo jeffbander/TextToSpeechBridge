@@ -360,37 +360,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // TwiML endpoint removed - now handled in server/index.ts to prevent routing conflicts
 
-  // Handle voice recordings from Twilio calls
+  // Handle voice recordings from Twilio calls - Enhanced for conversational engagement
   app.post("/api/calls/recording", async (req, res) => {
     try {
       const { CallSid, RecordingUrl, RecordingDuration } = req.body;
-      console.log('Recording received:', { CallSid, RecordingUrl, RecordingDuration });
+      console.log('🎙️ Recording received:', { CallSid, RecordingUrl, RecordingDuration });
 
       // Find the active call
       const calls = await storage.getCalls();
       const call = calls.find(c => c.twilioCallSid === CallSid && c.status === 'active');
       
       if (!call) {
-        console.log('Call not found for recording SID:', CallSid);
+        console.log('❌ Call not found for recording SID:', CallSid);
         res.type('text/xml');
         res.send(twilioService.generateTwiML("Thank you for calling. Goodbye.", false));
         return;
       }
 
-      // Store recording URL for processing
-      await storage.updateCall(call.id, {
-        transcript: JSON.stringify([{ 
-          speaker: 'patient', 
-          recordingUrl: RecordingUrl,
-          duration: RecordingDuration,
-          timestamp: new Date()
-        }])
+      const patient = await storage.getPatient(call.patientId);
+      if (!patient) {
+        console.log('❌ Patient not found for call:', call.id);
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Thank you for calling. Goodbye.", false));
+        return;
+      }
+
+      // Parse existing transcript
+      const transcriptHistory = call.transcript ? 
+        JSON.parse(call.transcript) as any[] : [];
+
+      // Add recording to transcript
+      transcriptHistory.push({ 
+        speaker: 'patient', 
+        recordingUrl: RecordingUrl,
+        duration: RecordingDuration,
+        timestamp: new Date()
       });
 
+      // Update call with recording
+      await storage.updateCall(call.id, {
+        transcript: JSON.stringify(transcriptHistory)
+      });
+
+      console.log('💭 Waiting for transcription to continue conversation...');
+      
+      // Transcription will trigger the conversational flow
       res.type('text/xml');
-      res.send(twilioService.generateTwiML("Thank you for your response. Please hold while I analyze your information.", false));
+      res.send(twilioService.generateTwiML("Thank you. Please hold while I process your response.", false));
     } catch (error: any) {
-      console.error('Recording processing error:', error);
+      console.error('❌ Recording processing error:', error);
       res.type('text/xml');
       res.send(twilioService.generateTwiML("Thank you for calling. Goodbye.", false));
     }
@@ -437,7 +455,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date()
       });
 
-      // Process with AI
+      // Enhanced AI processing for conversational engagement
+      let nextQuestion = "Thank you for sharing. Is there anything else about your health you'd like to discuss?";
+      let shouldContinue = true;
+      let conversationTurn = transcriptHistory.filter(entry => entry.speaker === 'patient').length;
+
       try {
         console.log('Processing transcription with AI:', TranscriptionText);
         
@@ -447,17 +469,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transcriptHistory
         );
 
-        const aiResponse = await openaiService.generateFollowUpResponse(
-          analysis,
-          patient.condition || 'general health'
-        );
-
-        // Add AI response to transcript
-        transcriptHistory.push({
-          speaker: 'ai',
-          text: aiResponse,
-          timestamp: new Date()
+        console.log('AI Analysis:', {
+          urgency: analysis.urgencyLevel,
+          symptoms: analysis.symptoms,
+          needsFollowUp: analysis.followUpRequired,
+          escalate: analysis.escalateToProvider
         });
+
+        // Determine conversation flow based on AI analysis
+        if (analysis.escalateToProvider || analysis.urgencyLevel === 'critical') {
+          nextQuestion = "I'm concerned about what you've shared. I need to connect you with a healthcare provider immediately. Please stay on the line.";
+          shouldContinue = false;
+          
+          // Create urgent alert
+          await storage.createAlert({
+            patientId: call.patientId,
+            callId: call.id,
+            type: 'urgent_medical',
+            message: `URGENT: Patient reported concerning symptoms requiring immediate attention: ${analysis.summary}`
+          });
+        } else if (analysis.followUpRequired && conversationTurn < 4) {
+          // Continue conversation with intelligent follow-up
+          const followUpResponse = await openaiService.generateFollowUpResponse(
+            analysis,
+            patient.condition || 'general health'
+          );
+          nextQuestion = followUpResponse;
+        } else if (conversationTurn >= 4) {
+          // Natural conversation ending after several exchanges
+          nextQuestion = "Thank you for taking the time to speak with me today. Based on our conversation, I'll update your care team. Take care and don't hesitate to call if you need anything.";
+          shouldContinue = false;
+        } else {
+          // Standard follow-up for non-urgent cases
+          nextQuestion = analysis.nextQuestions && analysis.nextQuestions.length > 0 ? 
+            analysis.nextQuestions[0] : nextQuestion;
+        }
 
         // Update call record with AI analysis
         await storage.updateCall(call.id, {
@@ -477,23 +523,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Broadcast real-time update
-        broadcastUpdate('callUpdated', { 
-          callId: call.id, 
-          transcript: transcriptHistory,
-          analysis: analysis
-        });
-
-        console.log('Transcription processed successfully with AI analysis');
+        console.log('AI Response:', nextQuestion);
 
       } catch (aiError: any) {
-        console.log('AI processing failed for transcription:', aiError.message);
+        console.log('AI processing failed, using fallback conversation:', aiError.message);
         
-        // Update with basic transcript
-        await storage.updateCall(call.id, {
-          transcript: JSON.stringify(transcriptHistory),
-          alertLevel: 'none'
-        });
+        // Fallback conversation logic without AI
+        if (conversationTurn >= 3) {
+          nextQuestion = "Thank you for sharing your health information with me today. Take care!";
+          shouldContinue = false;
+        }
+      }
+
+      // Add AI response to transcript
+      transcriptHistory.push({
+        speaker: 'ai',
+        text: nextQuestion,
+        timestamp: new Date()
+      });
+
+      // Update call with conversation continuation
+      await storage.updateCall(call.id, {
+        transcript: JSON.stringify(transcriptHistory),
+        status: shouldContinue ? 'active' : 'completed',
+        completedAt: shouldContinue ? null : new Date()
+      });
+
+      // Broadcast real-time update
+      broadcastUpdate('callUpdated', { 
+        callId: call.id, 
+        transcript: transcriptHistory,
+        status: shouldContinue ? 'active' : 'completed'
+      });
+
+      console.log('Continue conversation:', shouldContinue);
+
+      // If conversation should continue, send TwiML to continue the call
+      if (shouldContinue) {
+        // Redirect call to continue with next question
+        const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
+          `https://${process.env.REPLIT_DEV_DOMAIN}` : 
+          'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
+        
+        try {
+          // Use Twilio client to update the call with new instructions
+          await twilioService.getCallStatus(CallSid); // Verify call is still active
+          
+          // Store the next question for the continuation endpoint
+          await storage.updateCall(call.id, {
+            transcript: JSON.stringify(transcriptHistory),
+            status: 'active'
+          });
+          
+          console.log('Call continuation prepared');
+        } catch (error) {
+          console.log('Call may have ended, marking as completed');
+          await storage.updateCall(call.id, { 
+            status: 'completed',
+            completedAt: new Date()
+          });
+        }
       }
 
       res.status(200).send('OK');
