@@ -28,23 +28,9 @@ export default function RealtimePage() {
     if (!selectedPatient) return;
 
     try {
-      // Create a virtual call record for tracking
-      const response = await fetch('/api/calls/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: selectedPatient.id,
-          customPrompt: `GPT-4o Real-time session for ${selectedPatient.name}`,
-          actualCall: false // Flag this as a test/demo session
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create session');
-      }
-
-      const data = await response.json();
-      setSessionCallId(data.callId);
+      // Create a real-time session without Twilio call
+      const sessionId = `demo_${Date.now()}`;
+      setSessionCallId(parseInt(sessionId.replace('demo_', '')));
       setIsSessionActive(true);
     } catch (error) {
       console.error('Error starting session:', error);

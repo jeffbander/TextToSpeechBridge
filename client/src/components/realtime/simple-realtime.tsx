@@ -33,12 +33,33 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       }
       
       const data = await response.json();
-      setStatus('connected');
       
-      toast({
-        title: "Session Created",
-        description: `Real-time session ${data.sessionId} started`,
-      });
+      // Connect to WebSocket for real-time communication
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${window.location.host}${data.websocketUrl}`;
+      
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onopen = () => {
+        setStatus('connected');
+        toast({
+          title: "Real-time Connected",
+          description: "GPT-4o voice session ready",
+        });
+      };
+      
+      ws.onerror = () => {
+        setStatus('error');
+        toast({
+          title: "Connection Failed",
+          description: "WebSocket connection failed",
+          variant: "destructive"
+        });
+      };
+      
+      ws.onclose = () => {
+        setStatus('idle');
+      };
       
     } catch (error) {
       console.error('Session error:', error);
@@ -172,14 +193,15 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         </div>
 
         <div className="text-xs text-muted-foreground space-y-1 bg-muted p-4 rounded">
-          <h4 className="font-medium">Implementation Status:</h4>
-          <p>✓ Real-time session API endpoints functional</p>
-          <p>✓ OpenAI real-time API connection established</p>
-          <p>✓ WebSocket infrastructure configured</p>
-          <p>⚠ Requires OpenAI real-time API beta access</p>
-          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
-            <p className="font-medium">Note:</p>
-            <p>GPT-4o real-time preview requires beta API access from OpenAI. Contact OpenAI support to enable real-time API features for your account.</p>
+          <h4 className="font-medium">Real-time Voice Features:</h4>
+          <p>• Live bidirectional audio streaming</p>
+          <p>• Natural conversation with voice activity detection</p>
+          <p>• Healthcare-specific conversation prompts</p>
+          <p>• Real-time transcription and analysis</p>
+          
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800">
+            <p className="font-medium">OpenAI Real-time API Access:</p>
+            <p>This feature connects to OpenAI's real-time API. Ensure your OpenAI API key has access to real-time preview features. If you encounter connection issues, verify your API permissions or contact OpenAI support.</p>
           </div>
         </div>
       </CardContent>
