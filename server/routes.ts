@@ -153,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Start a new call
   app.post("/api/calls/start", async (req, res) => {
     try {
-      const { patientId, callType } = req.body;
+      const { patientId, callType, customPrompt } = req.body;
       
       const patient = await storage.getPatient(patientId);
       if (!patient) {
@@ -169,13 +169,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get optimal voice profile for patient's condition
       const voiceProfile = voiceConfigManager.getProfileForCondition(patient.condition);
       
-      // Generate AI script with voice personality
-      const script = await openaiService.generateCallScript(
-        patient.name, 
-        patient.condition, 
-        callType,
-        voiceProfile.personality
-      );
+      // Generate AI script with voice personality or use custom prompt
+      let script;
+      if (customPrompt) {
+        // Use custom prompt with patient's name
+        script = customPrompt;
+      } else {
+        // Generate standard AI script
+        script = await openaiService.generateCallScript(
+          patient.name, 
+          patient.condition, 
+          callType,
+          voiceProfile.personality
+        );
+      }
 
       // Create call record
       const call = await storage.createCall({
