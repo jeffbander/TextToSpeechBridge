@@ -15,6 +15,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Health check endpoint for public accessibility
   app.get('/health', (req, res) => {
+    console.log(`[HEALTH] Health check requested at ${new Date().toISOString()}`);
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
   });
 
@@ -27,27 +28,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const activeConnections = new Set<WebSocket>();
 
   wss.on('connection', (ws) => {
+    console.log(`[WS] WebSocket connection established. Total connections: ${activeConnections.size + 1}`);
     activeConnections.add(ws);
     
     ws.on('close', () => {
       activeConnections.delete(ws);
+      console.log(`[WS] WebSocket connection closed. Total connections: ${activeConnections.size}`);
+    });
+    
+    ws.on('error', (error) => {
+      console.error(`[WS] WebSocket error:`, error);
     });
   });
 
   // Handle GPT-4o real-time connections
   realtimeWss.on('connection', (ws, req) => {
+    console.log(`[REALTIME-WS] GPT-4o real-time connection attempt`);
     const url = new URL(req.url!, `http://${req.headers.host}`);
     const sessionId = url.searchParams.get('session');
     
     if (!sessionId) {
+      console.log(`[REALTIME-WS] Connection rejected - no session ID`);
       ws.close(1000, 'Session ID required');
       return;
     }
     
+    console.log(`[REALTIME-WS] Connecting session: ${sessionId}`);
     openaiRealtimeService.connectClientWebSocket(sessionId, ws);
   });
 
   function broadcastUpdate(type: string, data: any) {
+    console.log(`[BROADCAST] Sending update: ${type} to ${activeConnections.size} connections`);
     const message = JSON.stringify({ type, data });
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -58,10 +69,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Patient endpoints
   app.get("/api/patients", async (req, res) => {
+    console.log(`[API] GET /api/patients - ${new Date().toISOString()}`);
     try {
       const patients = await storage.getPatients();
+      console.log(`[API] Patients fetched: ${patients.length} records`);
       res.json(patients);
     } catch (error) {
+      console.error(`[API] Error fetching patients:`, error);
       res.status(500).json({ message: "Failed to fetch patients" });
     }
   });
