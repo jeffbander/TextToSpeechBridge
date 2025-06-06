@@ -184,12 +184,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      // Create call record
+      // Create call record with custom prompt stored temporarily in transcript
+      const callData = customPrompt ? { customPrompt } : {};
       const call = await storage.createCall({
         patientId,
         status: 'active',
         outcome: null,
-        transcript: '',
+        transcript: customPrompt ? JSON.stringify(callData) : '',
         aiAnalysis: null,
         alertLevel: 'none',
         duration: null,
@@ -741,6 +742,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ results, total: results.length });
     } catch (error) {
       res.status(500).json({ message: "Failed to start batch calls" });
+    }
+  });
+
+  // TwiML endpoint for initial call greeting
+  app.post("/api/calls/twiml/:callId", async (req, res) => {
+    try {
+      const callId = parseInt(req.params.callId);
+      console.log('TWIML ENDPOINT:', callId, 'Method:', req.method, 'IP:', req.ip);
+      
+      const call = await storage.getCall(callId);
+      if (!call) {
+        console.log('Call not found for TwiML:', callId);
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Sorry, we couldn't locate your call information. Goodbye."));
+        return;
+      }
+
+      const patient = await storage.getPatient(call.patientId);
+      if (!patient) {
+        console.log('Patient not found for call:', callId);
+        res.type('text/xml');
+        res.send(twilioService.generateTwiML("Sorry, we couldn't locate your patient information. Goodbye."));
+        return;
+      }
+
+      // Check if this call has a custom prompt stored in the transcript field temporarily
+      // or if we need to generate a standard script
+      let script;
+      
+      // Try to get custom prompt from call record (if stored during creation)
+      if (call.transcript && call.transcript.startsWith('{')) {
+        try {
+          const callData = JSON.parse(call.transcript);
+          script = callData.customPrompt;
+        } catch (e) {
+          // Not JSON, treat as regular transcript
+        }
+      }
+      
+      // If no custom prompt, generate standard AI script
+      if (!script) {
+        const voiceProfile = voiceConfigManager.getProfileForCondition(patient.condition);
+        script = await openaiService.generateCallScript(
+          patient.name,
+          patient.condition,
+          'initial',
+          voiceProfile.personality
+        );
+      }
+
+      // Initialize transcript with AI greeting
+      const transcript = [{
+        speaker: 'ai',
+        text: script,
+        timestamp: new Date()
+      }];
+
+      // Update call record with initial transcript
+      await storage.updateCall(callId, {
+        transcript: JSON.stringify(transcript)
+      });
+
+      console.log('TWIML SENT:', script.length, 'bytes to Twilio');
+      
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML(script));
+    } catch (error) {
+      console.error('TwiML generation error:', error);
+      res.type('text/xml');
+      res.send(twilioService.generateTwiML("We're experiencing technical difficulties. Goodbye."));
     }
   });
 
