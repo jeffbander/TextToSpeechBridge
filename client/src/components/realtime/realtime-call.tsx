@@ -135,16 +135,17 @@ export default function RealtimeCall({ patientId, patientName, callId, onEnd }: 
   const playAudioDelta = async (audioData: string) => {
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
       
-      const audioBuffer = Buffer.from(audioData, 'base64');
-      const arrayBuffer = audioBuffer.buffer.slice(
-        audioBuffer.byteOffset,
-        audioBuffer.byteOffset + audioBuffer.byteLength
-      );
+      // Convert base64 to array buffer
+      const binaryString = window.atob(audioData);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
       
-      const decodedAudio = await audioContextRef.current.decodeAudioData(arrayBuffer);
+      const decodedAudio = await audioContextRef.current.decodeAudioData(bytes.buffer);
       const source = audioContextRef.current.createBufferSource();
       source.buffer = decodedAudio;
       source.connect(audioContextRef.current.destination);
@@ -266,7 +267,21 @@ export default function RealtimeCall({ patientId, patientName, callId, onEnd }: 
   useEffect(() => {
     return () => {
       // Cleanup on unmount
-      endSession();
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+      
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      if (websocketRef.current) {
+        websocketRef.current.close();
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, []);
 

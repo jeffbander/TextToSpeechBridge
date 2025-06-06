@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import RealtimeCall from '@/components/realtime/realtime-call';
+import SimpleRealtime from '@/components/realtime/simple-realtime';
 import { Bot, Phone, User } from 'lucide-react';
 
 interface Patient {
@@ -168,7 +168,7 @@ export default function RealtimePage() {
         </Card>
       ) : (
         selectedPatient && sessionCallId && (
-          <RealtimeCall
+          <SimpleRealtime
             patientId={selectedPatient.id}
             patientName={selectedPatient.name}
             callId={sessionCallId}
