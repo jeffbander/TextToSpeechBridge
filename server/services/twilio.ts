@@ -118,7 +118,7 @@ export class TwilioService {
 <Response>
   <Say voice="${voice}">${naturalMessage}</Say>
   <Record action="${recordingUrl}" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
-    <Say voice="${voice}"><speak><prosody rate="medium" pitch="medium">Please share your response after the beep. When you're finished, just pause for a moment or press the pound key.</prosody></speak></Say>
+    <Say voice="${voice}">Please share your response after the beep. When you're finished, just pause for a moment or press the pound key.</Say>
   </Record>
 </Response>`;
     } else {
@@ -142,7 +142,7 @@ export class TwilioService {
 <Response>
   <Say voice="${voice}">${this.formatWithSSML(message)}</Say>
   <Record action="${baseUrl}/api/calls/recording" method="POST" maxLength="30" finishOnKey="#" transcribe="true" transcribeCallback="${baseUrl}/api/calls/transcription">
-    <Say voice="${voice}"><speak><prosody rate="medium" pitch="medium">Please respond after the beep.</prosody></speak></Say>
+    <Say voice="${voice}">Please respond after the beep.</Say>
   </Record>
 </Response>`;
     } else {
@@ -154,19 +154,13 @@ export class TwilioService {
     }
   }
 
-  // Format messages with SSML for natural speech patterns
+  // Format messages with simple SSML for natural speech patterns
   private formatWithSSML(message: string): string {
-    // Clean message first
+    // Clean message and avoid complex SSML that causes Twilio errors
     const cleanMessage = message.replace(/[<>&"']/g, '');
     
-    // Add natural pauses and prosody for healthcare conversations
-    return `<speak>
-      <prosody rate="medium" pitch="medium">
-        <break time="0.3s"/>
-        ${cleanMessage}
-        <break time="0.5s"/>
-      </prosody>
-    </speak>`;
+    // Use simple SSML that Twilio supports reliably
+    return `<speak><break time="0.5s"/>${cleanMessage}<break time="0.3s"/></speak>`;
   }
 }
 
