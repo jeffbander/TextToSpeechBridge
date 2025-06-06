@@ -150,10 +150,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         twilioCallSid: null
       });
 
-      // Initiate Twilio call - use Replit domain for webhooks
+      // Initiate Twilio call - use current Replit domain for webhooks
       const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
         `https://${process.env.REPLIT_DEV_DOMAIN}` : 
-        'https://your-repl-name.your-username.replit.dev';
+        'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
       
       const callbackUrl = `${baseUrl}/api/calls/webhook`;
       
