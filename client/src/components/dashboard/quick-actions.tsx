@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, Upload, Settings, BarChart } from "lucide-react";
+import { Phone, Upload, Settings, BarChart, Bot } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 export default function QuickActions() {
   const queryClient = useQueryClient();
@@ -18,8 +19,8 @@ export default function QuickActions() {
         callType: 'routine-followup'
       });
     },
-    onSuccess: (response) => {
-      const data = response.json();
+    onSuccess: async (response) => {
+      const data = await response.json();
       queryClient.invalidateQueries({ queryKey: ['/api/calls/active'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       toast({
@@ -69,6 +70,15 @@ export default function QuickActions() {
         <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <Link href="/realtime">
+          <Button 
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+          >
+            <Bot className="w-4 h-4 mr-2" />
+            GPT-4o Real-time Preview
+          </Button>
+        </Link>
+        
         <Button 
           className="w-full bg-medical-blue hover:bg-medical-blue-dark text-white"
           onClick={handleBatchCalls}
