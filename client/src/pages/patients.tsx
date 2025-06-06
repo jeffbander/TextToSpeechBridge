@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -27,6 +28,10 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function Patients() {
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+  const [selectedPatientForPrompt, setSelectedPatientForPrompt] = useState<any>(null);
+  const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+  const [callType, setCallType] = useState<"initial" | "followUp" | "urgent">("initial");
   const { toast } = useToast();
 
   const { data: patients = [], isLoading } = useQuery<any[]>({
@@ -477,6 +482,16 @@ export default function Patients() {
                         <Heart className="h-4 w-4 mr-1" />
                         Start Call
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPatientForPrompt(patient);
+                          setIsPromptDialogOpen(true);
+                        }}
+                      >
+                        Create Prompt
+                      </Button>
                       <Button variant="outline" size="sm">
                         View History
                       </Button>
@@ -488,6 +503,99 @@ export default function Patients() {
           ))
         )}
         </div>
+
+        {/* Custom Prompt Dialog */}
+        <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create Custom Prompt for {selectedPatientForPrompt?.name}</DialogTitle>
+              <DialogDescription>
+                Design a personalized message for the AI to deliver during the call. The AI will say the patient's name and your custom message.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="callType">Call Type</Label>
+                <Select value={callType} onValueChange={(value: any) => setCallType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="initial">Initial Check-in</SelectItem>
+                    <SelectItem value="followUp">Follow-up Call</SelectItem>
+                    <SelectItem value="urgent">Urgent Health Check</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="customMessage">Custom Message</Label>
+                <Textarea 
+                  id="customMessage"
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder={`Example: "Hi ${selectedPatientForPrompt?.name}, this is your CardioCare AI assistant calling to check on your recovery after your recent discharge. How are you feeling today?"`}
+                  rows={4}
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Preview</h4>
+                <p className="text-sm text-muted-foreground">
+                  The AI will say: "{customMessage || `Hi ${selectedPatientForPrompt?.name}, this is your CardioCare AI assistant...`}"
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsPromptDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={async () => {
+                    if (!customMessage.trim()) {
+                      toast({
+                        title: "Message Required",
+                        description: "Please enter a custom message for the AI to deliver.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    try {
+                      await apiRequest('POST', '/api/calls/start', {
+                        patientId: selectedPatientForPrompt.id,
+                        phoneNumber: selectedPatientForPrompt.phoneNumber,
+                        customPrompt: customMessage,
+                        callType: callType
+                      });
+                      
+                      toast({
+                        title: "Custom Call Started",
+                        description: `Calling ${selectedPatientForPrompt.name} with your personalized message.`,
+                      });
+                      
+                      setIsPromptDialogOpen(false);
+                      setCustomMessage("");
+                    } catch (error) {
+                      toast({
+                        title: "Call Failed",
+                        description: "Failed to start custom call. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  Start Custom Call
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
