@@ -51,7 +51,7 @@ export default function Patients() {
 
   const addPatientMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      return apiRequest(`/api/patients`, "POST", data);
+      return apiRequest("POST", "/api/patients", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/patients'] });
@@ -105,7 +105,7 @@ export default function Patients() {
 
   const startCall = async (patientId: number, phoneNumber: string) => {
     try {
-      const response = await apiRequest('/api/calls/start', 'POST', { 
+      const response = await apiRequest('POST', '/api/calls/start', { 
         patientId, 
         phoneNumber 
       });
