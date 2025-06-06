@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { twilioService } from "./services/twilio";
 import { openaiService } from "./services/openai";
+import { openaiRealtimeService } from "./services/openai-realtime";
 import { sendGridService } from "./services/sendgrid";
 import { voiceConfigManager } from "./services/voice-config";
 import { promptManager } from "./services/prompt-manager";
@@ -20,6 +21,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket server for real-time updates
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
   
+  // WebSocket server for GPT-4o real-time preview
+  const realtimeWss = new WebSocketServer({ server: httpServer, path: '/realtime' });
+  
   const activeConnections = new Set<WebSocket>();
 
   wss.on('connection', (ws) => {
@@ -28,6 +32,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('close', () => {
       activeConnections.delete(ws);
     });
+  });
+
+  // Handle GPT-4o real-time connections
+  realtimeWss.on('connection', (ws, req) => {
+    const url = new URL(req.url!, `http://${req.headers.host}`);
+    const sessionId = url.searchParams.get('session');
+    
+    if (!sessionId) {
+      ws.close(1000, 'Session ID required');
+      return;
+    }
+    
+    openaiRealtimeService.connectClientWebSocket(sessionId, ws);
   });
 
   function broadcastUpdate(type: string, data: any) {
@@ -815,6 +832,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ results, total: results.length });
     } catch (error) {
       res.status(500).json({ message: "Failed to start batch calls" });
+    }
+  });
+
+  // GPT-4o Real-time API endpoints
+  app.post("/api/realtime/session", async (req, res) => {
+    try {
+      const { patientId, patientName, callId } = req.body;
+      
+      if (!patientId || !patientName || !callId) {
+        return res.status(400).json({ message: "Patient ID, name, and call ID are required" });
+      }
+      
+      const sessionId = await openaiRealtimeService.createRealtimeSession(patientId, patientName, callId);
+      
+      // Initialize OpenAI connection
+      await openaiRealtimeService.initializeOpenAIRealtime(sessionId);
+      
+      res.json({ 
+        sessionId,
+        websocketUrl: `/realtime?session=${sessionId}`,
+        status: 'created'
+      });
+    } catch (error: any) {
+      console.error('Error creating realtime session:', error);
+      res.status(500).json({ message: "Failed to create realtime session" });
+    }
+  });
+
+  app.get("/api/realtime/sessions", async (req, res) => {
+    try {
+      const sessions = openaiRealtimeService.getAllActiveSessions();
+      res.json({ sessions, count: sessions.length });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch active sessions" });
+    }
+  });
+
+  app.delete("/api/realtime/session/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      await openaiRealtimeService.endSession(sessionId);
+      res.json({ message: "Session ended successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to end session" });
     }
   });
 
