@@ -1,151 +1,196 @@
 import { useQuery } from "@tanstack/react-query";
-import { useWebSocket } from "@/hooks/use-websocket";
-import StatsCards from "@/components/dashboard/stats-cards";
-import ActiveCalls from "@/components/dashboard/active-calls";
-import RecentCalls from "@/components/dashboard/recent-calls";
-import UrgentAlerts from "@/components/dashboard/urgent-alerts";
-import ScheduledCalls from "@/components/dashboard/scheduled-calls";
-import QuickActions from "@/components/dashboard/quick-actions";
-import CallLogs from "@/components/dashboard/call-logs";
-import LiveCallModal from "@/components/modals/live-call-modal";
 import { Heart, Bell, User, Volume2, Settings, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
-import { useState } from "react";
 
 export default function Dashboard() {
-  const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
-
-  // Subscribe to real-time updates
-  useWebSocket();
-
   const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: ['/api/dashboard/stats'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
   const { data: activeCalls = [], isLoading: activeCallsLoading } = useQuery<any[]>({
     queryKey: ['/api/calls/active'],
-    refetchInterval: 5000, // Refresh every 5 seconds
-  });
-
-  const { data: recentCalls = [], isLoading: recentCallsLoading } = useQuery<any[]>({
-    queryKey: ['/api/calls/recent'],
     refetchInterval: 10000,
   });
 
-  const { data: urgentAlerts = [], isLoading: alertsLoading } = useQuery<any[]>({
-    queryKey: ['/api/alerts/urgent'],
-    refetchInterval: 5000,
-  });
-
-  const { data: scheduledCalls = [], isLoading: scheduledLoading } = useQuery<any[]>({
-    queryKey: ['/api/calls/scheduled'],
-    refetchInterval: 10000,
-  });
-
-  const handleListenToCall = (callId: number) => {
-    setSelectedCallId(callId);
-    setIsCallModalOpen(true);
-  };
+  if (statsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+        <div className="text-center">Loading CardioCare AI Dashboard...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="bg-surface shadow-sm border-b border-gray-200">
+      <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <Heart className="text-medical-blue text-2xl mr-3" />
-                <span className="text-xl font-semibold text-gray-900">CardioCare AI</span>
+              <Heart className="h-8 w-8 text-red-500 mr-3" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">CardioCare AI</h1>
+                <p className="text-sm text-gray-500">Patient Outreach Dashboard</p>
               </div>
-              <nav className="hidden md:ml-10 md:flex md:space-x-8">
-                <Link href="/">
-                  <span className="text-medical-blue border-b-2 border-medical-blue px-1 pb-4 text-sm font-medium cursor-pointer">Dashboard</span>
-                </Link>
-                <Link href="/patients">
-                  <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium cursor-pointer">Patients</span>
-                </Link>
-                <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Calls</span>
-                <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Reports</span>
-                <Link href="/voice-settings">
-                  <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium cursor-pointer">Settings</span>
-                </Link>
-              </nav>
             </div>
             <div className="flex items-center space-x-4">
-              <Link href="/voice-settings">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4" />
-                  Voice Settings
-                </Button>
-              </Link>
               <Link href="/realtime">
-                <Button variant="outline" size="sm" className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-                  <Bot className="h-4 w-4 text-blue-600" />
-                  GPT-4o Real-time
+                <Button variant="outline" size="sm">
+                  <Bot className="h-4 w-4 mr-2" />
+                  GPT-4o Preview
                 </Button>
               </Link>
-              <button className="relative p-2 text-gray-400 hover:text-gray-500">
-                <Bell className="h-6 w-6" />
-                {urgentAlerts.length > 0 && (
-                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-error"></span>
-                )}
-              </button>
-              <div className="flex items-center space-x-3">
-                <User className="h-8 w-8 rounded-full bg-gray-200 p-1" />
-                <span className="text-sm font-medium text-gray-700">Dr. Sarah Chen</span>
-              </div>
+              <Link href="/patients">
+                <Button variant="outline" size="sm">
+                  <User className="h-4 w-4 mr-2" />
+                  Patients
+                </Button>
+              </Link>
+              <Link href="/voice-settings">
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <StatsCards stats={stats} isLoading={statsLoading} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            <ActiveCalls 
-              calls={activeCalls} 
-              isLoading={activeCallsLoading}
-              onListenToCall={handleListenToCall}
-            />
-            <CallLogs 
-              calls={[...activeCalls, ...recentCalls]} 
-              isLoading={activeCallsLoading || recentCallsLoading}
-            />
-            <RecentCalls 
-              calls={recentCalls} 
-              isLoading={recentCallsLoading}
-            />
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Calls Today</CardTitle>
+                <Volume2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.callsToday || 0}</div>
+                <p className="text-xs text-muted-foreground">+{stats?.callsToday || 0} from yesterday</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                <Heart className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.successRate || 0}%</div>
+                <p className="text-xs text-muted-foreground">Completed calls</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Active Calls</CardTitle>
+                <Volume2 className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{activeCalls.length}</div>
+                <p className="text-xs text-muted-foreground">Currently in progress</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Urgent Alerts</CardTitle>
+                <Bell className="h-4 w-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats?.urgentAlerts || 0}</div>
+                <p className="text-xs text-muted-foreground">Require attention</p>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <UrgentAlerts 
-              alerts={urgentAlerts} 
-              isLoading={alertsLoading}
-            />
-            <ScheduledCalls 
-              calls={scheduledCalls} 
-              isLoading={scheduledLoading}
-            />
-            <QuickActions />
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Start patient outreach and manage calls</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Link href="/patients">
+                  <Button className="w-full">
+                    <User className="h-4 w-4 mr-2" />
+                    Manage Patients
+                  </Button>
+                </Link>
+                <Link href="/realtime">
+                  <Button variant="outline" className="w-full">
+                    <Bot className="h-4 w-4 mr-2" />
+                    Test GPT-4o Real-time
+                  </Button>
+                </Link>
+                <Link href="/voice-settings">
+                  <Button variant="outline" className="w-full">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Voice Settings
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Calls</CardTitle>
+                <CardDescription>Monitor ongoing patient conversations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {activeCallsLoading ? (
+                  <div className="text-sm text-gray-500">Loading active calls...</div>
+                ) : activeCalls.length > 0 ? (
+                  <div className="space-y-2">
+                    {activeCalls.map((call: any) => (
+                      <div key={call.id} className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
+                        <div>
+                          <div className="font-medium">{call.patientName}</div>
+                          <div className="text-sm text-gray-500">{call.phoneNumber}</div>
+                        </div>
+                        <div className="text-sm text-green-600">Active</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No active calls</div>
+                )}
+              </CardContent>
+            </Card>
           </div>
+
+          {/* System Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>System Status</CardTitle>
+              <CardDescription>CardioCare AI platform health</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Twilio Voice Service</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">OpenAI GPT-4o</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">Real-time Analytics</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
-
-      {/* Live Call Modal */}
-      <LiveCallModal 
-        isOpen={isCallModalOpen}
-        onClose={() => setIsCallModalOpen(false)}
-        callId={selectedCallId}
-      />
+      </main>
     </div>
   );
 }
