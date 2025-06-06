@@ -65,10 +65,10 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeSampleData() {
-    // Single test patient with real phone number
+    // Patient with user's actual phone number
     const testPatient = {
       name: "Test Patient",
-      phoneNumber: "+19179035489",
+      phoneNumber: "+16465565559",
       email: "test@example.com",
       condition: "Health Check",
       lastDischarge: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
