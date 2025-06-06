@@ -62,11 +62,17 @@ export default function Dashboard() {
                 <span className="text-xl font-semibold text-gray-900">CardioCare AI</span>
               </div>
               <nav className="hidden md:ml-10 md:flex md:space-x-8">
-                <a href="#" className="text-medical-blue border-b-2 border-medical-blue px-1 pb-4 text-sm font-medium">Dashboard</a>
-                <a href="#" className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Patients</a>
-                <a href="#" className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Calls</a>
-                <a href="#" className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Reports</a>
-                <a href="#" className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Settings</a>
+                <Link href="/">
+                  <span className="text-medical-blue border-b-2 border-medical-blue px-1 pb-4 text-sm font-medium cursor-pointer">Dashboard</span>
+                </Link>
+                <Link href="/patients">
+                  <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium cursor-pointer">Patients</span>
+                </Link>
+                <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Calls</span>
+                <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Reports</span>
+                <Link href="/voice-settings">
+                  <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium cursor-pointer">Settings</span>
+                </Link>
               </nav>
             </div>
             <div className="flex items-center space-x-4">
