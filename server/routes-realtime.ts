@@ -94,8 +94,21 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
           console.error(`[${errorTime}][REALTIME-WS] Socket state: ${ws.readyState}`);
         });
         
-        // Connect to OpenAI realtime service
+        // Connect to OpenAI realtime service and initialize OpenAI connection
         openaiRealtimeService.connectClientWebSocket(sessionId, ws);
+        
+        // Initialize OpenAI real-time connection
+        openaiRealtimeService.initializeOpenAIRealtime(sessionId)
+          .then(() => {
+            console.log(`🔴 OpenAI connection initialized for session ${sessionId}`);
+          })
+          .catch((error) => {
+            console.error(`❌ Failed to initialize OpenAI for session ${sessionId}:`, error);
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Failed to connect to AI service'
+            }));
+          });
         
       } catch (error) {
         console.error(`[REALTIME-WS] Connection setup error:`, error);

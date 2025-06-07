@@ -203,23 +203,65 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     const session = this.sessions.get(sessionId);
     if (!session || !session.openaiWs) return;
     
+    console.log(`[REALTIME-WS] Received from client:`, { type: message.type, audioLength: message.audio?.length });
+    
     switch (message.type) {
-      case 'audio_chunk':
-        // Forward audio to OpenAI
+      case 'audio_input':
+        // Convert audio data to base64 and forward to OpenAI
+        if (session.openaiWs.readyState === WebSocket.OPEN && message.audio) {
+          try {
+            // Convert array buffer to base64
+            const audioBase64 = Buffer.from(message.audio).toString('base64');
+            
+            session.openaiWs.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: audioBase64
+            }));
+            
+            console.log(`🎵 Audio sent to OpenAI for session ${sessionId}`);
+          } catch (error) {
+            console.error(`❌ Error processing audio for session ${sessionId}:`, error);
+          }
+        }
+        break;
+        
+      case 'audio_input_complete':
+        // Tell OpenAI to process the complete audio input
         if (session.openaiWs.readyState === WebSocket.OPEN) {
           session.openaiWs.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: message.audio
+            type: 'input_audio_buffer.commit'
           }));
+          
+          // Request a response from GPT-4o
+          session.openaiWs.send(JSON.stringify({
+            type: 'response.create'
+          }));
+          
+          console.log(`🎵 Audio processing complete, requesting GPT-4o response for session ${sessionId}`);
         }
         break;
         
       case 'start_conversation':
-        // Begin the conversation
+        // Begin the conversation with initial greeting
         if (session.openaiWs.readyState === WebSocket.OPEN) {
+          // Send initial message to start conversation
+          session.openaiWs.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'user',
+              content: [{
+                type: 'input_text',
+                text: 'Hello, I am ready to begin the post-discharge follow-up call.'
+              }]
+            }
+          }));
+          
           session.openaiWs.send(JSON.stringify({
             type: 'response.create'
           }));
+          
+          console.log(`🎵 Started conversation for session ${sessionId}`);
         }
         break;
         
