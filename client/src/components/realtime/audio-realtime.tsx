@@ -68,13 +68,68 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       const host = window.location.host;
       const wsUrl = `${protocol}//${host}/ws/realtime${data.websocketUrl}`;
       
+      // Test direct connection first to verify WebSocket availability
+      console.log('[AUDIO] Testing WebSocket endpoint availability...');
+      const testWs = new WebSocket(`${protocol}//${host}/ws/realtime?session=test`);
+      
+      testWs.onopen = () => {
+        console.log('[AUDIO] WebSocket endpoint is available');
+        testWs.close();
+        
+        // Now connect with actual session
+        connectToSession(wsUrl);
+      };
+      
+      testWs.onerror = () => {
+        console.error('[AUDIO] WebSocket endpoint not available');
+        setStatus('error');
+        toast({
+          title: "Connection Error", 
+          description: "Voice service unavailable. Please try again later.",
+          variant: "destructive"
+        });
+      };
+      
+    } catch (error) {
+      console.error('[AUDIO] Session error:', error);
+      setStatus('error');
+      toast({
+        title: "Session Error",
+        description: "Could not start voice session",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const connectToSession = (wsUrl: string) => {
+    try {
+      
       console.log(`[AUDIO] Connecting to: ${wsUrl}`);
+      console.log(`[AUDIO] Protocol: ${protocol}, Host: ${host}`);
+      console.log(`[AUDIO] Session data:`, data);
       
       const websocket = new WebSocket(wsUrl);
       wsRef.current = websocket;
       
+      console.log(`[AUDIO] WebSocket created, readyState: ${websocket.readyState}`);
+      
+      // Add connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (websocket.readyState === WebSocket.CONNECTING) {
+          console.error('[AUDIO] Connection timeout');
+          websocket.close();
+          setStatus('error');
+          toast({
+            title: "Connection Timeout",
+            description: "Voice session failed to connect. Please try again.",
+            variant: "destructive"
+          });
+        }
+      }, 10000);
+      
       websocket.onopen = () => {
         console.log('[AUDIO] WebSocket connected');
+        clearTimeout(connectionTimeout);
         setStatus('connected');
         initializeAudio();
         toast({
@@ -107,6 +162,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
 
       websocket.onerror = (error) => {
         console.error('[AUDIO] WebSocket error:', error);
+        clearTimeout(connectionTimeout);
         setStatus('error');
         cleanup();
         toast({
