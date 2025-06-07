@@ -3,24 +3,42 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { openaiRealtimeService } from "./services/openai-realtime";
 import { storage } from "./storage";
+import url from 'url';
 
 let realtimeWss: WebSocketServer | null = null;
 
 export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   console.log("[REALTIME] Initializing GPT-4o real-time routes");
   
-  // Create a separate HTTP server for WebSocket to avoid conflicts
+  // Use WebSocket server with noServer mode and manual upgrade handling
   if (!realtimeWss) {
-    const wsServer = createServer();
-    realtimeWss = new WebSocketServer({ 
-      server: wsServer,
-      path: '/realtime'
+    realtimeWss = new WebSocketServer({ noServer: true });
+    
+    // Store original upgrade handler if it exists
+    const originalUpgrade = httpServer.listeners('upgrade');
+    httpServer.removeAllListeners('upgrade');
+    
+    // Handle upgrade requests with path filtering
+    httpServer.on('upgrade', (request, socket, head) => {
+      const pathname = url.parse(request.url!).pathname;
+      console.log(`[REALTIME] WebSocket upgrade request for: ${pathname}`);
+      
+      if (pathname === '/ws/realtime') {
+        console.log('[REALTIME] Handling realtime WebSocket upgrade');
+        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          realtimeWss!.emit('connection', websocket, request);
+        });
+      } else {
+        // Let other upgrade handlers (like Vite HMR) handle their requests
+        for (const handler of originalUpgrade) {
+          if (typeof handler === 'function') {
+            handler.call(httpServer, request, socket, head);
+          }
+        }
+      }
     });
     
-    const port = 8081; // Use different port from main server
-    wsServer.listen(port, '0.0.0.0', () => {
-      console.log(`[REALTIME] WebSocket server running on port ${port}`);
-    });
+    console.log(`[REALTIME] WebSocket server configured for /ws/realtime path with manual upgrade`);
 
     realtimeWss.on('connection', (ws, req) => {
       const timestamp = new Date().toISOString();

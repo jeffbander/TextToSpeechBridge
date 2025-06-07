@@ -109,7 +109,7 @@ export default function Dashboard() {
                 <Volume2 className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{activeCalls.length}</div>
+                <div className="text-2xl font-bold">{activeCalls?.length || 0}</div>
                 <p className="text-xs text-muted-foreground">Currently in progress</p>
               </CardContent>
             </Card>
