@@ -13,10 +13,11 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   if (!realtimeWss) {
     realtimeWss = new WebSocketServer({
       port: 8080,
-      host: '0.0.0.0'
+      host: '0.0.0.0',
+      path: '/realtime'
     });
     
-    console.log(`[REALTIME] WebSocket server running on port 8080`);
+    console.log(`[REALTIME] WebSocket server running on port 8080 with /realtime path`);
 
     realtimeWss.on('connection', (ws, req) => {
       const timestamp = new Date().toISOString();
