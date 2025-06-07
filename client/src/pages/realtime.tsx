@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import SimpleRealtime from '@/components/realtime/simple-realtime';
+import AudioRealtime from '@/components/realtime/audio-realtime';
 import { Bot, Phone, User } from 'lucide-react';
 
 interface Patient {

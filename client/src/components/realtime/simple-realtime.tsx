@@ -15,7 +15,64 @@ interface SimpleRealtimeProps {
 export default function SimpleRealtime({ patientId, patientName, callId, onEnd }: SimpleRealtimeProps) {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
   const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
   const { toast } = useToast();
+
+  // Audio processing functions
+  const initializeAudio = async () => {
+    try {
+      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+      setAudioContext(context);
+      console.log('[CLIENT] Audio context initialized');
+    } catch (error) {
+      console.error('[CLIENT] Failed to initialize audio context:', error);
+    }
+  };
+
+  const cleanupAudio = () => {
+    if (audioContext) {
+      audioContext.close();
+      setAudioContext(null);
+    }
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setMediaRecorder(null);
+    }
+    setIsRecording(false);
+  };
+
+  const handleAudioData = async (audioData: ArrayBuffer) => {
+    if (!audioContext) return;
+    
+    try {
+      const audioBuffer = await audioContext.decodeAudioData(audioData);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+      console.log('[CLIENT] Playing audio from GPT-4o');
+    } catch (error) {
+      console.error('[CLIENT] Error playing audio:', error);
+    }
+  };
+
+  const playAudioFromBase64 = async (base64Audio: string) => {
+    if (!audioContext) return;
+    
+    try {
+      const audioData = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+      const audioBuffer = await audioContext.decodeAudioData(audioData.buffer);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+      console.log('[CLIENT] Playing base64 audio from GPT-4o');
+    } catch (error) {
+      console.error('[CLIENT] Error playing base64 audio:', error);
+    }
+  };
 
   const startSession = async () => {
     try {
@@ -44,14 +101,15 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       console.log(`[${startTime}][CLIENT] Browser: ${navigator.userAgent}`);
       console.log(`[${startTime}][CLIENT] Protocol: ${window.location.protocol}`);
       
-      const ws = new WebSocket(wsUrl);
-      console.log(`[${startTime}][CLIENT] WebSocket object created, state: ${ws.readyState}`);
+      const websocket = new WebSocket(wsUrl);
+      setWs(websocket);
+      console.log(`[${startTime}][CLIENT] WebSocket object created, state: ${websocket.readyState}`);
       
       const connectionTimeout = setTimeout(() => {
         const timeoutTime = new Date().toISOString();
         console.error(`[${timeoutTime}][CLIENT] ⏰ CONNECTION TIMEOUT after 15 seconds`);
-        console.error(`[${timeoutTime}][CLIENT] Socket state at timeout: ${ws.readyState}`);
-        ws.close();
+        console.error(`[${timeoutTime}][CLIENT] Socket state at timeout: ${websocket.readyState}`);
+        websocket.close();
         setStatus('error');
         toast({
           title: "Connection Timeout",
@@ -60,26 +118,37 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         });
       }, 15000);
       
-      ws.onopen = () => {
+      websocket.onopen = () => {
         const openTime = new Date().toISOString();
         clearTimeout(connectionTimeout);
         console.log(`[${openTime}][CLIENT] ✅ WebSocket connection OPENED`);
-        console.log(`[${openTime}][CLIENT] Socket state: ${ws.readyState}`);
+        console.log(`[${openTime}][CLIENT] Socket state: ${websocket.readyState}`);
         setStatus('connected');
         toast({
           title: "Real-time Connected",
           description: "GPT-4o voice session ready",
         });
+        
+        // Initialize audio context for voice processing
+        initializeAudio();
       };
 
-      ws.onmessage = (event) => {
+      websocket.onmessage = (event) => {
         const msgTime = new Date().toISOString();
         try {
-          const message = JSON.parse(event.data);
-          console.log(`[${msgTime}][CLIENT] 📨 MESSAGE RECEIVED:`, message);
-          
-          if (message.type === 'connection_established') {
-            console.log(`[${msgTime}][CLIENT] ✅ Session confirmed: ${message.sessionId}`);
+          if (event.data instanceof ArrayBuffer) {
+            // Handle audio data from GPT-4o
+            handleAudioData(event.data);
+          } else {
+            const message = JSON.parse(event.data);
+            console.log(`[${msgTime}][CLIENT] 📨 MESSAGE RECEIVED:`, message);
+            
+            if (message.type === 'connection_established') {
+              console.log(`[${msgTime}][CLIENT] ✅ Session confirmed: ${message.sessionId}`);
+            } else if (message.type === 'audio') {
+              // Handle base64 encoded audio from GPT-4o
+              playAudioFromBase64(message.audio);
+            }
           }
         } catch (error) {
           console.error(`[${msgTime}][CLIENT] ❌ Message parse error:`, error);
@@ -87,13 +156,13 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         }
       };
 
-      ws.onerror = (error) => {
+      websocket.onerror = (error) => {
         const errorTime = new Date().toISOString();
         clearTimeout(connectionTimeout);
         console.error(`[${errorTime}][CLIENT] ❌ WEBSOCKET ERROR:`);
         console.error(`[${errorTime}][CLIENT] Error object:`, error);
-        console.error(`[${errorTime}][CLIENT] Socket state: ${ws.readyState}`);
-        console.error(`[${errorTime}][CLIENT] Socket URL: ${ws.url}`);
+        console.error(`[${errorTime}][CLIENT] Socket state: ${websocket.readyState}`);
+        console.error(`[${errorTime}][CLIENT] Socket URL: ${websocket.url}`);
         setStatus('error');
         toast({
           title: "Connection Failed",
@@ -102,15 +171,18 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         });
       };
 
-      ws.onclose = (event) => {
+      websocket.onclose = (event) => {
         const closeTime = new Date().toISOString();
         clearTimeout(connectionTimeout);
         console.log(`[${closeTime}][CLIENT] 🔌 CONNECTION CLOSED`);
         console.log(`[${closeTime}][CLIENT] Close code: ${event.code}`);
         console.log(`[${closeTime}][CLIENT] Close reason: ${event.reason}`);
         console.log(`[${closeTime}][CLIENT] Was clean: ${event.wasClean}`);
-        console.log(`[${closeTime}][CLIENT] Socket state: ${ws.readyState}`);
+        console.log(`[${closeTime}][CLIENT] Socket state: ${websocket.readyState}`);
         setStatus('idle');
+        
+        // Cleanup audio resources
+        cleanupAudio();
         
         if (event.code === 1006) {
           console.error(`[${closeTime}][CLIENT] ❌ ABNORMAL CLOSURE (1006) - Connection lost unexpectedly`);
@@ -133,21 +205,110 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
     }
   };
 
+  // Audio processing functions
+  const initializeAudio = async () => {
+    try {
+      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+      setAudioContext(context);
+      console.log('[CLIENT] Audio context initialized');
+    } catch (error) {
+      console.error('[CLIENT] Failed to initialize audio context:', error);
+    }
+  };
+
+  const cleanupAudio = () => {
+    if (audioContext) {
+      audioContext.close();
+      setAudioContext(null);
+    }
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setMediaRecorder(null);
+    }
+    setIsRecording(false);
+  };
+
+  const handleAudioData = async (audioData: ArrayBuffer) => {
+    if (!audioContext) return;
+    
+    try {
+      const audioBuffer = await audioContext.decodeAudioData(audioData);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+      console.log('[CLIENT] Playing audio from GPT-4o');
+    } catch (error) {
+      console.error('[CLIENT] Error playing audio:', error);
+    }
+  };
+
+  const playAudioFromBase64 = async (base64Audio: string) => {
+    if (!audioContext) return;
+    
+    try {
+      const audioData = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+      const audioBuffer = await audioContext.decodeAudioData(audioData.buffer);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+      console.log('[CLIENT] Playing base64 audio from GPT-4o');
+    } catch (error) {
+      console.error('[CLIENT] Error playing base64 audio:', error);
+    }
+  };
+
   const toggleRecording = async () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      toast({
+        title: "Connection Required",
+        description: "Please connect to session first",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!isRecording) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        setIsRecording(true);
-        toast({
-          title: "Recording Started",
-          description: "Microphone is now active",
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            sampleRate: 16000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true
+          }
         });
         
-        // Stop all tracks when done (cleanup)
-        setTimeout(() => {
-          stream.getTracks().forEach(track => track.stop());
-          setIsRecording(false);
-        }, 5000);
+        const recorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+        
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
+            // Convert to the format expected by GPT-4o real-time API
+            const reader = new FileReader();
+            reader.onload = () => {
+              if (reader.result instanceof ArrayBuffer) {
+                // Send audio data to GPT-4o via WebSocket
+                ws.send(JSON.stringify({
+                  type: 'input_audio_buffer.append',
+                  audio: Array.from(new Uint8Array(reader.result))
+                }));
+              }
+            };
+            reader.readAsArrayBuffer(event.data);
+          }
+        };
+        
+        recorder.start(100); // Send audio chunks every 100ms
+        setMediaRecorder(recorder);
+        setIsRecording(true);
+        
+        toast({
+          title: "Recording Started",
+          description: "Speaking to GPT-4o",
+        });
         
       } catch (error) {
         toast({
@@ -157,7 +318,19 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         });
       }
     } else {
+      if (mediaRecorder) {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        setMediaRecorder(null);
+      }
       setIsRecording(false);
+      
+      // Commit the audio buffer to GPT-4o
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'input_audio_buffer.commit'
+        }));
+      }
     }
   };
 
