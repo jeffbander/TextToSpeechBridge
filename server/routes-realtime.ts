@@ -12,13 +12,29 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   // Only create the WebSocket server once
   if (!realtimeWss) {
     realtimeWss = new WebSocketServer({
-      port: 5001, // Use a different port for WebSocket
-      host: '0.0.0.0'
+      noServer: true
+    });
+
+    // Handle WebSocket upgrade on the main HTTP server
+    httpServer.on('upgrade', (request, socket, head) => {
+      const url = request.url || '';
+      console.log(`[REALTIME-WS] Upgrade request for: ${url}`);
+      
+      if (url.startsWith('/realtime')) {
+        console.log(`[REALTIME-WS] Handling upgrade for real-time connection`);
+        const wss = realtimeWss; // Local reference to avoid null check issues
+        if (wss) {
+          wss.handleUpgrade(request, socket, head, (ws) => {
+            console.log(`[REALTIME-WS] Upgrade successful, emitting connection`);
+            wss.emit('connection', ws, request);
+          });
+        }
+      }
     });
 
     realtimeWss.on('connection', (ws, req) => {
       const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}][REALTIME-WS] NEW CONNECTION on port 5001`);
+      console.log(`[${timestamp}][REALTIME-WS] NEW CONNECTION on /realtime path`);
       console.log(`[${timestamp}][REALTIME-WS] Headers:`, JSON.stringify(req.headers, null, 2));
       console.log(`[${timestamp}][REALTIME-WS] URL: ${req.url}`);
       console.log(`[${timestamp}][REALTIME-WS] Socket state: ${ws.readyState}`);
@@ -105,7 +121,7 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
       console.error(`[REALTIME-WS] WebSocket server error:`, error);
     });
 
-    console.log(`[REALTIME] WebSocket server listening on port 5001`);
+    console.log(`[REALTIME] WebSocket server configured for /realtime path`);
   }
 
   // GPT-4o real-time session management
@@ -119,15 +135,18 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
 
       const sessionId = await openaiRealtimeService.createRealtimeSession(patientId, patientName, callId);
       
-      // Return WebSocket URL on different port
+      // Return WebSocket URL - use same host in Replit environment
       const isReplit = req.get('host')?.includes('replit.dev') || false;
       const protocol = isReplit ? 'wss' : 'ws';
       const currentHost = req.get('host') || 'localhost:5000';
-      const wsHost = currentHost.replace(':5000', ':5001');
+      
+      // In Replit, use same host with /realtime path instead of different port
+      const wsHost = isReplit ? currentHost : currentHost.replace(':5000', ':5001');
+      const wsPath = isReplit ? '/realtime' : '/';
       
       res.json({
         sessionId,
-        websocketUrl: `/?session=${sessionId}`,
+        websocketUrl: `${wsPath}?session=${sessionId}`,
         websocketHost: `${protocol}://${wsHost}`,
         status: "created"
       });
