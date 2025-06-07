@@ -184,6 +184,19 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     session.websocket = clientWs;
     console.log(`🔗 Client connected to realtime session ${sessionId}`);
     
+    // Initialize OpenAI connection when client connects
+    this.initializeOpenAIRealtime(sessionId)
+      .then(() => {
+        console.log(`🔴 OpenAI connection established for session ${sessionId}`);
+      })
+      .catch((error) => {
+        console.error(`❌ OpenAI connection failed for session ${sessionId}:`, error);
+        clientWs.send(JSON.stringify({
+          type: 'error',
+          message: 'Failed to connect to AI service'
+        }));
+      });
+    
     clientWs.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
@@ -252,16 +265,21 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
               role: 'user',
               content: [{
                 type: 'input_text',
-                text: 'Hello, I am ready to begin the post-discharge follow-up call.'
+                text: `Hello, this is a post-discharge follow-up call for ${session.patientName}. Please begin the conversation.`
               }]
             }
           }));
           
+          // Request audio response from GPT-4o
           session.openaiWs.send(JSON.stringify({
-            type: 'response.create'
+            type: 'response.create',
+            response: {
+              modalities: ['audio', 'text'],
+              instructions: `You are a healthcare AI assistant conducting a post-discharge follow-up call. Speak in a warm, professional tone and ask how ${session.patientName} is feeling today.`
+            }
           }));
           
-          console.log(`🎵 Started conversation for session ${sessionId}`);
+          console.log(`🎵 Started conversation with audio request for session ${sessionId}`);
         }
         break;
         
