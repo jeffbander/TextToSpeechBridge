@@ -101,7 +101,9 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       const host = window.location.host;
       const wsUrl = `${protocol}//${host}/ws/realtime${data.websocketUrl}`;
       
-      console.log(`[AUDIO] Connecting to: ${wsUrl}`);
+      console.log(`[AUDIO] Session data received:`, data);
+      console.log(`[AUDIO] Constructed URL: ${wsUrl}`);
+      console.log(`[AUDIO] Protocol: ${protocol}, Host: ${host}`);
       
       const websocket = new WebSocket(wsUrl);
       wsRef.current = websocket;

@@ -87,7 +87,24 @@
 3. **Dashboard**: Null safety implemented
    - Line 112: `{activeCalls?.length || 0}`
 
+## New Issues Detected - 2025-06-07 22:35 UTC ❌
+
+### Problem: Query Error in Console Logs
+- Console shows: "Query error:{}"
+- Voice session still failing for users
+- WebSocket upgrade requests to "/" instead of "/ws/realtime"
+
+### Investigation Needed
+1. **Query Error Source**: Empty query error object suggests API endpoint failure
+2. **Voice Session Flow**: Users still cannot establish voice connections
+3. **WebSocket Path**: Logs show requests to "/" not "/ws/realtime"
+
+### Status: INVESTIGATING
+- Backend WebSocket: Working in isolation tests
+- Frontend Integration: Failing in browser environment
+- Dashboard: Working with null safety fixes
+
 ---
-*Last Updated: 2025-06-07 22:27 UTC*
-*Voice System Status: OPERATIONAL*
-*Connection Test: PASSED*
+*Last Updated: 2025-06-07 22:35 UTC*
+*Voice System Status: ISSUES DETECTED*
+*Priority: HIGH - Voice sessions not working for users*
