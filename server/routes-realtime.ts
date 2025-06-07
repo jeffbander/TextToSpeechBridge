@@ -9,15 +9,18 @@ let realtimeWss: WebSocketServer | null = null;
 export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   console.log("[REALTIME] Initializing GPT-4o real-time routes");
   
-  // Only create the WebSocket server once
+  // Create a separate HTTP server for WebSocket to avoid conflicts
   if (!realtimeWss) {
-    realtimeWss = new WebSocketServer({
-      port: 8080,
-      host: '0.0.0.0',
+    const wsServer = createServer();
+    realtimeWss = new WebSocketServer({ 
+      server: wsServer,
       path: '/realtime'
     });
     
-    console.log(`[REALTIME] WebSocket server running on port 8080 with /realtime path`);
+    const port = 8081; // Use different port from main server
+    wsServer.listen(port, '0.0.0.0', () => {
+      console.log(`[REALTIME] WebSocket server running on port ${port}`);
+    });
 
     realtimeWss.on('connection', (ws, req) => {
       const timestamp = new Date().toISOString();
