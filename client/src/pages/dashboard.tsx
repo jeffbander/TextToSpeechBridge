@@ -4,13 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 
+interface DashboardStats {
+  callsToday: number;
+  urgentAlerts: number;
+  successRate: number;
+  activePatients: number;
+  activeCalls: number;
+  pendingCalls: number;
+}
+
+interface ActiveCall {
+  id: number;
+  patientName: string;
+  phoneNumber: string;
+  status: string;
+}
+
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading } = useQuery<any>({
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
     refetchInterval: 30000,
   });
 
-  const { data: activeCalls = [], isLoading: activeCallsLoading } = useQuery<any[]>({
+  const { data: activeCalls = [], isLoading: activeCallsLoading } = useQuery<ActiveCall[]>({
     queryKey: ['/api/calls/active'],
     refetchInterval: 10000,
   });
@@ -149,7 +165,7 @@ export default function Dashboard() {
                   <div className="text-sm text-gray-500">Loading active calls...</div>
                 ) : activeCalls.length > 0 ? (
                   <div className="space-y-2">
-                    {activeCalls.map((call: any) => (
+                    {activeCalls.map((call) => (
                       <div key={call.id} className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
                         <div>
                           <div className="font-medium">{call.patientName}</div>

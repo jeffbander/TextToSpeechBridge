@@ -59,13 +59,13 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "returnNull" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 60000,
-      retry: 1,
-      retryDelay: 1000,
+      staleTime: 30000,
+      retry: false,
+      throwOnError: false,
     },
     mutations: {
-      retry: 1,
-      retryDelay: 1000,
+      retry: false,
+      throwOnError: false,
     },
   },
 });
