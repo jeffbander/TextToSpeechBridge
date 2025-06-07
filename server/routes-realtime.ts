@@ -24,11 +24,23 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
         console.log(`[REALTIME-WS] Handling upgrade for real-time connection`);
         const wss = realtimeWss; // Local reference to avoid null check issues
         if (wss) {
-          wss.handleUpgrade(request, socket, head, (ws) => {
-            console.log(`[REALTIME-WS] Upgrade successful, emitting connection`);
-            wss.emit('connection', ws, request);
-          });
+          try {
+            wss.handleUpgrade(request, socket, head, (ws) => {
+              console.log(`[REALTIME-WS] Upgrade successful, emitting connection`);
+              wss.emit('connection', ws, request);
+            });
+          } catch (upgradeError) {
+            console.error(`[REALTIME-WS] ❌ Upgrade failed:`, upgradeError);
+            socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+            socket.destroy();
+          }
+        } else {
+          console.error(`[REALTIME-WS] ❌ WebSocket server not initialized`);
+          socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
+          socket.destroy();
         }
+      } else {
+        console.log(`[REALTIME-WS] ❌ Path not handled: ${url}`);
       }
     });
 
@@ -135,14 +147,14 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
 
       const sessionId = await openaiRealtimeService.createRealtimeSession(patientId, patientName, callId);
       
-      // Return WebSocket URL - use same host in Replit environment
+      // Return WebSocket URL - use /realtime path for all environments now
       const isReplit = req.get('host')?.includes('replit.dev') || false;
       const protocol = isReplit ? 'wss' : 'ws';
       const currentHost = req.get('host') || 'localhost:5000';
       
-      // In Replit, use same host with /realtime path instead of different port
-      const wsHost = isReplit ? currentHost : currentHost.replace(':5000', ':5001');
-      const wsPath = isReplit ? '/realtime' : '/';
+      // Use /realtime path on same host for both environments
+      const wsHost = currentHost;
+      const wsPath = '/realtime';
       
       res.json({
         sessionId,
