@@ -154,7 +154,7 @@ export default function RealtimePage() {
         </Card>
       ) : (
         selectedPatient && sessionCallId && (
-          <SimpleRealtime
+          <AudioRealtime
             patientId={selectedPatient.id}
             patientName={selectedPatient.name}
             callId={sessionCallId}
