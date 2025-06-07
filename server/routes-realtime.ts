@@ -158,8 +158,8 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
       
       res.json({
         sessionId,
-        websocketUrl: `/?session=${sessionId}`,
-        websocketHost: `${protocol}://${wsHost}`,
+        websocketUrl: `?session=${sessionId}`,
+        websocketHost: `${protocol}://${currentHost}`,
         status: "created"
       });
     } catch (error) {
