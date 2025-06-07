@@ -36,13 +36,21 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       
       // Build WebSocket URL using the separate WebSocket host
       const wsUrl = `${data.websocketHost}${data.websocketUrl}`;
+      const startTime = new Date().toISOString();
       
-      console.log(`[CLIENT] Session ID: ${data.sessionId}`);
-      console.log(`[CLIENT] WebSocket URL: ${wsUrl}`);
+      console.log(`[${startTime}][CLIENT] 🚀 STARTING WebSocket connection`);
+      console.log(`[${startTime}][CLIENT] Session ID: ${data.sessionId}`);
+      console.log(`[${startTime}][CLIENT] WebSocket URL: ${wsUrl}`);
+      console.log(`[${startTime}][CLIENT] Browser: ${navigator.userAgent}`);
+      console.log(`[${startTime}][CLIENT] Protocol: ${window.location.protocol}`);
       
       const ws = new WebSocket(wsUrl);
+      console.log(`[${startTime}][CLIENT] WebSocket object created, state: ${ws.readyState}`);
       
       const connectionTimeout = setTimeout(() => {
+        const timeoutTime = new Date().toISOString();
+        console.error(`[${timeoutTime}][CLIENT] ⏰ CONNECTION TIMEOUT after 15 seconds`);
+        console.error(`[${timeoutTime}][CLIENT] Socket state at timeout: ${ws.readyState}`);
         ws.close();
         setStatus('error');
         toast({
@@ -53,8 +61,10 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       }, 15000);
       
       ws.onopen = () => {
+        const openTime = new Date().toISOString();
         clearTimeout(connectionTimeout);
-        console.log(`[CLIENT] WebSocket connection established`);
+        console.log(`[${openTime}][CLIENT] ✅ WebSocket connection OPENED`);
+        console.log(`[${openTime}][CLIENT] Socket state: ${ws.readyState}`);
         setStatus('connected');
         toast({
           title: "Real-time Connected",
@@ -63,21 +73,27 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       };
 
       ws.onmessage = (event) => {
+        const msgTime = new Date().toISOString();
         try {
           const message = JSON.parse(event.data);
-          console.log(`[CLIENT] Received:`, message);
+          console.log(`[${msgTime}][CLIENT] 📨 MESSAGE RECEIVED:`, message);
           
           if (message.type === 'connection_established') {
-            console.log(`[CLIENT] Session confirmed: ${message.sessionId}`);
+            console.log(`[${msgTime}][CLIENT] ✅ Session confirmed: ${message.sessionId}`);
           }
         } catch (error) {
-          console.error(`[CLIENT] Message parse error:`, error);
+          console.error(`[${msgTime}][CLIENT] ❌ Message parse error:`, error);
+          console.error(`[${msgTime}][CLIENT] Raw message data:`, event.data);
         }
       };
 
       ws.onerror = (error) => {
+        const errorTime = new Date().toISOString();
         clearTimeout(connectionTimeout);
-        console.error(`[CLIENT] WebSocket error:`, error);
+        console.error(`[${errorTime}][CLIENT] ❌ WEBSOCKET ERROR:`);
+        console.error(`[${errorTime}][CLIENT] Error object:`, error);
+        console.error(`[${errorTime}][CLIENT] Socket state: ${ws.readyState}`);
+        console.error(`[${errorTime}][CLIENT] Socket URL: ${ws.url}`);
         setStatus('error');
         toast({
           title: "Connection Failed",
@@ -87,11 +103,17 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       };
 
       ws.onclose = (event) => {
+        const closeTime = new Date().toISOString();
         clearTimeout(connectionTimeout);
-        console.log(`[CLIENT] Connection closed:`, event.code, event.reason);
+        console.log(`[${closeTime}][CLIENT] 🔌 CONNECTION CLOSED`);
+        console.log(`[${closeTime}][CLIENT] Close code: ${event.code}`);
+        console.log(`[${closeTime}][CLIENT] Close reason: ${event.reason}`);
+        console.log(`[${closeTime}][CLIENT] Was clean: ${event.wasClean}`);
+        console.log(`[${closeTime}][CLIENT] Socket state: ${ws.readyState}`);
         setStatus('idle');
         
         if (event.code === 1006) {
+          console.error(`[${closeTime}][CLIENT] ❌ ABNORMAL CLOSURE (1006) - Connection lost unexpectedly`);
           toast({
             title: "Connection Lost",
             description: "WebSocket connection was terminated",

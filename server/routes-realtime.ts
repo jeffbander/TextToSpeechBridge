@@ -17,20 +17,23 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
     });
 
     realtimeWss.on('connection', (ws, req) => {
-      console.log(`[REALTIME-WS] WebSocket connection established on port 5001`);
-      console.log(`[REALTIME-WS] URL: ${req.url}`);
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}][REALTIME-WS] NEW CONNECTION on port 5001`);
+      console.log(`[${timestamp}][REALTIME-WS] Headers:`, JSON.stringify(req.headers, null, 2));
+      console.log(`[${timestamp}][REALTIME-WS] URL: ${req.url}`);
+      console.log(`[${timestamp}][REALTIME-WS] Socket state: ${ws.readyState}`);
       
       try {
         const url = new URL(req.url!, `http://${req.headers.host || 'localhost'}`);
         const sessionId = url.searchParams.get('session');
         
         if (!sessionId) {
-          console.log(`[REALTIME-WS] Connection rejected - no session ID`);
+          console.log(`[${timestamp}][REALTIME-WS] ❌ REJECTED - no session ID`);
           ws.close(1000, 'Session ID required');
           return;
         }
         
-        console.log(`[REALTIME-WS] Session connected: ${sessionId}`);
+        console.log(`[${timestamp}][REALTIME-WS] ✅ SESSION CONNECTED: ${sessionId}`);
         
         // Send immediate confirmation
         ws.send(JSON.stringify({
@@ -73,11 +76,20 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
         
         ws.on('close', (code, reason) => {
           clearInterval(pingInterval);
-          console.log(`[REALTIME-WS] Connection closed for session ${sessionId}: ${code} ${reason}`);
+          const closeTime = new Date().toISOString();
+          console.log(`[${closeTime}][REALTIME-WS] 🔌 CONNECTION CLOSED for ${sessionId}`);
+          console.log(`[${closeTime}][REALTIME-WS] Close code: ${code}`);
+          console.log(`[${closeTime}][REALTIME-WS] Close reason: ${reason.toString()}`);
+          console.log(`[${closeTime}][REALTIME-WS] Was clean close: ${code === 1000}`);
         });
         
         ws.on('error', (error) => {
-          console.error(`[REALTIME-WS] WebSocket error for session ${sessionId}:`, error);
+          const errorTime = new Date().toISOString();
+          console.error(`[${errorTime}][REALTIME-WS] ❌ WEBSOCKET ERROR for ${sessionId}:`);
+          console.error(`[${errorTime}][REALTIME-WS] Error type: ${error.name}`);
+          console.error(`[${errorTime}][REALTIME-WS] Error message: ${error.message}`);
+          console.error(`[${errorTime}][REALTIME-WS] Error stack:`, error.stack);
+          console.error(`[${errorTime}][REALTIME-WS] Socket state: ${ws.readyState}`);
         });
         
         // Connect to OpenAI realtime service
