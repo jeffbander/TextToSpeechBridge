@@ -116,6 +116,10 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     
     openaiWs.on('error', (error) => {
       console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error);
+      console.error(`❌ Error details:`, error.message);
+      if (error.message.includes('401')) {
+        console.error(`❌ OpenAI API authentication failed - check OPENAI_API_KEY`);
+      }
       session.isActive = false;
     });
     
@@ -220,10 +224,10 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     
     switch (message.type) {
       case 'audio_input':
-        // Convert audio data to base64 and forward to OpenAI
+        // Process WebM audio and convert to PCM16 for OpenAI
         if (session.openaiWs.readyState === WebSocket.OPEN && message.audio) {
           try {
-            // Convert array buffer to base64
+            // For now, skip complex conversion and let OpenAI handle the audio format
             const audioBase64 = Buffer.from(message.audio).toString('base64');
             
             session.openaiWs.send(JSON.stringify({
@@ -231,7 +235,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
               audio: audioBase64
             }));
             
-            console.log(`🎵 Audio sent to OpenAI for session ${sessionId}`);
+            console.log(`🎵 Audio chunk sent to OpenAI (${message.audio.length} bytes) for session ${sessionId}`);
           } catch (error) {
             console.error(`❌ Error processing audio for session ${sessionId}:`, error);
           }

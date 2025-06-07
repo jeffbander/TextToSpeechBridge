@@ -104,9 +104,10 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       websocket.onerror = (error) => {
         console.error('[AUDIO] WebSocket error:', error);
         setStatus('error');
+        cleanup();
         toast({
           title: "Connection Error",
-          description: "Failed to connect to voice session",
+          description: "Voice session connection failed. Please try again.",
           variant: "destructive"
         });
       };
@@ -149,39 +150,27 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           }
         });
         
-        // Create audio processing pipeline for PCM16 format
-        if (!audioContextRef.current) {
-          await initializeAudio();
-        }
+        const recorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+        mediaRecorderRef.current = recorder;
         
-        const audioContext = audioContextRef.current!;
-        const source = audioContext.createMediaStreamSource(stream);
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
-        
-        processor.onaudioprocess = (event) => {
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            const inputBuffer = event.inputBuffer;
-            const inputData = inputBuffer.getChannelData(0);
-            
-            // Convert float32 to PCM16 format for OpenAI
-            const pcmData = new Int16Array(inputData.length);
-            for (let i = 0; i < inputData.length; i++) {
-              pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-            }
-            
-            // Send PCM16 audio data to server
-            wsRef.current.send(JSON.stringify({
-              type: 'audio_input',
-              audio: Array.from(new Uint8Array(pcmData.buffer))
-            }));
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              if (reader.result instanceof ArrayBuffer) {
+                wsRef.current?.send(JSON.stringify({
+                  type: 'audio_input',
+                  audio: Array.from(new Uint8Array(reader.result))
+                }));
+              }
+            };
+            reader.readAsArrayBuffer(event.data);
           }
         };
         
-        source.connect(processor);
-        processor.connect(audioContext.destination);
-        
-        // Store for cleanup
-        mediaRecorderRef.current = { processor, source } as any;
+        recorder.start(250);
         setIsRecording(true);
         
         toast({
@@ -202,18 +191,9 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      const { processor, source } = mediaRecorderRef.current as any;
-      
-      // Properly disconnect audio processing pipeline
-      if (processor) {
-        processor.disconnect();
-        processor.onaudioprocess = null;
-      }
-      if (source) {
-        source.disconnect();
-      }
-      
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream?.getTracks().forEach(track => track.stop());
       mediaRecorderRef.current = null;
     }
     setIsRecording(false);
