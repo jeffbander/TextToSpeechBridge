@@ -17,55 +17,6 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
   const [isRecording, setIsRecording] = useState(false);
   const { toast } = useToast();
 
-  const connectWebSocket = (wsUrl: string, sessionId: string, retryCount = 0): Promise<WebSocket> => {
-    return new Promise((resolve, reject) => {
-      console.log(`[CLIENT] Attempt ${retryCount + 1} connecting to: ${wsUrl}`);
-      
-      const ws = new WebSocket(wsUrl);
-      const timeout = setTimeout(() => {
-        ws.close();
-        reject(new Error('Connection timeout'));
-      }, 10000);
-
-      ws.onopen = () => {
-        clearTimeout(timeout);
-        console.log(`[CLIENT] WebSocket connection established`);
-        resolve(ws);
-      };
-
-      ws.onerror = (error) => {
-        clearTimeout(timeout);
-        console.error(`[CLIENT] WebSocket error on attempt ${retryCount + 1}:`, error);
-        
-        if (retryCount < 3) {
-          setTimeout(() => {
-            connectWebSocket(wsUrl, sessionId, retryCount + 1)
-              .then(resolve)
-              .catch(reject);
-          }, 1000 * (retryCount + 1));
-        } else {
-          reject(error);
-        }
-      };
-
-      ws.onclose = (event) => {
-        clearTimeout(timeout);
-        if (event.code !== 1000) {
-          console.log(`[CLIENT] WebSocket closed unexpectedly:`, event.code, event.reason);
-          if (retryCount < 3) {
-            setTimeout(() => {
-              this.connectWebSocket(wsUrl, sessionId, retryCount + 1)
-                .then(resolve)
-                .catch(reject);
-            }, 1000 * (retryCount + 1));
-          } else {
-            reject(new Error(`Connection failed after ${retryCount + 1} attempts`));
-          }
-        }
-      };
-    });
-  };
-
   const startSession = async () => {
     try {
       setStatus('connecting');
@@ -91,43 +42,72 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       console.log(`[CLIENT] Session ID: ${data.sessionId}`);
       console.log(`[CLIENT] WebSocket URL: ${wsUrl}`);
       
-      try {
-        const ws = await this.connectWebSocket(wsUrl, data.sessionId);
-        
+      const ws = new WebSocket(wsUrl);
+      
+      const connectionTimeout = setTimeout(() => {
+        ws.close();
+        setStatus('error');
+        toast({
+          title: "Connection Timeout",
+          description: "WebSocket connection timed out",
+          variant: "destructive"
+        });
+      }, 15000);
+      
+      ws.onopen = () => {
+        clearTimeout(connectionTimeout);
+        console.log(`[CLIENT] WebSocket connection established`);
         setStatus('connected');
         toast({
           title: "Real-time Connected",
           description: "GPT-4o voice session ready",
         });
+      };
 
-        ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data);
-            console.log(`[CLIENT] Received:`, message);
-            
-            if (message.type === 'connection_established') {
-              console.log(`[CLIENT] Session confirmed: ${message.sessionId}`);
-            }
-          } catch (error) {
-            console.error(`[CLIENT] Message parse error:`, error);
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log(`[CLIENT] Received:`, message);
+          
+          if (message.type === 'connection_established') {
+            console.log(`[CLIENT] Session confirmed: ${message.sessionId}`);
           }
-        };
+        } catch (error) {
+          console.error(`[CLIENT] Message parse error:`, error);
+        }
+      };
 
-        ws.onclose = (event) => {
-          console.log(`[CLIENT] Connection closed:`, event.code, event.reason);
-          setStatus('idle');
-        };
+      ws.onerror = (error) => {
+        clearTimeout(connectionTimeout);
+        console.error(`[CLIENT] WebSocket error:`, error);
+        setStatus('error');
+        toast({
+          title: "Connection Failed",
+          description: "WebSocket connection failed",
+          variant: "destructive"
+        });
+      };
+
+      ws.onclose = (event) => {
+        clearTimeout(connectionTimeout);
+        console.log(`[CLIENT] Connection closed:`, event.code, event.reason);
+        setStatus('idle');
         
-      } catch (wsError) {
-        throw new Error('WebSocket connection failed after multiple attempts');
-      }
+        if (event.code === 1006) {
+          toast({
+            title: "Connection Lost",
+            description: "WebSocket connection was terminated",
+            variant: "destructive"
+          });
+        }
+      };
       
     } catch (error) {
       console.error('Session error:', error);
       setStatus('error');
       toast({
         title: "Connection Failed",
-        description: error.message || "Could not establish real-time session",
+        description: (error as Error).message || "Could not establish real-time session",
         variant: "destructive"
       });
     }
@@ -143,14 +123,10 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
           description: "Microphone is now active",
         });
         
-        // Stop the stream after 5 seconds for demo
+        // Stop all tracks when done (cleanup)
         setTimeout(() => {
           stream.getTracks().forEach(track => track.stop());
           setIsRecording(false);
-          toast({
-            title: "Recording Stopped",
-            description: "Demo recording completed",
-          });
         }, 5000);
         
       } catch (error) {
@@ -168,104 +144,114 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
   const endSession = () => {
     setStatus('idle');
     setIsRecording(false);
-    if (onEnd) onEnd();
-    
-    toast({
-      title: "Session Ended",
-      description: "Real-time session terminated",
-    });
+    onEnd?.();
+  };
+
+  const getStatusColor = () => {
+    switch (status) {
+      case 'connected': return 'bg-green-500';
+      case 'connecting': return 'bg-yellow-500';
+      case 'error': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getStatusText = () => {
+    switch (status) {
+      case 'connected': return 'Connected';
+      case 'connecting': return 'Connecting...';
+      case 'error': return 'Connection Failed';
+      default: return 'Disconnected';
+    }
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>GPT-4o Real-time Session</span>
-          <Badge variant={status === 'connected' ? 'default' : 'secondary'}>
-            {status}
-          </Badge>
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Patient: {patientName} | Call ID: {callId}
-        </p>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        <div className="flex gap-2 justify-center">
-          {status === 'idle' && (
-            <Button onClick={startSession} size="lg">
-              <Bot className="mr-2 h-4 w-4" />
-              Start Real-time Session
-            </Button>
-          )}
-          
-          {status === 'connecting' && (
-            <Button disabled size="lg">
-              <Bot className="mr-2 h-4 w-4 animate-spin" />
-              Connecting...
-            </Button>
-          )}
-          
-          {status === 'connected' && (
-            <>
-              <Button
-                onClick={toggleRecording}
-                variant={isRecording ? "destructive" : "default"}
-                size="lg"
-              >
-                {isRecording ? (
-                  <>
-                    <MicOff className="mr-2 h-4 w-4" />
-                    Stop Recording
-                  </>
-                ) : (
-                  <>
-                    <Mic className="mr-2 h-4 w-4" />
-                    Start Recording
-                  </>
-                )}
-              </Button>
-              
-              <Button onClick={endSession} variant="outline" size="lg">
-                <Phone className="mr-2 h-4 w-4" />
-                End Session
-              </Button>
-            </>
-          )}
-          
-          {status === 'error' && (
-            <Button onClick={startSession} variant="destructive" size="lg">
-              <Bot className="mr-2 h-4 w-4" />
-              Retry Connection
-            </Button>
-          )}
-        </div>
-
-        <div className="text-center space-y-2">
-          {status === 'connecting' && (
-            <p className="text-sm text-muted-foreground">Establishing connection to GPT-4o...</p>
-          )}
-          {status === 'connected' && isRecording && (
-            <p className="text-sm text-green-600">Live recording in progress</p>
-          )}
-          {status === 'error' && (
-            <p className="text-sm text-red-600">Connection failed. Check your OpenAI API key permissions.</p>
-          )}
-        </div>
-
-        <div className="text-xs text-muted-foreground space-y-1 bg-muted p-4 rounded">
-          <h4 className="font-medium">Real-time Voice Features:</h4>
-          <p>• Live bidirectional audio streaming</p>
-          <p>• Natural conversation with voice activity detection</p>
-          <p>• Healthcare-specific conversation prompts</p>
-          <p>• Real-time transcription and analysis</p>
-          
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800">
-            <p className="font-medium">OpenAI Real-time API Access:</p>
-            <p>This feature connects to OpenAI's real-time API. Ensure your OpenAI API key has access to real-time preview features. If you encounter connection issues, verify your API permissions or contact OpenAI support.</p>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              GPT-4o Real-time Session
+            </CardTitle>
+            <Badge className={`${getStatusColor()} text-white`}>
+              {getStatusText()}
+            </Badge>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <h3 className="font-medium text-blue-900">Patient Information</h3>
+            <p className="text-blue-700">Name: {patientName}</p>
+            <p className="text-blue-700">Session ID: {callId}</p>
+          </div>
+
+          <div className="flex gap-3">
+            {status === 'idle' && (
+              <Button onClick={startSession} className="flex-1">
+                <Phone className="h-4 w-4 mr-2" />
+                Start Real-time Session
+              </Button>
+            )}
+            
+            {status === 'connecting' && (
+              <Button disabled className="flex-1">
+                <Phone className="h-4 w-4 mr-2 animate-pulse" />
+                Connecting...
+              </Button>
+            )}
+            
+            {status === 'connected' && (
+              <>
+                <Button 
+                  onClick={toggleRecording}
+                  variant={isRecording ? "destructive" : "outline"}
+                  className="flex-1"
+                >
+                  {isRecording ? (
+                    <MicOff className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Mic className="h-4 w-4 mr-2" />
+                  )}
+                  {isRecording ? 'Stop Recording' : 'Start Recording'}
+                </Button>
+                
+                <Button onClick={endSession} variant="outline">
+                  End Session
+                </Button>
+              </>
+            )}
+            
+            {status === 'error' && (
+              <>
+                <Button onClick={startSession} variant="outline" className="flex-1">
+                  Retry Connection
+                </Button>
+                <Button onClick={endSession} variant="outline">
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
+
+          {status === 'connected' && (
+            <div className="p-4 bg-green-50 rounded-lg">
+              <p className="text-green-800 text-sm">
+                WebSocket connection established. The GPT-4o real-time voice session is ready for testing.
+              </p>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="p-4 bg-red-50 rounded-lg">
+              <p className="text-red-800 text-sm">
+                WebSocket connection failed. This may be due to network issues or server configuration.
+                Check the browser console for detailed error information.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
