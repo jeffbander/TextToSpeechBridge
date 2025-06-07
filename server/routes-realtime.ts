@@ -11,49 +11,12 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   
   // Only create the WebSocket server once
   if (!realtimeWss) {
-    realtimeWss = new WebSocketServer({ noServer: true });
-
-    // Handle WebSocket upgrade manually to avoid Express conflicts
-    httpServer.on('upgrade', (request, socket, head) => {
-      try {
-        const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
-        console.log(`[REALTIME-WS] 🔄 Upgrade request for: ${pathname}`);
-        console.log(`[REALTIME-WS] 📋 Full headers:`, JSON.stringify(request.headers, null, 2));
-        
-        if (pathname === '/realtime' && realtimeWss) {
-          console.log(`[REALTIME-WS] 🎯 Handling upgrade for /realtime`);
-          
-          // Validate WebSocket headers
-          const key = request.headers['sec-websocket-key'];
-          const version = request.headers['sec-websocket-version'];
-          const upgrade = request.headers['upgrade'];
-          const connection = request.headers['connection'];
-          
-          console.log(`[REALTIME-WS] 🔍 Headers - Key: ${key}, Version: ${version}, Upgrade: ${upgrade}, Connection: ${connection}`);
-          
-          if (!key || version !== '13' || upgrade?.toLowerCase() !== 'websocket') {
-            console.error(`[REALTIME-WS] ❌ Invalid WebSocket headers - rejecting`);
-            socket.write('HTTP/1.1 400 Bad Request\\r\\nContent-Type: text/plain\\r\\n\\r\\nInvalid WebSocket headers');
-            socket.destroy();
-            return;
-          }
-          
-          console.log(`[REALTIME-WS] ✅ Headers validated, proceeding with upgrade`);
-          
-          realtimeWss.handleUpgrade(request, socket, head, (ws) => {
-            console.log(`[REALTIME-WS] 🚀 Upgrade successful - WebSocket connected`);
-            realtimeWss!.emit('connection', ws, request);
-          });
-          
-        } else {
-          console.log(`[REALTIME-WS] ❌ Path ${pathname} not handled - ignoring`);
-        }
-      } catch (error) {
-        console.error(`[REALTIME-WS] 💥 Critical upgrade error:`, error);
-        socket.write('HTTP/1.1 500 Internal Server Error\\r\\n\\r\\n');
-        socket.destroy();
-      }
+    realtimeWss = new WebSocketServer({
+      port: 8080,
+      host: '0.0.0.0'
     });
+    
+    console.log(`[REALTIME] WebSocket server running on port 8080`);
 
     realtimeWss.on('connection', (ws, req) => {
       const timestamp = new Date().toISOString();
@@ -162,18 +125,18 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
 
       const sessionId = await openaiRealtimeService.createRealtimeSession(patientId, patientName, callId);
       
-      // Return WebSocket URL - use /realtime path for all environments now
+      // Return WebSocket URL - use dedicated port for WebSocket
       const isReplit = req.get('host')?.includes('replit.dev') || false;
       const protocol = isReplit ? 'wss' : 'ws';
       const currentHost = req.get('host') || 'localhost:5000';
       
-      // Use /realtime path on same host for both environments
-      const wsHost = currentHost;
-      const wsPath = '/realtime';
+      // Use dedicated WebSocket port
+      const baseHost = currentHost.split(':')[0];
+      const wsHost = `${baseHost}:8080`;
       
       res.json({
         sessionId,
-        websocketUrl: `${wsPath}?session=${sessionId}`,
+        websocketUrl: `/?session=${sessionId}`,
         websocketHost: `${protocol}://${wsHost}`,
         status: "created"
       });
