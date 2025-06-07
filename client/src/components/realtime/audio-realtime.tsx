@@ -88,8 +88,8 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
             
             if (message.type === 'connection_established') {
               console.log('[AUDIO] Session confirmed:', message.sessionId);
-            } else if (message.type === 'audio_response') {
-              // Handle base64 audio from GPT-4o
+            } else if (message.type === 'audio_delta') {
+              // Handle base64 audio chunks from GPT-4o
               const audioData = Uint8Array.from(atob(message.audio), c => c.charCodeAt(0));
               playAudioBuffer(audioData.buffer);
             } else if (message.type === 'transcript') {
@@ -149,26 +149,39 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           }
         });
         
-        const recorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = recorder;
+        // Create audio processing pipeline for PCM16 format
+        if (!audioContextRef.current) {
+          await initializeAudio();
+        }
         
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
-            // Send raw audio data to server for GPT-4o processing
-            const reader = new FileReader();
-            reader.onload = () => {
-              if (reader.result instanceof ArrayBuffer) {
-                wsRef.current?.send(JSON.stringify({
-                  type: 'audio_input',
-                  audio: Array.from(new Uint8Array(reader.result))
-                }));
-              }
-            };
-            reader.readAsArrayBuffer(event.data);
+        const audioContext = audioContextRef.current!;
+        const source = audioContext.createMediaStreamSource(stream);
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        
+        processor.onaudioprocess = (event) => {
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            const inputBuffer = event.inputBuffer;
+            const inputData = inputBuffer.getChannelData(0);
+            
+            // Convert float32 to PCM16 format for OpenAI
+            const pcmData = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+            }
+            
+            // Send PCM16 audio data to server
+            wsRef.current.send(JSON.stringify({
+              type: 'audio_input',
+              audio: Array.from(new Uint8Array(pcmData.buffer))
+            }));
           }
         };
         
-        recorder.start(250); // Send chunks every 250ms
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+        
+        // Store for cleanup
+        mediaRecorderRef.current = { processor, source } as any;
         setIsRecording(true);
         
         toast({
@@ -190,8 +203,17 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
 
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      const { processor, source } = mediaRecorderRef.current as any;
+      
+      // Properly disconnect audio processing pipeline
+      if (processor) {
+        processor.disconnect();
+        processor.onaudioprocess = null;
+      }
+      if (source) {
+        source.disconnect();
+      }
+      
       mediaRecorderRef.current = null;
     }
     setIsRecording(false);
