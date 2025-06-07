@@ -11,15 +11,19 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   const realtimeWss = new WebSocketServer({ 
     server: httpServer, 
     path: '/realtime',
-    clientTracking: true
+    clientTracking: true,
+    perMessageDeflate: false,
+    maxPayload: 1024 * 1024
   });
 
   // Handle GPT-4o real-time connections
   realtimeWss.on('connection', (ws, req) => {
-    console.log(`[REALTIME-WS] GPT-4o real-time connection established`);
+    console.log(`[REALTIME-WS] New WebSocket connection from ${req.socket.remoteAddress}`);
+    console.log(`[REALTIME-WS] Headers:`, req.headers);
+    console.log(`[REALTIME-WS] URL:`, req.url);
     
     try {
-      const url = new URL(req.url!, `http://${req.headers.host}`);
+      const url = new URL(req.url!, `http://${req.headers.host || 'localhost'}`);
       const sessionId = url.searchParams.get('session');
       
       if (!sessionId) {
@@ -30,12 +34,33 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
       
       console.log(`[REALTIME-WS] Connecting session: ${sessionId}`);
       
+      // Send immediate ping to test connection
+      ws.ping();
+      
       // Send immediate confirmation
       ws.send(JSON.stringify({
         type: 'connection_established',
         sessionId,
         timestamp: new Date().toISOString()
       }));
+      
+      // Set up keepalive
+      const keepAlive = setInterval(() => {
+        if (ws.readyState === ws.OPEN) {
+          ws.ping();
+        } else {
+          clearInterval(keepAlive);
+        }
+      }, 30000);
+      
+      ws.on('pong', () => {
+        console.log(`[REALTIME-WS] Pong received for session ${sessionId}`);
+      });
+      
+      ws.on('close', () => {
+        clearInterval(keepAlive);
+        console.log(`[REALTIME-WS] Connection closed for session ${sessionId}`);
+      });
       
       openaiRealtimeService.connectClientWebSocket(sessionId, ws);
       

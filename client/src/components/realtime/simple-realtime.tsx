@@ -17,6 +17,55 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
   const [isRecording, setIsRecording] = useState(false);
   const { toast } = useToast();
 
+  const connectWebSocket = (wsUrl: string, sessionId: string, retryCount = 0): Promise<WebSocket> => {
+    return new Promise((resolve, reject) => {
+      console.log(`[CLIENT] Attempt ${retryCount + 1} connecting to: ${wsUrl}`);
+      
+      const ws = new WebSocket(wsUrl);
+      const timeout = setTimeout(() => {
+        ws.close();
+        reject(new Error('Connection timeout'));
+      }, 10000);
+
+      ws.onopen = () => {
+        clearTimeout(timeout);
+        console.log(`[CLIENT] WebSocket connection established`);
+        resolve(ws);
+      };
+
+      ws.onerror = (error) => {
+        clearTimeout(timeout);
+        console.error(`[CLIENT] WebSocket error on attempt ${retryCount + 1}:`, error);
+        
+        if (retryCount < 3) {
+          setTimeout(() => {
+            connectWebSocket(wsUrl, sessionId, retryCount + 1)
+              .then(resolve)
+              .catch(reject);
+          }, 1000 * (retryCount + 1));
+        } else {
+          reject(error);
+        }
+      };
+
+      ws.onclose = (event) => {
+        clearTimeout(timeout);
+        if (event.code !== 1000) {
+          console.log(`[CLIENT] WebSocket closed unexpectedly:`, event.code, event.reason);
+          if (retryCount < 3) {
+            setTimeout(() => {
+              this.connectWebSocket(wsUrl, sessionId, retryCount + 1)
+                .then(resolve)
+                .catch(reject);
+            }, 1000 * (retryCount + 1));
+          } else {
+            reject(new Error(`Connection failed after ${retryCount + 1} attempts`));
+          }
+        }
+      };
+    });
+  };
+
   const startSession = async () => {
     try {
       setStatus('connecting');
@@ -34,57 +83,51 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       
       const data = await response.json();
       
-      // Connect to WebSocket for real-time communication
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      // Build WebSocket URL with proper protocol detection
+      const isSecure = window.location.protocol === "https:";
+      const protocol = isSecure ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}${data.websocketUrl}`;
       
-      console.log(`[CLIENT] Connecting to WebSocket: ${wsUrl}`);
+      console.log(`[CLIENT] Session ID: ${data.sessionId}`);
+      console.log(`[CLIENT] WebSocket URL: ${wsUrl}`);
       
-      const ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        console.log(`[CLIENT] WebSocket connection opened`);
+      try {
+        const ws = await this.connectWebSocket(wsUrl, data.sessionId);
+        
         setStatus('connected');
         toast({
           title: "Real-time Connected",
           description: "GPT-4o voice session ready",
         });
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          console.log(`[CLIENT] Received message:`, message);
-          
-          if (message.type === 'connection_established') {
-            console.log(`[CLIENT] Connection confirmed for session: ${message.sessionId}`);
+
+        ws.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data);
+            console.log(`[CLIENT] Received:`, message);
+            
+            if (message.type === 'connection_established') {
+              console.log(`[CLIENT] Session confirmed: ${message.sessionId}`);
+            }
+          } catch (error) {
+            console.error(`[CLIENT] Message parse error:`, error);
           }
-        } catch (error) {
-          console.error(`[CLIENT] Message parse error:`, error);
-        }
-      };
-      
-      ws.onerror = (error) => {
-        console.error(`[CLIENT] WebSocket error:`, error);
-        setStatus('error');
-        toast({
-          title: "Connection Failed",
-          description: "WebSocket connection failed",
-          variant: "destructive"
-        });
-      };
-      
-      ws.onclose = (event) => {
-        console.log(`[CLIENT] WebSocket closed:`, event.code, event.reason);
-        setStatus('idle');
-      };
+        };
+
+        ws.onclose = (event) => {
+          console.log(`[CLIENT] Connection closed:`, event.code, event.reason);
+          setStatus('idle');
+        };
+        
+      } catch (wsError) {
+        throw new Error('WebSocket connection failed after multiple attempts');
+      }
       
     } catch (error) {
       console.error('Session error:', error);
       setStatus('error');
       toast({
         title: "Connection Failed",
-        description: "Could not establish real-time session",
+        description: error.message || "Could not establish real-time session",
         variant: "destructive"
       });
     }
