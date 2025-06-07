@@ -11,36 +11,18 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   
   // Only create the WebSocket server once
   if (!realtimeWss) {
-    realtimeWss = new WebSocketServer({
-      noServer: true
-    });
+    realtimeWss = new WebSocketServer({ noServer: true });
 
-    // Handle WebSocket upgrade on the main HTTP server
+    // Handle WebSocket upgrade manually to avoid Express conflicts
     httpServer.on('upgrade', (request, socket, head) => {
-      const url = request.url || '';
-      console.log(`[REALTIME-WS] Upgrade request for: ${url}`);
+      const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+      console.log(`[REALTIME-WS] Upgrade request for: ${pathname}`);
       
-      if (url.startsWith('/realtime')) {
-        console.log(`[REALTIME-WS] Handling upgrade for real-time connection`);
-        const wss = realtimeWss; // Local reference to avoid null check issues
-        if (wss) {
-          try {
-            wss.handleUpgrade(request, socket, head, (ws) => {
-              console.log(`[REALTIME-WS] Upgrade successful, emitting connection`);
-              wss.emit('connection', ws, request);
-            });
-          } catch (upgradeError) {
-            console.error(`[REALTIME-WS] ❌ Upgrade failed:`, upgradeError);
-            socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-            socket.destroy();
-          }
-        } else {
-          console.error(`[REALTIME-WS] ❌ WebSocket server not initialized`);
-          socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-          socket.destroy();
-        }
-      } else {
-        console.log(`[REALTIME-WS] ❌ Path not handled: ${url}`);
+      if (pathname === '/realtime' && realtimeWss) {
+        console.log(`[REALTIME-WS] Handling upgrade for /realtime`);
+        realtimeWss.handleUpgrade(request, socket, head, (ws) => {
+          realtimeWss!.emit('connection', ws, request);
+        });
       }
     });
 
