@@ -21,8 +21,8 @@ async function testWebSocketConnection() {
     const sessionData = await sessionResponse.json();
     console.log('Session created:', sessionData.sessionId);
     
-    // Test WebSocket connection
-    const wsUrl = `ws://localhost:5000${sessionData.websocketUrl}`;
+    // Test WebSocket connection using the new host
+    const wsUrl = `${sessionData.websocketHost}${sessionData.websocketUrl}`;
     console.log('Connecting to:', wsUrl);
     
     const ws = new WebSocket(wsUrl);

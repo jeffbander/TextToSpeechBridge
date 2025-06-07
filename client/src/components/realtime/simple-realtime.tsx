@@ -34,10 +34,8 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       
       const data = await response.json();
       
-      // Build WebSocket URL with proper protocol detection
-      const isSecure = window.location.protocol === "https:";
-      const protocol = isSecure ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}${data.websocketUrl}`;
+      // Build WebSocket URL using the separate WebSocket host
+      const wsUrl = `${data.websocketHost}${data.websocketUrl}`;
       
       console.log(`[CLIENT] Session ID: ${data.sessionId}`);
       console.log(`[CLIENT] WebSocket URL: ${wsUrl}`);
