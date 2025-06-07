@@ -8,22 +8,45 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   console.log("[REALTIME] Initializing GPT-4o real-time routes");
   
   // Dedicated WebSocket server for GPT-4o real-time preview only
-  const realtimeWss = new WebSocketServer({ server: httpServer, path: '/realtime' });
+  const realtimeWss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/realtime',
+    clientTracking: true
+  });
 
   // Handle GPT-4o real-time connections
   realtimeWss.on('connection', (ws, req) => {
-    console.log(`[REALTIME-WS] GPT-4o real-time connection attempt`);
-    const url = new URL(req.url!, `http://${req.headers.host}`);
-    const sessionId = url.searchParams.get('session');
+    console.log(`[REALTIME-WS] GPT-4o real-time connection established`);
     
-    if (!sessionId) {
-      console.log(`[REALTIME-WS] Connection rejected - no session ID`);
-      ws.close(1000, 'Session ID required');
-      return;
+    try {
+      const url = new URL(req.url!, `http://${req.headers.host}`);
+      const sessionId = url.searchParams.get('session');
+      
+      if (!sessionId) {
+        console.log(`[REALTIME-WS] Connection rejected - no session ID`);
+        ws.close(1000, 'Session ID required');
+        return;
+      }
+      
+      console.log(`[REALTIME-WS] Connecting session: ${sessionId}`);
+      
+      // Send immediate confirmation
+      ws.send(JSON.stringify({
+        type: 'connection_established',
+        sessionId,
+        timestamp: new Date().toISOString()
+      }));
+      
+      openaiRealtimeService.connectClientWebSocket(sessionId, ws);
+      
+    } catch (error) {
+      console.error(`[REALTIME-WS] Connection error:`, error);
+      ws.close(1011, 'Internal server error');
     }
-    
-    console.log(`[REALTIME-WS] Connecting session: ${sessionId}`);
-    openaiRealtimeService.connectClientWebSocket(sessionId, ws);
+  });
+
+  realtimeWss.on('error', (error) => {
+    console.error(`[REALTIME-WS] WebSocket server error:`, error);
   });
 
   // GPT-4o real-time session management

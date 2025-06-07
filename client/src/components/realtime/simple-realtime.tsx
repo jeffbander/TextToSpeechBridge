@@ -38,9 +38,12 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}${data.websocketUrl}`;
       
+      console.log(`[CLIENT] Connecting to WebSocket: ${wsUrl}`);
+      
       const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
+        console.log(`[CLIENT] WebSocket connection opened`);
         setStatus('connected');
         toast({
           title: "Real-time Connected",
@@ -48,7 +51,21 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         });
       };
       
-      ws.onerror = () => {
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log(`[CLIENT] Received message:`, message);
+          
+          if (message.type === 'connection_established') {
+            console.log(`[CLIENT] Connection confirmed for session: ${message.sessionId}`);
+          }
+        } catch (error) {
+          console.error(`[CLIENT] Message parse error:`, error);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error(`[CLIENT] WebSocket error:`, error);
         setStatus('error');
         toast({
           title: "Connection Failed",
@@ -57,7 +74,8 @@ export default function SimpleRealtime({ patientId, patientName, callId, onEnd }
         });
       };
       
-      ws.onclose = () => {
+      ws.onclose = (event) => {
+        console.log(`[CLIENT] WebSocket closed:`, event.code, event.reason);
         setStatus('idle');
       };
       
