@@ -63,10 +63,10 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       
       const data = await response.json();
       
-      // Construct WebSocket URL for integrated server
+      // Construct WebSocket URL for mobile environment
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const wsUrl = `${protocol}//${host}/realtime${data.websocketUrl}`;
+      const hostname = window.location.hostname;
+      const wsUrl = `${protocol}//${hostname}:8080/realtime${data.websocketUrl}`;
       
       console.log(`[AUDIO] Connecting to: ${wsUrl}`);
       
