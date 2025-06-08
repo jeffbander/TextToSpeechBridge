@@ -25,6 +25,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Shared endpoints that don't belong to calling or realtime modules
   
+  // Conversation logs endpoints
+  app.get("/api/conversation-logs", async (req, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const logsDir = path.join(process.cwd(), 'conversation_logs');
+      
+      if (!fs.existsSync(logsDir)) {
+        return res.json([]);
+      }
+      
+      const files = fs.readdirSync(logsDir)
+        .filter(file => file.endsWith('.txt'))
+        .map(file => {
+          const filepath = path.join(logsDir, file);
+          const stats = fs.statSync(filepath);
+          const content = fs.readFileSync(filepath, 'utf8');
+          
+          // Extract metadata from content
+          const lines = content.split('\n');
+          const sessionId = lines.find(l => l.startsWith('Session ID:'))?.split(': ')[1] || '';
+          const patient = lines.find(l => l.startsWith('Patient:'))?.split(': ')[1] || '';
+          const duration = lines.find(l => l.startsWith('Duration:'))?.split(': ')[1] || '';
+          const dateStr = lines.find(l => l.startsWith('Date:'))?.split(': ')[1] || '';
+          
+          return {
+            filename: file,
+            sessionId,
+            patient,
+            duration,
+            date: dateStr,
+            createdAt: stats.ctime,
+            size: stats.size
+          };
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      res.json(files);
+    } catch (error) {
+      console.error('Error fetching conversation logs:', error);
+      res.status(500).json({ message: "Failed to fetch conversation logs" });
+    }
+  });
+  
+  app.get("/api/conversation-logs/:filename", async (req, res) => {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const { filename } = req.params;
+      const filepath = path.join(process.cwd(), 'conversation_logs', filename);
+      
+      if (!fs.existsSync(filepath)) {
+        return res.status(404).json({ message: "Conversation log not found" });
+      }
+      
+      const content = fs.readFileSync(filepath, 'utf8');
+      res.json({ content });
+    } catch (error) {
+      console.error('Error fetching conversation log:', error);
+      res.status(500).json({ message: "Failed to fetch conversation log" });
+    }
+  });
+  
   // Alerts endpoints
   app.get("/api/alerts/urgent", async (req, res) => {
     try {

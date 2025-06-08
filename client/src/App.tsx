@@ -7,6 +7,7 @@ import Dashboard from "@/pages/dashboard";
 import VoiceSettings from "@/pages/voice-settings";
 import Patients from "@/pages/patients";
 import RealtimePage from "@/pages/realtime";
+import ConversationLogs from "@/pages/conversation-logs";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/patients" component={Patients} />
       <Route path="/voice-settings" component={VoiceSettings} />
       <Route path="/realtime" component={RealtimePage} />
+      <Route path="/conversation-logs" component={ConversationLogs} />
       <Route component={NotFound} />
     </Switch>
   );
