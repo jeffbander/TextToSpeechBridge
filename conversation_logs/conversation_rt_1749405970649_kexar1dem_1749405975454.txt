@@ -1,0 +1,15 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749405970649_kexar1dem
+Patient: Test Patient (ID: 2)
+Call ID: 1749405970112
+Duration: 5 seconds
+Date: 2025-06-08T18:06:10.649Z
+Total Exchanges: 1
+
+─────────────────────────────────────────────────────────
+
+[6:06:14 PM] AI: Hello, this is your healthcare AI assistant calling for your post-discharge follow-up. How are you feeling today? Are you experiencing any symptoms or complications since you've been home?
+
+─────────────────────────────────────────────────────────
+End of Conversation

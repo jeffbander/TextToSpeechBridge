@@ -16,17 +16,22 @@ class AudioManager {
   }
   
   async initialize(): Promise<void> {
-    if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-        sampleRate: 24000
-      });
-      console.log('[AUDIO-MANAGER] AudioContext created, state:', this.audioContext.state);
-    }
-    
-    if (this.audioContext.state === 'suspended') {
-      console.log('[AUDIO-MANAGER] Resuming suspended AudioContext');
-      await this.audioContext.resume();
-      console.log('[AUDIO-MANAGER] AudioContext resumed, new state:', this.audioContext.state);
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+          sampleRate: 24000
+        });
+        console.log('[AUDIO-MANAGER] AudioContext created, state:', this.audioContext.state);
+      }
+      
+      if (this.audioContext.state === 'suspended') {
+        console.log('[AUDIO-MANAGER] Resuming suspended AudioContext');
+        await this.audioContext.resume();
+        console.log('[AUDIO-MANAGER] AudioContext resumed, new state:', this.audioContext.state);
+      }
+    } catch (error) {
+      console.error('[AUDIO-MANAGER] Failed to initialize AudioContext:', error);
+      throw error;
     }
   }
   
@@ -55,8 +60,14 @@ class AudioManager {
   // Play accumulated audio buffer
   async playAccumulatedAudio(): Promise<void> {
     console.log('[AUDIO-MANAGER] playAccumulatedAudio called - buffer length:', this.audioBuffer.length, 'context:', !!this.audioContext);
-    if (!this.audioContext || this.audioBuffer.length === 0) {
-      console.log('[AUDIO-MANAGER] Skipping playback - no context or empty buffer');
+    
+    if (!this.audioContext) {
+      console.log('[AUDIO-MANAGER] No AudioContext available');
+      return;
+    }
+    
+    if (this.audioBuffer.length === 0) {
+      console.log('[AUDIO-MANAGER] No audio samples to play');
       return;
     }
     
@@ -67,21 +78,31 @@ class AudioManager {
     }
     
     try {
-      await this.initialize();
+      // Ensure AudioContext is running
+      if (this.audioContext.state !== 'running') {
+        console.log('[AUDIO-MANAGER] AudioContext not running, state:', this.audioContext.state);
+        await this.audioContext.resume();
+        console.log('[AUDIO-MANAGER] AudioContext state after resume:', this.audioContext.state);
+      }
       
       // Stop any previous audio first
       this.stopCurrentAudio();
       
       // Create audio buffer from accumulated samples
       const sampleCount = this.audioBuffer.length;
+      console.log('[AUDIO-MANAGER] Creating AudioBuffer with', sampleCount, 'samples at 24kHz');
+      
       const audioBuffer = this.audioContext.createBuffer(1, sampleCount, 24000);
       const channelData = audioBuffer.getChannelData(0);
       
+      // Copy audio data with bounds checking
       for (let i = 0; i < sampleCount; i++) {
-        channelData[i] = this.audioBuffer[i];
+        const sample = this.audioBuffer[i];
+        // Clamp sample values to valid range [-1, 1]
+        channelData[i] = Math.max(-1, Math.min(1, sample));
       }
       
-      // Play the audio
+      // Create and configure audio source
       const source = this.audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(this.audioContext.destination);
@@ -92,13 +113,13 @@ class AudioManager {
       source.onended = () => {
         this.currentSource = null;
         this.isPlaying = false;
-        this.audioBuffer = [];
         console.log('[AUDIO-MANAGER] Audio playback completed');
       };
       
-      source.start();
+      // Start playback
+      source.start(0);
       const duration = (sampleCount / 24000).toFixed(1);
-      console.log('[AUDIO-MANAGER] Started playing', sampleCount, 'samples (', duration, 's)');
+      console.log('[AUDIO-MANAGER] Successfully started playing', sampleCount, 'samples (' + duration + 's)');
       
       // Clear buffer after starting playback
       this.audioBuffer = [];
@@ -106,6 +127,57 @@ class AudioManager {
     } catch (error) {
       console.error('[AUDIO-MANAGER] Playback error:', error);
       this.isPlaying = false;
+      this.currentSource = null;
+      this.audioBuffer = [];
+    }
+  }
+  
+  // Test audio playback with a simple tone
+  async testAudioPlayback(): Promise<boolean> {
+    try {
+      console.log('[AUDIO-MANAGER] Starting audio test');
+      await this.initialize();
+      
+      if (!this.audioContext) {
+        console.log('[AUDIO-MANAGER] No audio context available for test');
+        return false;
+      }
+      
+      // Generate a short test tone (440Hz for 0.5 seconds)
+      const sampleRate = 24000;
+      const duration = 0.5;
+      const frequency = 440;
+      const sampleCount = Math.floor(sampleRate * duration);
+      
+      const testBuffer = this.audioContext.createBuffer(1, sampleCount, sampleRate);
+      const channelData = testBuffer.getChannelData(0);
+      
+      for (let i = 0; i < sampleCount; i++) {
+        channelData[i] = 0.1 * Math.sin(2 * Math.PI * frequency * i / sampleRate);
+      }
+      
+      const source = this.audioContext.createBufferSource();
+      source.buffer = testBuffer;
+      source.connect(this.audioContext.destination);
+      
+      return new Promise((resolve) => {
+        source.onended = () => {
+          console.log('[AUDIO-MANAGER] Test tone playback completed successfully');
+          resolve(true);
+        };
+        
+        try {
+          source.start(0);
+          console.log('[AUDIO-MANAGER] Started test tone playback');
+        } catch (error) {
+          console.error('[AUDIO-MANAGER] Failed to start test tone:', error);
+          resolve(false);
+        }
+      });
+      
+    } catch (error) {
+      console.error('[AUDIO-MANAGER] Test playback error:', error);
+      return false;
     }
   }
   

@@ -231,6 +231,12 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         // Initialize audio manager first with user interaction context
         audioManager.initialize().then(() => {
           console.log(`[AUDIO] Audio manager initialized successfully`);
+          
+          // Test audio playback capability
+          return audioManager.testAudioPlayback();
+        }).then((testResult) => {
+          console.log(`[AUDIO] Audio test result:`, testResult);
+          
           initializeAudio();
           
           // Auto-start conversation and recording immediately after connection
