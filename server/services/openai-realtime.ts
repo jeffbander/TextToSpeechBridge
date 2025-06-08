@@ -18,6 +18,7 @@ export interface RealtimeSession {
   startedAt: Date;
   transcript: string[];
   audioBuffer: Buffer[];
+  currentResponse?: string;
 }
 
 export class OpenAIRealtimeService {
@@ -36,7 +37,8 @@ export class OpenAIRealtimeService {
       isActive: false,
       startedAt: new Date(),
       transcript: [],
-      audioBuffer: []
+      audioBuffer: [],
+      currentResponse: ''
     };
     
     this.sessions.set(sessionId, session);
@@ -163,12 +165,37 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'response.text.delta':
-        // Handle text responses if needed
+        // Handle text responses and build transcript
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
           session.websocket.send(JSON.stringify({
             type: 'text_delta',
             text: message.delta
           }));
+        }
+        // Accumulate response text for transcript
+        if (!session.currentResponse) session.currentResponse = '';
+        session.currentResponse += message.delta;
+        break;
+        
+      case 'response.audio_transcript.delta':
+        // Handle audio transcript and build complete response
+        if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
+          session.websocket.send(JSON.stringify({
+            type: 'audio_transcript_delta',
+            text: message.delta
+          }));
+        }
+        // Accumulate audio transcript for complete response
+        if (!session.currentResponse) session.currentResponse = '';
+        session.currentResponse += message.delta;
+        break;
+        
+      case 'response.done':
+        // Complete response - add to transcript
+        if (session.currentResponse && session.currentResponse.trim()) {
+          session.transcript.push(`AI: ${session.currentResponse.trim()}`);
+          console.log(`🤖 AI said: ${session.currentResponse.trim()}`);
+          session.currentResponse = '';
         }
         break;
         
