@@ -62,9 +62,11 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       console.log(`[TWILIO-INTEGRATION] Created GPT-4o session ${sessionId} for patient ${patient.name}`);
 
       // Generate Twilio webhook URL for this specific session
+      console.log(`[TWILIO-INTEGRATION] REPLIT_DOMAINS env var:`, process.env.REPLIT_DOMAINS);
       const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'https://localhost:5000';
       const webhookUrl = `${baseUrl}/api/twilio/webhook/${sessionId}`;
       
+      console.log(`[TWILIO-INTEGRATION] Base URL: ${baseUrl}`);
       console.log(`[TWILIO-INTEGRATION] Using webhook URL: ${webhookUrl}`);
       
       // Make the Twilio call
