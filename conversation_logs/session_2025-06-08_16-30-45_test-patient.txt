@@ -1,0 +1,57 @@
+CONVERSATION LOG
+================
+Session ID: test-session-123
+Patient: Test Patient
+Phone: (555) 123-4567
+Started: 2025-06-08 16:30:45
+Duration: 3m 42s
+Status: Completed
+
+TRANSCRIPT
+----------
+
+[16:30:45] AI: Hello, this is CardioCare AI calling for your post-discharge follow-up. Is this Test Patient?
+
+[16:30:48] Patient: Yes, this is me.
+
+[16:30:50] AI: Great! I'm calling to check on how you're feeling after your recent hospital visit. How are you doing today?
+
+[16:30:55] Patient: I'm feeling much better, thank you. The chest pain has mostly gone away.
+
+[16:31:02] AI: That's wonderful to hear. Are you taking your prescribed medications as directed?
+
+[16:31:05] Patient: Yes, I'm taking the blood pressure medication twice a day as instructed.
+
+[16:31:12] AI: Excellent. Have you experienced any side effects from the medication?
+
+[16:31:15] Patient: No side effects so far. I feel good.
+
+[16:31:20] AI: That's great news. Do you have any questions or concerns about your recovery?
+
+[16:31:25] Patient: Actually, yes. When can I start exercising again?
+
+[16:31:30] AI: That's an important question. For cardiac patients, we typically recommend starting with light walking after discharge. However, you should discuss a specific exercise plan with your cardiologist during your follow-up appointment. Have you scheduled that appointment yet?
+
+[16:31:45] Patient: Yes, it's scheduled for next Tuesday.
+
+[16:31:48] AI: Perfect. Please bring up your exercise questions during that visit. Is there anything else you'd like to discuss today?
+
+[16:31:55] Patient: No, I think that covers everything.
+
+[16:31:58] AI: Wonderful. Thank you for taking this call. Please don't hesitate to contact your healthcare team if you have any concerns. Take care!
+
+[16:32:02] Patient: Thank you, goodbye.
+
+[16:32:05] AI: Goodbye!
+
+SESSION SUMMARY
+--------------
+- Patient reports feeling much better
+- Chest pain has mostly resolved
+- Taking medications as prescribed with no side effects
+- Patient has questions about exercise resumption
+- Follow-up appointment scheduled for Tuesday
+- Overall positive recovery progress
+
+ALERT LEVEL: Low
+FOLLOW-UP REQUIRED: No urgent action needed
