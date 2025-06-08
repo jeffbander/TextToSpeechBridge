@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Volume2, Play, Settings, Users, TestTube2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import Navigation from "@/components/navigation";
 
 interface VoiceProfile {
   id: string;
@@ -98,7 +99,11 @@ export default function VoiceSettings() {
   const selectedProfileData = profiles.find((p: VoiceProfile) => p.id === selectedProfile);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Navigation />
+      
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0 space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Voice Settings</h1>
         <p className="text-muted-foreground">
@@ -304,6 +309,8 @@ export default function VoiceSettings() {
           )}
         </CardContent>
       </Card>
+        </div>
+      </main>
     </div>
   );
 }

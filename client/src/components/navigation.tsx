@@ -10,7 +10,7 @@ export default function Navigation() {
     { href: "/patients", label: "Patients", icon: User },
     { href: "/realtime", label: "Calls", icon: Volume2 },
     { href: "/conversation-logs", label: "Reports", icon: FileText },
-    { href: "/voice-settings", label: "Settings", icon: Settings },
+    { href: "/voice-settings", label: "Voice Settings", icon: Settings },
   ];
 
   return (
