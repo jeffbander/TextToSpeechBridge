@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Volume2, Play, Settings, Users, TestTube2, MessageSquare, Edit } from "lucide-react";
+import { Volume2, Play, Settings, Users, TestTube2, MessageSquare, Edit, Save, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -51,6 +52,8 @@ export default function VoiceSettings() {
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [selectedPromptTemplate, setSelectedPromptTemplate] = useState<string>('');
   const [editingPrompt, setEditingPrompt] = useState<PromptTemplate | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState<PromptTemplate | null>(null);
   const [testData, setTestData] = useState<TestPromptData>({
     patientName: 'John Smith',
     condition: 'cardiac monitoring',
@@ -182,7 +185,8 @@ export default function VoiceSettings() {
 
   // Button handlers
   const handleEditTemplate = (template: PromptTemplate) => {
-    setEditingPrompt(template);
+    setEditForm({ ...template });
+    setIsEditDialogOpen(true);
   };
 
   const handleCreateNewTemplate = () => {
@@ -272,12 +276,12 @@ export default function VoiceSettings() {
                       <div>
                         <h4 className="font-medium">{profile.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {profile.voice} • {profile.personality.tone}
+                          {profile.voice} • {profile.personality?.tone || 'professional'}
                         </p>
                       </div>
                       <div className="flex gap-1">
                         <Badge variant="secondary" className="text-xs">
-                          {profile.personality.pace}
+                          {profile.personality?.pace || 'normal'}
                         </Badge>
                         {profile.medicalSpecialty && (
                           <Badge variant="outline" className="text-xs">
