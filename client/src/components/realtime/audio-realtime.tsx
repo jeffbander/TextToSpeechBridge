@@ -76,15 +76,39 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const playAudioBuffer = useCallback(async (audioData: ArrayBuffer) => {
     try {
       if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
+        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       }
       
-      const audioBuffer = await audioContextRef.current.decodeAudioData(audioData);
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-      source.start();
-      console.log('[AUDIO] Playing GPT-4o voice response');
+      // Ensure audio context is running
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      
+      try {
+        // Try standard audio decoding first
+        const audioBuffer = await audioContextRef.current.decodeAudioData(audioData);
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContextRef.current.destination);
+        source.start();
+        console.log('[AUDIO] Playing GPT-4o voice response');
+      } catch (decodeError) {
+        // Fallback: handle PCM16 data manually
+        console.log('[AUDIO] Using PCM16 fallback conversion');
+        const pcmData = new Int16Array(audioData);
+        const audioBuffer = audioContextRef.current.createBuffer(1, pcmData.length, 24000);
+        const channelData = audioBuffer.getChannelData(0);
+        
+        for (let i = 0; i < pcmData.length; i++) {
+          channelData[i] = pcmData[i] / 32768.0;
+        }
+        
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContextRef.current.destination);
+        source.start();
+        console.log('[AUDIO] PCM16 audio playback successful');
+      }
     } catch (error) {
       console.error('[AUDIO] Error playing audio:', error);
     }
