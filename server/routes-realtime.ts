@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { openaiRealtimeService } from "./services/openai-realtime";
+import { twilioWebSocketHandler } from "./services/twilio-websocket";
 import { storage } from "./storage";
 import url from 'url';
 
@@ -27,6 +28,12 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
         console.log('[REALTIME] Handling realtime WebSocket upgrade');
         realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
           realtimeWss!.emit('connection', websocket, request);
+        });
+      } else if (pathname?.startsWith('/ws/twilio/')) {
+        console.log('[REALTIME] Handling Twilio WebSocket upgrade');
+        const sessionId = pathname.split('/ws/twilio/')[1];
+        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          twilioWebSocketHandler.handleTwilioWebSocket(websocket, sessionId);
         });
       } else {
         // Let other upgrade handlers (like Vite HMR) handle their requests

@@ -19,6 +19,7 @@ function Router() {
       <Route path="/voice-settings" component={VoiceSettings} />
       <Route path="/realtime" component={RealtimePage} />
       <Route path="/conversation-logs" component={ConversationLogs} />
+      <Route path="/automated-calls" component={AutomatedCallsPage} />
       <Route component={NotFound} />
     </Switch>
   );
