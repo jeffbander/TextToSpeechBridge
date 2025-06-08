@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import VoiceSettings from "@/pages/voice-settings";
+import PatientPrompts from "@/pages/patient-prompts";
 import Patients from "@/pages/patients";
 import RealtimePage from "@/pages/realtime";
 import ConversationLogs from "@/pages/conversation-logs";
