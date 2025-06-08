@@ -1,0 +1,37 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749407244389_gcogl566t
+Patient: Test Patient (ID: 2)
+Call ID: 1749407243705
+Duration: 84 seconds
+Date: 2025-06-08T18:27:24.389Z
+Total Exchanges: 10
+
+─────────────────────────────────────────────────────────
+
+[6:27:28 PM] AI: Hello, this is Dr. Smith calling. May I please speak with Test Patient? I'm calling to follow up on your recent visit and see how you are feeling. How has your recovery been going?
+
+[6:27:32 PM] AI: Yes, I can hear you. Can you hear me clearly? How have you been feeling since your last appointment?
+
+[6:27:32 PM] PATIENT: Can you hear me?
+
+
+[6:27:34 PM] AI: Hello, this is Dr. Smith. How have you been feeling since your recent visit? I'm calling to check on your recovery.
+
+[6:27:36 PM] PATIENT: EAR EARS
+
+
+[6:27:38 PM] AI: It seems there might be a connection issue. I will try to reach out again shortly to check on your recovery. Please take care, and we'll be in touch soon.
+
+[6:27:50 PM] PATIENT: I'm here, um, can you tell me if I should be taking more Tylenol if I have a headache?
+
+
+[6:27:51 PM] AI: I'm glad we got the connection working. If you're experiencing a headache, taking Tylenol can help. However, it's important not to exceed the recommended dosage on the package. How severe is your headache on a scale from 1 to 10, with 10 being the most severe?
+
+[6:28:38 PM] PATIENT: I don't know, like five?
+
+
+[6:28:42 PM] AI: A level 5 headache can be quite uncomfortable. Taking Tylenol should help manage the pain. Make sure to follow the dosage instructions on the package. Also, try to rest in a quiet, dark room and stay hydrated. If the headache persists or worsens, please contact us or seek medical attention.
+
+─────────────────────────────────────────────────────────
+End of Conversation

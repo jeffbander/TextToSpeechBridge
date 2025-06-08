@@ -30,7 +30,7 @@ export default function ConversationLogs() {
     queryKey: ['/api/conversation-logs'],
   });
 
-  const { data: logContent } = useQuery<ConversationContent>({
+  const { data: logContent, isLoading: isLoadingContent, error: contentError } = useQuery<ConversationContent>({
     queryKey: ['/api/conversation-logs', selectedLog],
     enabled: !!selectedLog,
   });
@@ -156,12 +156,17 @@ export default function ConversationLogs() {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <Dialog>
+                          <Dialog onOpenChange={(open) => {
+                            if (open) {
+                              setSelectedLog(log.filename);
+                            } else {
+                              setSelectedLog(null);
+                            }
+                          }}>
                             <DialogTrigger asChild>
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                onClick={() => setSelectedLog(log.filename)}
                               >
                                 <Eye className="h-4 w-4 mr-1" />
                                 View
@@ -173,7 +178,13 @@ export default function ConversationLogs() {
                               </DialogHeader>
                               <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
                                 <pre className="text-sm whitespace-pre-wrap">
-                                  {logContent?.content || 'Loading transcript...'}
+                                  {selectedLog === log.filename ? (
+                                    isLoadingContent ? 
+                                      'Loading transcript...' : 
+                                      contentError ? 
+                                        `Error loading transcript: ${contentError.message}` :
+                                        logContent?.content || 'No content available'
+                                  ) : 'Loading transcript...'}
                                 </pre>
                               </ScrollArea>
                             </DialogContent>

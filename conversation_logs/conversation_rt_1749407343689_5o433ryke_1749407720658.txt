@@ -1,0 +1,35 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749407343689_5o433ryke
+Patient: Test Patient (ID: 2)
+Call ID: 1749407343149
+Duration: 377 seconds
+Date: 2025-06-08T18:29:03.689Z
+Total Exchanges: 9
+
+─────────────────────────────────────────────────────────
+
+[6:29:07 PM] AI: Hello! This is your follow-up call from the healthcare team. How have you been feeling since your last appointment, Test Patient? Is your recovery going as expected?
+
+[6:29:25 PM] PATIENT: Yeah, yeah, I'm doing pretty well.
+
+
+[6:29:28 PM] AI: That's great to hear! Have you experienced any new or worsening symptoms since our last conversation? And is there anything specific you'd like to discuss or any concerns you have?
+
+[6:29:41 PM] PATIENT: I've fainted a few times.
+
+
+[6:29:43 PM] AI: I'm sorry to hear about the fatigue. It's quite common during recovery. Have you noticed if certain activities or times of day make it worse? And are you able to get restful sleep at night? This information can help us understand what might be contributing to your fatigue.
+
+[6:29:46 PM] PATIENT: I've fainted this time, and, uh, n-n-n-n-n-n-n-not
+
+
+[6:29:49 PM] AI: It sounds like you're experiencing more fatigue in the afternoon. This could be your body's way of signaling for rest. Have you been able to take short breaks or naps when you feel this way? Also, could you share if you’re keeping up with meals and hydration, as these can also impact energy levels?
+
+[6:30:54 PM] PATIENT: video. And, I will see you back here next week.
+
+
+[6:30:56 PM] AI: It's understandable that you might not always have an appetite, but skipping meals can definitely contribute to fatigue. Try to have small, nutritious snacks throughout the day, even if you're not feeling very hungry. Have you found any particular foods or drinks that are easier for you to consume when you don't have much appetite? And how's your water intake been? Staying hydrated is crucial.
+
+─────────────────────────────────────────────────────────
+End of Conversation
