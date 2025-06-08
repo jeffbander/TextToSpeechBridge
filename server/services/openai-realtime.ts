@@ -119,6 +119,37 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       };
       
       openaiWs.send(JSON.stringify(sessionConfig));
+      
+      // Start the conversation immediately after session config
+      setTimeout(() => {
+        const conversationStarter = {
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [
+              {
+                type: 'input_text',
+                text: `Start the healthcare follow-up call for ${session.patientName}. Begin with a warm greeting and ask about their recovery.`
+              }
+            ]
+          }
+        };
+        
+        openaiWs.send(JSON.stringify(conversationStarter));
+        
+        // Trigger response generation
+        const responseCreate = {
+          type: 'response.create',
+          response: {
+            modalities: ['text', 'audio'],
+            instructions: 'After your greeting, wait for the patient to respond. Do not end the conversation immediately.'
+          }
+        };
+        
+        openaiWs.send(JSON.stringify(responseCreate));
+      }, 1000);
+      
       session.isActive = true;
     });
     
