@@ -23,6 +23,9 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sessionInitializedRef = useRef(false);
+  const audioQueueRef = useRef<Uint8Array[]>([]);
+  const isPlayingRef = useRef(false);
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const { toast } = useToast();
 
   // Auto-start session when component mounts
@@ -96,12 +99,29 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         await audioContextRef.current.resume();
       }
       
+      // Stop any currently playing audio to prevent overlaps
+      if (currentSourceRef.current) {
+        try {
+          currentSourceRef.current.stop();
+        } catch (e) {
+          // Source may already be stopped
+        }
+        currentSourceRef.current = null;
+      }
+
       try {
         // Try standard audio decoding first
         const audioBuffer = await audioContextRef.current.decodeAudioData(audioData);
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContextRef.current.destination);
+        
+        // Track the current source to prevent overlaps
+        currentSourceRef.current = source;
+        source.onended = () => {
+          currentSourceRef.current = null;
+        };
+        
         source.start();
         console.log('[AUDIO] Playing GPT-4o voice response');
       } catch (decodeError) {
@@ -118,6 +138,13 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContextRef.current.destination);
+        
+        // Track the current source to prevent overlaps
+        currentSourceRef.current = source;
+        source.onended = () => {
+          currentSourceRef.current = null;
+        };
+        
         source.start();
         console.log('[AUDIO] PCM16 audio playback successful');
       }
