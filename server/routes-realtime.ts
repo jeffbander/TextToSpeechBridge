@@ -80,6 +80,9 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
                 timestamp: new Date().toISOString()
               }));
             }
+            
+            // Forward all other messages to OpenAI realtime service
+            // The service will handle audio processing and conversation flow
           } catch (error) {
             console.error(`[REALTIME-WS] Message parse error:`, error);
           }

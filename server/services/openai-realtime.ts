@@ -89,6 +89,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           voice: 'alloy',
           input_audio_format: 'pcm16',
           output_audio_format: 'pcm16',
+          sample_rate: 24000,
           input_audio_transcription: {
             model: 'whisper-1'
           },
@@ -227,9 +228,14 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         // Convert PCM16 audio data for OpenAI real-time API
         if (session.openaiWs.readyState === WebSocket.OPEN && message.audio) {
           try {
-            // Convert audio array to Int16Array PCM16 format
-            const pcm16Array = new Int16Array(message.audio);
-            const audioBuffer = Buffer.from(pcm16Array.buffer);
+            // Create proper 16-bit PCM buffer from audio samples
+            const audioBuffer = Buffer.alloc(message.audio.length * 2);
+            for (let i = 0; i < message.audio.length; i++) {
+              // Clamp to 16-bit signed integer range and write as little-endian
+              const sample = Math.max(-32768, Math.min(32767, Math.floor(message.audio[i])));
+              audioBuffer.writeInt16LE(sample, i * 2);
+            }
+            
             const audioBase64 = audioBuffer.toString('base64');
             
             session.openaiWs.send(JSON.stringify({
@@ -237,7 +243,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
               audio: audioBase64
             }));
             
-            console.log(`🎵 Audio chunk sent to OpenAI (${message.audio.length} samples) for session ${sessionId}`);
+            console.log(`🎵 Audio chunk sent to OpenAI (${message.audio.length} samples, ${audioBuffer.length} bytes) for session ${sessionId}`);
           } catch (error) {
             console.error(`❌ Error processing audio for session ${sessionId}:`, error);
           }
