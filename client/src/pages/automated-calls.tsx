@@ -1,0 +1,321 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Phone, Clock, User, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import Navigation from '@/components/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+
+interface Patient {
+  id: number;
+  name: string;
+  phoneNumber: string;
+  condition: string;
+}
+
+interface AutomatedCall {
+  id: number;
+  patientId: number;
+  status: string;
+  callType: string;
+  duration: number | null;
+  twilioCallSid: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  metadata: {
+    urgencyLevel?: string;
+    visitReason?: string;
+    medications?: string[];
+  };
+}
+
+export default function AutomatedCallsPage() {
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [urgencyLevel, setUrgencyLevel] = useState<string>('medium');
+  const [visitReason, setVisitReason] = useState<string>('');
+  const [medications, setMedications] = useState<string>('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: patients = [], isLoading: patientsLoading } = useQuery<Patient[]>({
+    queryKey: ['/api/patients'],
+  });
+
+  const { data: automatedCalls = [], isLoading: callsLoading } = useQuery<AutomatedCall[]>({
+    queryKey: ['/api/twilio/automated-calls'],
+  });
+
+  const startCallMutation = useMutation({
+    mutationFn: async (callData: any) => {
+      const response = await apiRequest('POST', '/api/twilio/call-patient', callData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Call Initiated",
+        description: `Automated call started for patient. Call ID: ${data.callId}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/twilio/automated-calls'] });
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Call Failed",
+        description: error.message || "Failed to start automated call",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetForm = () => {
+    setSelectedPatientId(null);
+    setUrgencyLevel('medium');
+    setVisitReason('');
+    setMedications('');
+  };
+
+  const handleStartCall = () => {
+    if (!selectedPatientId) {
+      toast({
+        title: "Patient Required",
+        description: "Please select a patient before starting the call",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const medicationList = medications
+      .split(',')
+      .map(med => med.trim())
+      .filter(med => med.length > 0);
+
+    startCallMutation.mutate({
+      patientId: selectedPatientId,
+      urgencyLevel,
+      visitReason: visitReason || undefined,
+      medications: medicationList.length > 0 ? medicationList : undefined,
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>;
+      case 'in-progress':
+      case 'answered':
+        return <Badge className="bg-blue-500"><Phone className="w-3 h-3 mr-1" />In Progress</Badge>;
+      case 'failed':
+      case 'busy':
+      case 'no-answer':
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
+      case 'calling':
+      case 'ringing':
+        return <Badge className="bg-yellow-500"><Phone className="w-3 h-3 mr-1" />Calling</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const getUrgencyBadge = (urgency: string) => {
+    switch (urgency) {
+      case 'critical':
+        return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Critical</Badge>;
+      case 'high':
+        return <Badge className="bg-orange-500"><AlertTriangle className="w-3 h-3 mr-1" />High</Badge>;
+      case 'medium':
+        return <Badge className="bg-blue-500">Medium</Badge>;
+      case 'low':
+        return <Badge variant="secondary">Low</Badge>;
+      default:
+        return <Badge variant="secondary">{urgency}</Badge>;
+    }
+  };
+
+  const selectedPatient = patients.find(p => p.id === selectedPatientId);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      
+      <main className="container mx-auto px-4 py-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Automated Patient Calls</h1>
+            <p className="text-muted-foreground">
+              AI-powered patient follow-up calls using GPT-4o and Twilio integration
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Phone className="h-8 w-8 text-blue-600" />
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Start New Automated Call</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="w-full">
+                  <Phone className="w-4 h-4 mr-2" />
+                  Initiate Automated Patient Call
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Configure Automated Call</DialogTitle>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="patient">Select Patient</Label>
+                    <Select value={selectedPatientId?.toString() || ''} onValueChange={(value) => setSelectedPatientId(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a patient" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {patients.map((patient) => (
+                          <SelectItem key={patient.id} value={patient.id.toString()}>
+                            {patient.name} - {patient.condition}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="urgency">Urgency Level</Label>
+                    <Select value={urgencyLevel} onValueChange={setUrgencyLevel}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low - Routine Check-in</SelectItem>
+                        <SelectItem value="medium">Medium - Standard Follow-up</SelectItem>
+                        <SelectItem value="high">High - Important Follow-up</SelectItem>
+                        <SelectItem value="critical">Critical - Urgent Medical Concern</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="visit-reason">Recent Visit Reason (Optional)</Label>
+                    <Input
+                      id="visit-reason"
+                      value={visitReason}
+                      onChange={(e) => setVisitReason(e.target.value)}
+                      placeholder="e.g., Cardiac consultation, medication adjustment"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="medications">Current Medications (Optional)</Label>
+                    <Textarea
+                      id="medications"
+                      value={medications}
+                      onChange={(e) => setMedications(e.target.value)}
+                      placeholder="Enter medications separated by commas"
+                      className="h-20"
+                    />
+                  </div>
+
+                  {selectedPatient && (
+                    <div className="p-3 bg-muted rounded-lg">
+                      <h4 className="font-medium">Selected Patient:</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedPatient.name} - {selectedPatient.phoneNumber}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Condition: {selectedPatient.condition}
+                      </p>
+                    </div>
+                  )}
+
+                  <Button 
+                    onClick={handleStartCall} 
+                    disabled={startCallMutation.isPending || !selectedPatientId}
+                    className="w-full"
+                  >
+                    {startCallMutation.isPending ? 'Initiating Call...' : 'Start Automated Call'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
+
+        {/* Call History */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Automated Calls</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {callsLoading ? (
+              <div className="text-center py-8">Loading call history...</div>
+            ) : automatedCalls.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Phone className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No automated calls found</p>
+                <p className="text-sm">Start your first automated patient call above</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {automatedCalls.map((call) => {
+                  const patient = patients.find(p => p.id === call.patientId);
+                  return (
+                    <div key={call.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium">{patient?.name || 'Unknown Patient'}</span>
+                            {call.metadata.urgencyLevel && getUrgencyBadge(call.metadata.urgencyLevel)}
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(call.startedAt), 'MMM d, yyyy h:mm a')}
+                            </div>
+                            {call.duration && (
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {call.duration}s
+                              </div>
+                            )}
+                            {call.metadata.visitReason && (
+                              <div className="text-xs bg-muted px-2 py-1 rounded">
+                                {call.metadata.visitReason}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(call.status)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}

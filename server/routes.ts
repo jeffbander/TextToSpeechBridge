@@ -9,6 +9,7 @@ import { promptManager } from "./services/prompt-manager";
 import { insertScheduledCallSchema, insertAlertSchema } from "@shared/schema";
 import { registerCallingRoutes } from "./routes-calling";
 import { registerRealtimeRoutes } from "./routes-realtime";
+import { registerTwilioIntegrationRoutes } from "./routes-twilio-integration";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -22,6 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register isolated route modules
   registerCallingRoutes(app, httpServer);
   registerRealtimeRoutes(app, httpServer);
+  registerTwilioIntegrationRoutes(app);
 
   // Shared endpoints that don't belong to calling or realtime modules
   

@@ -22,12 +22,14 @@ export const calls = pgTable("calls", {
   id: serial("id").primaryKey(),
   patientId: integer("patient_id").references(() => patients.id).notNull(),
   status: text("status").notNull(), // active, completed, failed, escalated
+  callType: text("call_type").default("manual"), // manual, automated_gpt4o, scheduled
   duration: integer("duration"), // in seconds
   outcome: text("outcome"), // routine, urgent, escalated, etc.
   transcript: text("transcript"),
   aiAnalysis: jsonb("ai_analysis"), // GPT analysis of call
   alertLevel: text("alert_level"), // none, warning, urgent
   customPrompt: text("custom_prompt"), // Store custom prompt separately
+  metadata: jsonb("metadata"), // Additional call metadata
   startedAt: timestamp("started_at").defaultNow(),
   completedAt: timestamp("completed_at"),
   twilioCallSid: text("twilio_call_sid"),

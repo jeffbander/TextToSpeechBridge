@@ -8,6 +8,7 @@ import VoiceSettings from "@/pages/voice-settings";
 import Patients from "@/pages/patients";
 import RealtimePage from "@/pages/realtime";
 import ConversationLogs from "@/pages/conversation-logs";
+import AutomatedCallsPage from "@/pages/automated-calls";
 import NotFound from "@/pages/not-found";
 
 function Router() {
