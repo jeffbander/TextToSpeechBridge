@@ -101,10 +101,13 @@ export default function VoiceSettings() {
   // Create prompt template mutation
   const createTemplateMutation = useMutation({
     mutationFn: async (template: Omit<PromptTemplate, 'id'>) => {
-      return apiRequest('/api/prompt-templates', {
+      const response = await fetch('/api/prompt-templates', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(template)
       });
+      if (!response.ok) throw new Error('Failed to create template');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/prompt-templates'] });
@@ -125,10 +128,13 @@ export default function VoiceSettings() {
   // Update prompt template mutation
   const updateTemplateMutation = useMutation({
     mutationFn: async ({ id, ...template }: PromptTemplate) => {
-      return apiRequest(`/api/prompt-templates/${id}`, {
+      const response = await fetch(`/api/prompt-templates/${id}`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(template)
       });
+      if (!response.ok) throw new Error('Failed to update template');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/prompt-templates'] });
@@ -150,10 +156,13 @@ export default function VoiceSettings() {
   // Test prompt template mutation
   const testTemplateMutation = useMutation({
     mutationFn: async ({ templateId, patientName }: { templateId: string, patientName: string }) => {
-      return apiRequest('/api/prompt-templates/test', {
+      const response = await fetch('/api/prompt-templates/test', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ templateId, patientName, condition: 'test', urgencyLevel: 'medium' })
       });
+      if (!response.ok) throw new Error('Failed to test template');
+      return response.json();
     },
     onSuccess: (result) => {
       setTestResult(result);
@@ -445,94 +454,70 @@ export default function VoiceSettings() {
         <CardContent className="space-y-6">
           {/* Prompt Templates List */}
           <div className="grid gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Cardiac Surgery Template */}
-              <Card className="border-2 hover:border-blue-200 cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm">Cardiac Surgery Follow-up</CardTitle>
-                    <Badge variant="secondary">Medium</Badge>
-                  </div>
-                  <CardDescription className="text-xs">
-                    Post-operative cardiac surgery patients
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">Initial Greeting:</div>
-                    <div className="text-xs bg-gray-50 p-2 rounded border">
-                      "Hello [Patient], this is your healthcare assistant calling for your follow-up after your recent cardiac surgery. How have you been feeling since your visit?"
-                    </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <Badge variant="outline" className="text-xs">5 follow-up questions</Badge>
-                      <Button variant="ghost" size="sm" className="h-6 px-2">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Diabetes Management Template */}
-              <Card className="border-2 hover:border-green-200 cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm">Diabetes Management</CardTitle>
-                    <Badge variant="secondary">Medium</Badge>
-                  </div>
-                  <CardDescription className="text-xs">
-                    Diabetes monitoring and medication adherence
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">Initial Greeting:</div>
-                    <div className="text-xs bg-gray-50 p-2 rounded border">
-                      "Hello [Patient], this is your diabetes care team checking in. How have your blood sugar levels been lately?"
-                    </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <Badge variant="outline" className="text-xs">4 follow-up questions</Badge>
-                      <Button variant="ghost" size="sm" className="h-6 px-2">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Urgent Care Template */}
-              <Card className="border-2 hover:border-red-200 cursor-pointer">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm">Urgent Follow-up</CardTitle>
-                    <Badge variant="destructive">Critical</Badge>
-                  </div>
-                  <CardDescription className="text-xs">
-                    High-priority patient concerns requiring immediate attention
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-2">
-                    <div className="text-xs text-muted-foreground">Initial Greeting:</div>
-                    <div className="text-xs bg-gray-50 p-2 rounded border">
-                      "Hello [Patient], this is your healthcare team calling urgently. We need to check on you immediately. How are you feeling right now?"
-                    </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <Badge variant="outline" className="text-xs">3 escalation triggers</Badge>
-                      <Button variant="ghost" size="sm" className="h-6 px-2">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {templatesLoading ? (
+              <div className="text-center py-8">Loading templates...</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {promptTemplates.map((template) => (
+                  <Card key={template.id} className="border-2 hover:border-blue-200 cursor-pointer">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm">{template.name}</CardTitle>
+                        <Badge variant={template.urgencyLevel === 'critical' ? 'destructive' : 'secondary'}>
+                          {template.urgencyLevel}
+                        </Badge>
+                      </div>
+                      <CardDescription className="text-xs">
+                        {template.condition}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Initial Greeting:</div>
+                        <div className="text-xs bg-gray-50 p-2 rounded border">
+                          "{template.initialGreeting}"
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          <Badge variant="outline" className="text-xs">
+                            {template.followUpQuestions.length} follow-up questions
+                          </Badge>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 px-2"
+                              onClick={() => handleTestTemplate(template.id)}
+                              disabled={testTemplateMutation.isPending}
+                            >
+                              <TestTube2 className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 px-2"
+                              onClick={() => handleEditTemplate(template)}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
             {/* Create New Template Button */}
             <div className="flex justify-center pt-4">
-              <Button variant="outline" className="w-full max-w-md">
+              <Button 
+                variant="outline" 
+                className="w-full max-w-md"
+                onClick={handleCreateNewTemplate}
+                disabled={createTemplateMutation.isPending}
+              >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Create New Prompt Template
+                {createTemplateMutation.isPending ? 'Creating...' : 'Create New Prompt Template'}
               </Button>
             </div>
           </div>
