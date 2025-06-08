@@ -162,6 +162,12 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         clearTimeout(connectionTimeout);
         setStatus('connected');
         initializeAudio();
+        
+        // Start conversation immediately when connected
+        websocket.send(JSON.stringify({
+          type: 'start_conversation'
+        }));
+        
         toast({
           title: "Connected",
           description: "GPT-4o voice session active"
@@ -240,11 +246,6 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       console.log('[AUDIO] Recording stopped');
     } else {
       setIsRecording(true);
-      
-      wsRef.current.send(JSON.stringify({
-        type: 'start_conversation'
-      }));
-      
       console.log('[AUDIO] Recording started');
     }
   };
