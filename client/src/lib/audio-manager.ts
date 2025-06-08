@@ -20,10 +20,13 @@ class AudioManager {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 24000
       });
+      console.log('[AUDIO-MANAGER] AudioContext created, state:', this.audioContext.state);
     }
     
     if (this.audioContext.state === 'suspended') {
+      console.log('[AUDIO-MANAGER] Resuming suspended AudioContext');
       await this.audioContext.resume();
+      console.log('[AUDIO-MANAGER] AudioContext resumed, new state:', this.audioContext.state);
     }
   }
   
@@ -51,7 +54,11 @@ class AudioManager {
   
   // Play accumulated audio buffer
   async playAccumulatedAudio(): Promise<void> {
-    if (!this.audioContext || this.audioBuffer.length === 0) return;
+    console.log('[AUDIO-MANAGER] playAccumulatedAudio called - buffer length:', this.audioBuffer.length, 'context:', !!this.audioContext);
+    if (!this.audioContext || this.audioBuffer.length === 0) {
+      console.log('[AUDIO-MANAGER] Skipping playback - no context or empty buffer');
+      return;
+    }
     
     // Prevent overlapping audio playback
     if (this.isPlaying) {
@@ -90,9 +97,10 @@ class AudioManager {
       };
       
       source.start();
-      console.log(`[AUDIO-MANAGER] Playing ${sampleCount} samples`);
+      const duration = (sampleCount / 24000).toFixed(1);
+      console.log('[AUDIO-MANAGER] Started playing', sampleCount, 'samples (', duration, 's)');
       
-      // Clear buffer after playing
+      // Clear buffer after starting playback
       this.audioBuffer = [];
       
     } catch (error) {

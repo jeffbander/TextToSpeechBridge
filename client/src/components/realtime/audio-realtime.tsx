@@ -264,7 +264,15 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
               
             } else if (message.type === 'audio_done') {
               console.log(`[AUDIO] ${timestamp} Audio complete - playing accumulated audio`);
-              playAccumulatedAudio();
+              
+              // Initialize audio context first, then play
+              audioManager.initialize().then(() => {
+                return playAccumulatedAudio();
+              }).then(() => {
+                console.log(`[AUDIO] Playback initiated successfully`);
+              }).catch((error) => {
+                console.error(`[AUDIO] Playback initiation failed:`, error);
+              });
               
               // Enable recording for patient response after AI finishes speaking
               setTimeout(() => {
