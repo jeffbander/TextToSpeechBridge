@@ -498,10 +498,57 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         });
         
         console.log(`─────────────────────────────────────────────────────────\n`);
+        
+        // Save transcript to file
+        await this.saveTranscriptToFile(session);
       }
       
     } catch (error) {
       console.error(`❌ Error saving session data:`, error);
+    }
+  }
+  
+  private async saveTranscriptToFile(session: RealtimeSession) {
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      const duration = Date.now() - session.startedAt.getTime();
+      const filename = `conversation_${session.id}_${Date.now()}.txt`;
+      const filepath = path.join(process.cwd(), 'conversation_logs', filename);
+      
+      // Ensure directory exists
+      const dir = path.dirname(filepath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // Build transcript content
+      let content = `HEALTHCARE CONVERSATION TRANSCRIPT\n`;
+      content += `=====================================\n`;
+      content += `Session ID: ${session.id}\n`;
+      content += `Patient: ${session.patientName} (ID: ${session.patientId})\n`;
+      content += `Call ID: ${session.callId}\n`;
+      content += `Duration: ${Math.round(duration / 1000)} seconds\n`;
+      content += `Date: ${session.startedAt.toISOString()}\n`;
+      content += `Total Exchanges: ${session.conversationLog.length}\n`;
+      content += `\n─────────────────────────────────────────────────────────\n\n`;
+      
+      session.conversationLog.forEach((entry, index) => {
+        const timestamp = entry.timestamp.toLocaleTimeString();
+        const speaker = entry.speaker === 'ai' ? 'AI' : 'PATIENT';
+        content += `[${timestamp}] ${speaker}: ${entry.text}\n\n`;
+      });
+      
+      content += `─────────────────────────────────────────────────────────\n`;
+      content += `End of Conversation\n`;
+      
+      // Write to file
+      fs.writeFileSync(filepath, content, 'utf8');
+      console.log(`📄 Conversation saved to file: ${filename}`);
+      
+    } catch (error) {
+      console.error(`❌ Error saving transcript to file:`, error);
     }
   }
   
