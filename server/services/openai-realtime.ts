@@ -113,7 +113,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
             type: 'server_vad',
             threshold: 0.5,
             prefix_padding_ms: 300,
-            silence_duration_ms: 200
+            silence_duration_ms: 1000
           }
         }
       };
