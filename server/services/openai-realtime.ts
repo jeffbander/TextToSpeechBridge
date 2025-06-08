@@ -190,6 +190,11 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     const session = this.sessions.get(sessionId);
     if (!session) return;
     
+    // Debug log all message types for conversation tracking
+    if (message.type !== 'response.audio.delta') {
+      console.log(`[OPENAI-EVENT] ${sessionId}: ${message.type}`);
+    }
+    
     switch (message.type) {
       case 'session.created':
         console.log(`✅ OpenAI session created for ${sessionId}`);
@@ -230,6 +235,16 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           text: transcript
         });
         console.log(`🎤 Patient said: ${transcript}`);
+        
+        // Also log to conversation summary
+        console.log(`[CONVERSATION] Patient in session ${sessionId}: "${transcript}"`);
+        
+        // Output ongoing conversation log in real-time
+        console.log(`\n📱 LIVE CONVERSATION UPDATE - Session ${sessionId}`);
+        console.log(`👤 Patient: ${session.patientName}`);
+        console.log(`💬 Latest: "${transcript}"`);
+        console.log(`📊 Total exchanges: ${session.conversationLog.length}`);
+        console.log(`─────────────────────────────────────────\n`);
         break;
         
       case 'response.text.delta':
@@ -269,6 +284,14 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
             text: aiResponse
           });
           console.log(`🤖 AI said: ${aiResponse}`);
+          
+          // Real-time conversation update for AI responses
+          console.log(`\n🤖 AI RESPONSE - Session ${sessionId}`);
+          console.log(`👤 Patient: ${session.patientName}`);
+          console.log(`💬 AI: "${aiResponse}"`);
+          console.log(`📊 Total exchanges: ${session.conversationLog.length}`);
+          console.log(`─────────────────────────────────────────\n`);
+          
           session.currentResponse = '';
         }
         // Keep session alive - don't close after response
