@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Phone, Clock, User, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Phone, Clock, User, AlertTriangle, CheckCircle, XCircle, MessageSquare, TestTube2 } from 'lucide-react';
 import { format } from 'date-fns';
 import Navigation from '@/components/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +42,9 @@ export default function AutomatedCallsPage() {
   const [urgencyLevel, setUrgencyLevel] = useState<string>('medium');
   const [visitReason, setVisitReason] = useState<string>('');
   const [medications, setMedications] = useState<string>('');
+  const [customInstructions, setCustomInstructions] = useState<string>('');
+  const [useCustomPrompt, setUseCustomPrompt] = useState<boolean>(false);
+  const [generatedPrompt, setGeneratedPrompt] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const { toast } = useToast();
@@ -78,11 +81,52 @@ export default function AutomatedCallsPage() {
     },
   });
 
+  // Generate custom prompt for selected patient
+  const generatePromptMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedPatientId) throw new Error('No patient selected');
+      
+      const medicationList = medications.split(',').map(m => m.trim()).filter(Boolean);
+      
+      const response = await fetch(`/api/patients/${selectedPatientId}/generate-prompt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: selectedPatientId,
+          recentVisitReason: visitReason,
+          customMedications: medicationList,
+          urgencyLevel,
+          customInstructions
+        })
+      });
+      if (!response.ok) throw new Error('Failed to generate prompt');
+      return response.json();
+    },
+    onSuccess: (prompt) => {
+      setGeneratedPrompt(prompt);
+      setUseCustomPrompt(true);
+      toast({
+        title: "Custom Prompt Generated",
+        description: `Personalized conversation script created for ${prompt.patientName}`
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Prompt Generation Failed",
+        description: "Could not generate custom prompt",
+        variant: "destructive"
+      });
+    }
+  });
+
   const resetForm = () => {
     setSelectedPatientId(null);
     setUrgencyLevel('medium');
     setVisitReason('');
     setMedications('');
+    setCustomInstructions('');
+    setUseCustomPrompt(false);
+    setGeneratedPrompt(null);
   };
 
   const handleStartCall = () => {
@@ -105,6 +149,9 @@ export default function AutomatedCallsPage() {
       urgencyLevel,
       visitReason: visitReason || undefined,
       medications: medicationList.length > 0 ? medicationList : undefined,
+      customInstructions: customInstructions || undefined,
+      useCustomPrompt,
+      generatedPrompt: useCustomPrompt ? generatedPrompt : undefined,
     });
   };
 
@@ -230,6 +277,64 @@ export default function AutomatedCallsPage() {
                       placeholder="Enter medications separated by commas"
                       className="h-20"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="instructions">Special Instructions (Optional)</Label>
+                    <Textarea
+                      id="instructions"
+                      value={customInstructions}
+                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      placeholder="Any special considerations for this patient..."
+                      className="h-16"
+                    />
+                  </div>
+
+                  {/* Custom Prompt Section */}
+                  <div className="border rounded-lg p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-medium">AI Conversation Script</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generatePromptMutation.mutate()}
+                        disabled={!selectedPatientId || generatePromptMutation.isPending}
+                      >
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        {generatePromptMutation.isPending ? 'Generating...' : 'Generate Custom Prompt'}
+                      </Button>
+                    </div>
+                    
+                    {generatedPrompt && useCustomPrompt && (
+                      <div className="bg-green-50 border border-green-200 rounded p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">
+                            Custom prompt ready for {generatedPrompt.patientName}
+                          </span>
+                        </div>
+                        <div className="text-xs text-green-700">
+                          Personalized greeting, {generatedPrompt.followUpQuestions?.length || 0} follow-up questions, 
+                          and {generatedPrompt.escalationTriggers?.length || 0} escalation triggers configured.
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 text-green-700 hover:text-green-800"
+                          onClick={() => setUseCustomPrompt(false)}
+                        >
+                          Use Standard Prompt Instead
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {!useCustomPrompt && (
+                      <div className="text-xs text-muted-foreground">
+                        Standard GPT-4o conversation script will be used. Generate a custom prompt for more personalized interactions.
+                      </div>
+                    )}
                   </div>
 
                   {selectedPatient && (
