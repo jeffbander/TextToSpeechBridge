@@ -10,6 +10,7 @@ import { insertScheduledCallSchema, insertAlertSchema } from "@shared/schema";
 import { registerCallingRoutes } from "./routes-calling";
 import { registerRealtimeRoutes } from "./routes-realtime";
 import { registerTwilioIntegrationRoutes } from "./routes-twilio-integration";
+import { registerPromptTemplateRoutes } from "./routes-prompt-templates";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -364,6 +365,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send('Error');
     }
   });
+
+  // Register prompt template management routes
+  registerPromptTemplateRoutes(app);
 
   return httpServer;
 }

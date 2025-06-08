@@ -65,6 +65,12 @@ export default function VoiceSettings() {
     enabled: true
   });
 
+  // Fetch prompt templates
+  const { data: promptTemplates = [], isLoading: templatesLoading } = useQuery<PromptTemplate[]>({
+    queryKey: ['/api/prompt-templates'],
+    enabled: true
+  });
+
   // Test prompt generation
   const testPromptMutation = useMutation({
     mutationFn: async (data: TestPromptData) => {
@@ -91,6 +97,108 @@ export default function VoiceSettings() {
       });
     }
   });
+
+  // Create prompt template mutation
+  const createTemplateMutation = useMutation({
+    mutationFn: async (template: Omit<PromptTemplate, 'id'>) => {
+      return apiRequest('/api/prompt-templates', {
+        method: 'POST',
+        body: JSON.stringify(template)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/prompt-templates'] });
+      toast({
+        title: "Template Created",
+        description: "New prompt template created successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Creation Failed",
+        description: "Could not create prompt template",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update prompt template mutation
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, ...template }: PromptTemplate) => {
+      return apiRequest(`/api/prompt-templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(template)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/prompt-templates'] });
+      setEditingPrompt(null);
+      toast({
+        title: "Template Updated",
+        description: "Prompt template updated successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Could not update prompt template",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Test prompt template mutation
+  const testTemplateMutation = useMutation({
+    mutationFn: async ({ templateId, patientName }: { templateId: string, patientName: string }) => {
+      return apiRequest('/api/prompt-templates/test', {
+        method: 'POST',
+        body: JSON.stringify({ templateId, patientName, condition: 'test', urgencyLevel: 'medium' })
+      });
+    },
+    onSuccess: (result) => {
+      setTestResult(result);
+      toast({
+        title: "Template Tested",
+        description: "Prompt template tested successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Test Failed",
+        description: "Could not test prompt template",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Button handlers
+  const handleEditTemplate = (template: PromptTemplate) => {
+    setEditingPrompt(template);
+  };
+
+  const handleCreateNewTemplate = () => {
+    const newTemplate: Omit<PromptTemplate, 'id'> = {
+      name: 'New Template',
+      condition: 'General',
+      urgencyLevel: 'medium',
+      systemPrompt: 'You are a healthcare AI assistant conducting a patient follow-up call.',
+      initialGreeting: 'Hello [Patient], this is your healthcare team calling to check on you.',
+      followUpQuestions: ['How are you feeling today?'],
+      escalationTriggers: ['severe pain', 'difficulty breathing']
+    };
+    createTemplateMutation.mutate(newTemplate);
+  };
+
+  const handleSaveTemplate = (template: PromptTemplate) => {
+    updateTemplateMutation.mutate(template);
+  };
+
+  const handleTestTemplate = (templateId: string) => {
+    testTemplateMutation.mutate({ 
+      templateId, 
+      patientName: testData.patientName || 'John Smith' 
+    });
+  };
 
   const handleTestPrompt = () => {
     const profileId = testData.voiceProfileId || selectedProfile;
