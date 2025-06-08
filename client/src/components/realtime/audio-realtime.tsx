@@ -15,6 +15,7 @@ interface AudioRealtimeProps {
 export default function AudioRealtime({ patientId, patientName, callId, onEnd }: AudioRealtimeProps) {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
   const [isRecording, setIsRecording] = useState(false);
+  const isRecordingRef = useRef(false);
   const [conversationStarted, setConversationStarted] = useState(false);
   const [transcript, setTranscript] = useState<string[]>([]);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -30,6 +31,12 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const silenceCountRef = useRef(0);
   const lastAudioTimeRef = useRef<number>(0);
   const { toast } = useToast();
+
+  const updateRecordingState = useCallback((recording: boolean) => {
+    setIsRecording(recording);
+    isRecordingRef.current = recording;
+    console.log(`[AUDIO] Recording state updated: ${recording}`);
+  }, []);
 
   // Auto-start session when component mounts
   useEffect(() => {
@@ -74,7 +81,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           console.log(`[AUDIO] Processor: WS=${wsRef.current?.readyState}, Recording=${isRecording}, Level=${audioLevel.toFixed(4)}`);
         }
         
-        if (wsRef.current?.readyState === WebSocket.OPEN && isRecording) {
+        if (wsRef.current?.readyState === WebSocket.OPEN && isRecordingRef.current) {
           if (audioLevel > 0.001) {
             console.log(`[AUDIO] Voice detected - level: ${audioLevel.toFixed(4)}`);
           }
@@ -265,7 +272,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         setTimeout(() => {
           console.log(`[AUDIO] ${new Date().toISOString()} Auto-starting conversation after 1s delay`);
           startConversation();
-          setIsRecording(true);
+          updateRecordingState(true);
         }, 1000);
         
         toast({
@@ -299,7 +306,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
               
               // Enable recording for patient response after AI finishes speaking
               setTimeout(() => {
-                setIsRecording(true);
+                updateRecordingState(true);
                 console.log(`[AUDIO] Recording enabled for patient response`);
               }, 500);
               
