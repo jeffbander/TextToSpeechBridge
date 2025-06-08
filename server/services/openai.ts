@@ -69,9 +69,22 @@ export class OpenAIService {
   async analyzePatientResponse(
     transcript: string, 
     patientCondition: string,
-    conversationHistory: CallTranscription[]
+    conversationHistory: CallTranscription[] = []
   ): Promise<PatientCallAnalysis> {
     try {
+      // Handle undefined transcript
+      if (!transcript || transcript.trim() === '') {
+        return {
+          urgencyLevel: 'low',
+          symptoms: [],
+          concerns: [],
+          followUpRequired: false,
+          escalateToProvider: false,
+          summary: 'No patient response received',
+          nextQuestions: ['How are you feeling today?']
+        };
+      }
+
       const conversationContext = conversationHistory
         .map(t => `${t.speaker.toUpperCase()}: ${t.text}`)
         .join('\n');

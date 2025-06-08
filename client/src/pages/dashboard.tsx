@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Heart, Bell, User, Volume2, Settings, Bot } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bell, Volume2, Heart } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "wouter";
+import Navigation from "@/components/navigation";
 
 interface DashboardStats {
   callsToday: number;
@@ -41,48 +40,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Heart className="h-8 w-8 text-red-500 mr-3" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">CardioCare AI</h1>
-                <p className="text-sm text-gray-500">Patient Outreach Dashboard</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/realtime">
-                <Button variant="outline" size="sm">
-                  <Bot className="h-4 w-4 mr-2" />
-                  GPT-4o Preview
-                </Button>
-              </Link>
-              <Link href="/conversation-logs">
-                <Button variant="outline" size="sm">
-                  <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Transcripts
-                </Button>
-              </Link>
-              <Link href="/patients">
-                <Button variant="outline" size="sm">
-                  <User className="h-4 w-4 mr-2" />
-                  Patients
-                </Button>
-              </Link>
-              <Link href="/voice-settings">
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navigation />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -142,24 +100,9 @@ export default function Dashboard() {
                 <CardDescription>Start patient outreach and manage calls</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Link href="/patients">
-                  <Button className="w-full">
-                    <User className="h-4 w-4 mr-2" />
-                    Manage Patients
-                  </Button>
-                </Link>
-                <Link href="/realtime">
-                  <Button variant="outline" className="w-full">
-                    <Bot className="h-4 w-4 mr-2" />
-                    Test GPT-4o Real-time
-                  </Button>
-                </Link>
-                <Link href="/voice-settings">
-                  <Button variant="outline" className="w-full">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Voice Settings
-                  </Button>
-                </Link>
+                <div className="text-sm text-gray-600">
+                  Use the navigation above to access patient management, voice calls, conversation reports, and system settings.
+                </div>
               </CardContent>
             </Card>
 
