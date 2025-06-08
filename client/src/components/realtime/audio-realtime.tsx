@@ -163,11 +163,6 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         setStatus('connected');
         initializeAudio();
         
-        // Start conversation immediately when connected
-        websocket.send(JSON.stringify({
-          type: 'start_conversation'
-        }));
-        
         toast({
           title: "Connected",
           description: "GPT-4o voice session active"
@@ -183,6 +178,17 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
             
             if (message.type === 'connection_established') {
               console.log('[AUDIO] Session confirmed:', message.sessionId);
+              
+              // Delay to ensure OpenAI connection is ready
+              setTimeout(() => {
+                if (wsRef.current?.readyState === WebSocket.OPEN) {
+                  wsRef.current.send(JSON.stringify({
+                    type: 'start_conversation'
+                  }));
+                  console.log('[AUDIO] Auto-starting conversation (delayed)');
+                }
+              }, 1500);
+              
             } else if (message.type === 'audio_delta') {
               // Handle base64 audio chunks from GPT-4o
               const audioData = Uint8Array.from(atob(message.audio), c => c.charCodeAt(0));
