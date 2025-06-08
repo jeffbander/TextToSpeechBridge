@@ -271,8 +271,19 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
               
             } else if (message.type === 'audio_delta') {
               console.log(`[AUDIO] ${timestamp} Audio delta received - base64 length: ${message.audio?.length || 0}`);
-              const audioData = Uint8Array.from(atob(message.audio), c => c.charCodeAt(0));
-              playAudioBuffer(audioData.buffer);
+              if (message.audio) {
+                // Decode base64 to binary data
+                const binaryString = atob(message.audio);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // Convert bytes to 16-bit PCM samples
+                const pcmSamples = new Int16Array(bytes.buffer);
+                audioManager.addAudioData(pcmSamples);
+                console.log(`[AUDIO] ${timestamp} Added ${pcmSamples.length} PCM samples to audio manager`);
+              }
               
             } else if (message.type === 'audio_done') {
               console.log(`[AUDIO] ${timestamp} Audio complete - playing accumulated audio`);
