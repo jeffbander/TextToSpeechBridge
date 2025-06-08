@@ -145,10 +145,10 @@ export default function RealtimePage() {
               onClick={startRealtimeSession}
               disabled={!selectedPatient}
               size="lg"
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700"
             >
-              <Bot className="mr-2 h-4 w-4" />
-              Start GPT-4o Real-time Session
+              <Phone className="mr-2 h-4 w-4" />
+              Call Patient with AI
             </Button>
           </CardContent>
         </Card>

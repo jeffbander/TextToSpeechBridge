@@ -180,9 +180,14 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         setIsCreatingSession(false);
         initializeAudio();
         
+        // Auto-start conversation immediately after connection
+        setTimeout(() => {
+          startConversation();
+        }, 1000);
+        
         toast({
           title: "Connected",
-          description: "GPT-4o voice session active"
+          description: "AI conversation starting..."
         });
       };
 
@@ -347,61 +352,54 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Control Buttons */}
+        {/* Simplified Control Buttons */}
         <div className="flex gap-2 justify-center">
           {status === 'idle' && (
             <Button 
               onClick={startSession} 
               disabled={isCreatingSession}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              size="lg"
             >
-              <Phone className="w-4 h-4" />
-              {isCreatingSession ? 'Creating Session...' : 'Start Session'}
+              <Phone className="w-5 h-5" />
+              {isCreatingSession ? 'Starting AI Call...' : 'Start AI Call'}
             </Button>
           )}
           
-          {status === 'connected' && !conversationStarted && (
-            <>
-              <Button
-                onClick={startConversation}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-              >
-                <Phone className="w-4 h-4" />
-                Start Conversation
-              </Button>
-              
-              <Button onClick={endSession} variant="outline" className="flex items-center gap-2">
-                <PhoneOff className="w-4 h-4" />
-                End Session
-              </Button>
-            </>
+          {status === 'connecting' && (
+            <Button disabled className="flex items-center gap-2" size="lg">
+              <Phone className="w-5 h-5 animate-pulse" />
+              Connecting to AI...
+            </Button>
           )}
           
-          {status === 'connected' && conversationStarted && (
+          {(status === 'connected' || conversationStarted) && (
             <>
               <Button
                 onClick={toggleRecording}
                 variant={isRecording ? "destructive" : "default"}
                 className="flex items-center gap-2"
+                size="lg"
               >
-                {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                {isRecording ? 'Stop Recording' : 'Start Recording'}
+                {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                {isRecording ? 'Stop Speaking' : 'Speak to AI'}
               </Button>
               
-              <Button onClick={endSession} variant="outline" className="flex items-center gap-2">
-                <PhoneOff className="w-4 h-4" />
-                End Session
+              <Button onClick={endSession} variant="outline" className="flex items-center gap-2" size="lg">
+                <PhoneOff className="w-5 h-5" />
+                End Call
               </Button>
             </>
           )}
           
-          {(status === 'connecting' || status === 'error') && (
+          {status === 'error' && (
             <Button 
               onClick={startSession} 
               disabled={isCreatingSession}
               variant="outline"
+              size="lg"
             >
-              {isCreatingSession ? 'Retrying...' : 'Retry Connection'}
+              {isCreatingSession ? 'Retrying...' : 'Try Again'}
             </Button>
           )}
         </div>

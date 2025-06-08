@@ -26,19 +26,17 @@ export class OpenAIRealtimeService {
   private activePatients: Set<number> = new Set();
   
   async createRealtimeSession(patientId: number, patientName: string, callId: number): Promise<string> {
-    // Prevent multiple sessions for the same patient completely
-    if (this.activePatients.has(patientId)) {
-      throw new Error(`Patient ${patientName} already has an active session. Only one conversation per patient allowed.`);
-    }
-    
-    // Clean up any existing sessions for this patient to prevent multiple GPT-4o instances
+    // Clean up any existing sessions for this patient FIRST
     const existingSessions = Array.from(this.sessions.entries());
     for (const [id, session] of existingSessions) {
-      if (session.patientId === patientId && session.isActive) {
-        console.log(`🧹 Terminating duplicate session ${id} for patient ${patientName}`);
+      if (session.patientId === patientId) {
+        console.log(`🧹 Cleaning up existing session ${id} for patient ${patientName}`);
         await this.endSession(id);
       }
     }
+    
+    // Clear patient from active set
+    this.activePatients.delete(patientId);
     
     this.activePatients.add(patientId);
     
