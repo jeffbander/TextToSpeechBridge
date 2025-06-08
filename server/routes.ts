@@ -320,10 +320,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Processing transcription with AI: ${TranscriptionText}`);
 
+      // Get patient condition for analysis
+      const patient = await storage.getPatient(call.patientId);
+      const patientCondition = patient?.condition || 'general';
+      
       // Analyze the patient response with AI
       const analysis = await openaiService.analyzePatientResponse(
         TranscriptionText,
-        call.patientId
+        patientCondition
       );
 
       console.log('AI Analysis:', analysis);

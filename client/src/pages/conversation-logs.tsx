@@ -114,87 +114,89 @@ export default function ConversationLogs() {
       </div>
 
       {/* Conversation List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Conversations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {logs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No conversation logs found</p>
-              <p className="text-sm">Start a conversation to see transcripts here</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {logs.map((log, index) => (
-                <div key={index} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-blue-600" />
-                        <span className="font-medium">{log.patient}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {log.sessionId.split('_')[0]}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {log.date ? format(new Date(log.date), 'MMM d, yyyy') : 'Unknown date'}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Conversations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {logs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No conversation logs found</p>
+                  <p className="text-sm">Start a conversation to see transcripts here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {logs.map((log, index) => (
+                    <div key={index} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium">{log.patient}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {log.sessionId.split('_')[0]}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {log.date ? format(new Date(log.date), 'MMM d, yyyy') : 'Unknown date'}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {log.duration}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <FileText className="h-3 w-3" />
+                              {formatFileSize(log.size)}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {log.duration}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <FileText className="h-3 w-3" />
-                          {formatFileSize(log.size)}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
+                        
+                        <div className="flex items-center gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setSelectedLog(log.filename)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[80vh]">
+                              <DialogHeader>
+                                <DialogTitle>Conversation Transcript - {log.patient}</DialogTitle>
+                              </DialogHeader>
+                              <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
+                                <pre className="text-sm whitespace-pre-wrap">
+                                  {logContent?.content || 'Loading transcript...'}
+                                </pre>
+                              </ScrollArea>
+                            </DialogContent>
+                          </Dialog>
+                          
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => setSelectedLog(log.filename)}
+                            onClick={() => downloadLog(log.filename)}
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
+                            <Download className="h-4 w-4 mr-1" />
+                            Download
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh]">
-                          <DialogHeader>
-                            <DialogTitle>Conversation Transcript - {log.patient}</DialogTitle>
-                          </DialogHeader>
-                          <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
-                            <pre className="text-sm whitespace-pre-wrap">
-                              {logContent?.content || 'Loading transcript...'}
-                            </pre>
-                          </ScrollArea>
-                        </DialogContent>
-                      </Dialog>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => downloadLog(log.filename)}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AudioRealtime from '@/components/realtime/audio-realtime';
 import { Bot, Phone, User } from 'lucide-react';
+import Navigation from '@/components/navigation';
 
 interface Patient {
   id: number;
@@ -49,7 +50,11 @@ export default function RealtimePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Navigation />
+      
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div className="px-4 py-6 sm:px-0 space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -205,6 +210,8 @@ export default function RealtimePage() {
           </div>
         </CardContent>
       </Card>
+        </div>
+      </main>
     </div>
   );
 }
