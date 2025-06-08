@@ -303,46 +303,24 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'audio_input_complete':
-        // Handle audio input completion - use text fallback for now
-        if (session.openaiWs.readyState === WebSocket.OPEN) {
-          try {
-            // For now, simulate patient response with text since audio input has format issues
-            // This allows the conversation to continue while we resolve the PCM16 format
-            session.openaiWs.send(JSON.stringify({
-              type: 'conversation.item.create',
-              item: {
-                type: 'message',
-                role: 'user',
-                content: [{
-                  type: 'input_text',
-                  text: `Patient ${session.patientName} has spoken (audio processing pending format resolution). Please continue the conversation and ask about their recovery status.`
-                }]
-              }
-            }));
-            
-            session.openaiWs.send(JSON.stringify({
-              type: 'response.create',
-              response: {
-                modalities: ['audio', 'text']
-              }
-            }));
-            
-            console.log(`🎵 Conversation continuing with audio response for session ${sessionId}`);
-            
-            // Clear any accumulated audio buffer
-            session.audioBuffer = [];
-          } catch (error) {
-            console.error(`❌ Error continuing conversation for session ${sessionId}:`, error);
-          }
-        }
+        // Handle audio input completion - no new AI response trigger needed
+        console.log(`🔇 Audio input complete for session ${sessionId} - REMOVED DUPLICATE GPT-4o TRIGGER`);
+        // Only clear audio buffer, conversation continues from existing trigger
+        session.audioBuffer = [];
         break;
         
       case 'start_conversation':
         // Begin the conversation with initial greeting - SINGLE TRIGGER ONLY
         if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
           console.log(`🎯 SINGLE GPT-4o conversation starting for ${session.patientName}`);
+          console.log(`📍 TRIGGER SOURCE: start_conversation message from client`);
+          console.log(`🔢 SESSION COUNT BEFORE: ${this.sessions.size} total sessions`);
           
           // Create response immediately to trigger ONE GPT-4o instance
+          console.log(`🚨 GPT-4O RESPONSE.CREATE SENT - SOURCE: start_conversation handler`);
+          console.log(`🚨 TIMESTAMP: ${new Date().toISOString()}`);
+          console.log(`🚨 SESSION: ${sessionId} for patient ${session.patientName}`);
+          
           session.openaiWs.send(JSON.stringify({
             type: 'response.create',
             response: {
@@ -351,6 +329,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           }));
           
           console.log(`🎵 SINGLE GPT-4o response triggered for ${sessionId}`);
+          console.log(`📊 ACTIVE PATIENTS: ${Array.from(this.activePatients)}`);
         } else {
           console.log(`❌ OpenAI WebSocket not ready for ${sessionId}`);
         }
