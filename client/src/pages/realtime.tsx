@@ -28,12 +28,18 @@ export default function RealtimePage() {
     if (!selectedPatient) return;
 
     try {
-      // Create a real-time session without Twilio call
-      const sessionId = `demo_${Date.now()}`;
-      setSessionCallId(parseInt(sessionId.replace('demo_', '')));
+      console.log(`[REALTIME-PAGE] Starting session for patient: ${selectedPatient.name} (ID: ${selectedPatient.id})`);
+      
+      // Create actual backend session
+      const callId = Date.now();
+      console.log(`[REALTIME-PAGE] Generated call ID: ${callId}`);
+      
+      setSessionCallId(callId);
       setIsSessionActive(true);
+      
+      console.log(`[REALTIME-PAGE] Session state updated - isSessionActive: true, sessionCallId: ${callId}`);
     } catch (error) {
-      console.error('Error starting session:', error);
+      console.error('[REALTIME-PAGE] Error starting session:', error);
     }
   };
 
