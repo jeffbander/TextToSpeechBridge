@@ -15,6 +15,7 @@ interface AudioRealtimeProps {
 export default function AudioRealtime({ patientId, patientName, callId, onEnd }: AudioRealtimeProps) {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
   const [isRecording, setIsRecording] = useState(false);
+  const [conversationStarted, setConversationStarted] = useState(false);
   const [transcript, setTranscript] = useState<string[]>([]);
   
   const wsRef = useRef<WebSocket | null>(null);
@@ -178,16 +179,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
             
             if (message.type === 'connection_established') {
               console.log('[AUDIO] Session confirmed:', message.sessionId);
-              
-              // Delay to ensure OpenAI connection is ready
-              setTimeout(() => {
-                if (wsRef.current?.readyState === WebSocket.OPEN) {
-                  wsRef.current.send(JSON.stringify({
-                    type: 'start_conversation'
-                  }));
-                  console.log('[AUDIO] Auto-starting conversation (delayed)');
-                }
-              }, 1500);
+              // Session ready - wait for manual start button click
               
             } else if (message.type === 'audio_delta') {
               // Handle base64 audio chunks from GPT-4o
@@ -195,6 +187,8 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
               playAudioBuffer(audioData.buffer);
             } else if (message.type === 'transcript') {
               setTranscript(prev => [...prev, `${message.speaker}: ${message.text}`]);
+            } else if (message.type === 'audio_transcript_delta') {
+              setConversationStarted(true);
             }
           }
         } catch (error) {
@@ -232,11 +226,28 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
     }
   };
 
-  const toggleRecording = async () => {
+  const startConversation = async () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       toast({
         title: "Not Connected",
         description: "Start session first",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('[AUDIO] Starting conversation - SINGLE TRIGGER');
+    wsRef.current.send(JSON.stringify({
+      type: 'start_conversation'
+    }));
+    setConversationStarted(true);
+  };
+
+  const toggleRecording = async () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !conversationStarted) {
+      toast({
+        title: "Start Conversation First",
+        description: "Click Start Conversation before recording",
         variant: "destructive"
       });
       return;
@@ -284,6 +295,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
     }
     
     setIsRecording(false);
+    setConversationStarted(false);
   };
 
   const getStatusBadge = () => {
@@ -324,7 +336,24 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
             </Button>
           )}
           
-          {status === 'connected' && (
+          {status === 'connected' && !conversationStarted && (
+            <>
+              <Button
+                onClick={startConversation}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+              >
+                <Phone className="w-4 h-4" />
+                Start Conversation
+              </Button>
+              
+              <Button onClick={endSession} variant="outline" className="flex items-center gap-2">
+                <PhoneOff className="w-4 h-4" />
+                End Session
+              </Button>
+            </>
+          )}
+          
+          {status === 'connected' && conversationStarted && (
             <>
               <Button
                 onClick={toggleRecording}

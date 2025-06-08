@@ -311,28 +311,32 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         
       case 'start_conversation':
         // Begin the conversation with initial greeting - SINGLE TRIGGER ONLY
-        if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-          console.log(`🎯 SINGLE GPT-4o conversation starting for ${session.patientName}`);
-          console.log(`📍 TRIGGER SOURCE: start_conversation message from client`);
-          console.log(`🔢 SESSION COUNT BEFORE: ${this.sessions.size} total sessions`);
-          
-          // Create response immediately to trigger ONE GPT-4o instance
-          console.log(`🚨 GPT-4O RESPONSE.CREATE SENT - SOURCE: start_conversation handler`);
-          console.log(`🚨 TIMESTAMP: ${new Date().toISOString()}`);
-          console.log(`🚨 SESSION: ${sessionId} for patient ${session.patientName}`);
-          
-          session.openaiWs.send(JSON.stringify({
-            type: 'response.create',
-            response: {
-              modalities: ['text', 'audio']
+        console.log(`🎯 Received start_conversation for ${session.patientName}`);
+        
+        // Wait for OpenAI connection to be ready
+        const waitForOpenAI = async () => {
+          for (let i = 0; i < 10; i++) {
+            if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+              console.log(`🚨 SINGLE GPT-4O TRIGGER - SOURCE: start_conversation`);
+              console.log(`🚨 SESSION: ${sessionId} for patient ${session.patientName}`);
+              
+              session.openaiWs.send(JSON.stringify({
+                type: 'response.create',
+                response: {
+                  modalities: ['text', 'audio']
+                }
+              }));
+              
+              console.log(`🎵 GPT-4o conversation started for ${sessionId}`);
+              return;
             }
-          }));
-          
-          console.log(`🎵 SINGLE GPT-4o response triggered for ${sessionId}`);
-          console.log(`📊 ACTIVE PATIENTS: ${Array.from(this.activePatients)}`);
-        } else {
-          console.log(`❌ OpenAI WebSocket not ready for ${sessionId}`);
-        }
+            console.log(`⏳ Waiting for OpenAI connection... attempt ${i + 1}`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          console.log(`❌ OpenAI connection timeout for ${sessionId}`);
+        };
+        
+        waitForOpenAI();
         break;
         
       case 'end_conversation':
