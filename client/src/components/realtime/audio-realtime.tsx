@@ -131,7 +131,8 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       setStatus('connecting');
       setTranscript([]);
       
-      console.log('[AUDIO] Creating SINGLE session for', patientName);
+      const timestamp = new Date().toISOString();
+      console.log(`[AUDIO] ${timestamp} Creating SINGLE session for ${patientName} (ID: ${patientId})`);
       
       const response = await fetch('/api/realtime/session', {
         method: 'POST',
@@ -374,33 +375,37 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Simplified Control Buttons */}
-        <div className="flex gap-2 justify-center">
+        {/* Single Button Flow */}
+        <div className="flex flex-col items-center gap-4">
           {status === 'idle' && (
-            <Button 
-              onClick={startSession} 
-              disabled={isCreatingSession}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-              size="lg"
-            >
-              <Phone className="w-5 h-5" />
-              {isCreatingSession ? 'Starting AI Call...' : 'Start AI Call'}
-            </Button>
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-2">Ready to start AI call</div>
+              <Button 
+                onClick={startSession} 
+                disabled={isCreatingSession}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                size="lg"
+              >
+                <Phone className="w-5 h-5" />
+                {isCreatingSession ? 'Starting...' : 'Begin AI Call'}
+              </Button>
+            </div>
           )}
           
           {status === 'connecting' && (
-            <Button disabled className="flex items-center gap-2" size="lg">
-              <Phone className="w-5 h-5 animate-pulse" />
-              Connecting to AI...
-            </Button>
+            <div className="text-center">
+              <div className="text-sm text-blue-600 mb-2">Connecting to AI...</div>
+              <Button disabled className="flex items-center gap-2" size="lg">
+                <Phone className="w-5 h-5 animate-pulse" />
+                Connecting...
+              </Button>
+            </div>
           )}
           
           {(status === 'connected' || conversationStarted) && (
-            <div className="flex flex-col items-center gap-4">
-              <div className="text-center">
-                <div className="text-sm text-green-600 font-medium">AI is speaking...</div>
-                <div className="text-xs text-gray-500">Microphone is active - speak normally</div>
-              </div>
+            <div className="text-center">
+              <div className="text-sm text-green-600 font-medium mb-1">AI Call Active</div>
+              <div className="text-xs text-gray-500 mb-4">AI is speaking - microphone is listening</div>
               
               <Button onClick={endSession} variant="destructive" className="flex items-center gap-2" size="lg">
                 <PhoneOff className="w-5 h-5" />
@@ -410,14 +415,17 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           )}
           
           {status === 'error' && (
-            <Button 
-              onClick={startSession} 
-              disabled={isCreatingSession}
-              variant="outline"
-              size="lg"
-            >
-              {isCreatingSession ? 'Retrying...' : 'Try Again'}
-            </Button>
+            <div className="text-center">
+              <div className="text-sm text-red-600 mb-2">Connection failed</div>
+              <Button 
+                onClick={startSession} 
+                disabled={isCreatingSession}
+                variant="outline"
+                size="lg"
+              >
+                {isCreatingSession ? 'Retrying...' : 'Try Again'}
+              </Button>
+            </div>
           )}
         </div>
 
