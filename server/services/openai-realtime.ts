@@ -234,6 +234,29 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     session.websocket = clientWs;
     console.log(`🔗 Client connected to realtime session ${sessionId}`);
     
+    // Send session ready confirmation
+    clientWs.send(JSON.stringify({
+      type: 'session_ready',
+      sessionId: sessionId,
+      patientName: session.patientName
+    }));
+    
+    // Auto-start conversation when client connects
+    setTimeout(() => {
+      if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+        console.log(`🎯 Auto-starting GPT-4o conversation for ${session.patientName}`);
+        
+        session.openaiWs.send(JSON.stringify({
+          type: 'response.create',
+          response: {
+            modalities: ['text', 'audio']
+          }
+        }));
+        
+        console.log(`🎵 GPT-4o conversation initiated for ${sessionId}`);
+      }
+    }, 300);
+    
     // Initialize OpenAI connection when client connects
     this.initializeOpenAIRealtime(sessionId)
       .then(() => {
