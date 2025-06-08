@@ -179,8 +179,10 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
   }
   
   connectClientWebSocket(sessionId: string, clientWs: WebSocket) {
+    console.log(`🔍 Looking for session ${sessionId}, available sessions:`, Array.from(this.sessions.keys()));
     const session = this.sessions.get(sessionId);
     if (!session) {
+      console.log(`❌ Session ${sessionId} not found in sessions map`);
       clientWs.close(1000, 'Session not found');
       return;
     }
@@ -227,22 +229,26 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         // Convert PCM16 audio data for OpenAI real-time API
         if (session.openaiWs.readyState === WebSocket.OPEN && message.audio) {
           try {
-            // Create proper 16-bit PCM buffer from audio samples
-            const audioBuffer = Buffer.alloc(message.audio.length * 2);
+            // OpenAI expects raw PCM16 audio data as base64
+            // Create buffer with proper 16-bit little-endian format
+            const audioBuffer = new ArrayBuffer(message.audio.length * 2);
+            const view = new DataView(audioBuffer);
+            
             for (let i = 0; i < message.audio.length; i++) {
-              // Clamp to 16-bit signed integer range and write as little-endian
-              const sample = Math.max(-32768, Math.min(32767, Math.floor(message.audio[i])));
-              audioBuffer.writeInt16LE(sample, i * 2);
+              // Write 16-bit signed samples in little-endian format
+              const sample = Math.max(-32768, Math.min(32767, Math.round(message.audio[i])));
+              view.setInt16(i * 2, sample, true); // true = little-endian
             }
             
-            const audioBase64 = audioBuffer.toString('base64');
+            const buffer = Buffer.from(audioBuffer);
+            const audioBase64 = buffer.toString('base64');
             
             session.openaiWs.send(JSON.stringify({
               type: 'input_audio_buffer.append',
               audio: audioBase64
             }));
             
-            console.log(`🎵 Audio chunk sent to OpenAI (${message.audio.length} samples, ${audioBuffer.length} bytes) for session ${sessionId}`);
+            console.log(`🎵 Audio sent: ${message.audio.length} samples (${buffer.length} bytes, ${(message.audio.length / 24000 * 1000).toFixed(1)}ms) for session ${sessionId}`);
           } catch (error) {
             console.error(`❌ Error processing audio for session ${sessionId}:`, error);
           }
