@@ -297,6 +297,12 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
               console.log(`[AUDIO] ${timestamp} Audio complete - playing accumulated audio`);
               playAccumulatedAudio();
               
+              // Enable recording for patient response after AI finishes speaking
+              setTimeout(() => {
+                setIsRecording(true);
+                console.log(`[AUDIO] Recording enabled for patient response`);
+              }, 500);
+              
             } else if (message.type === 'transcript') {
               console.log(`[AUDIO] ${timestamp} Transcript: ${message.speaker}: ${message.text}`);
               setTranscript(prev => [...prev, `${message.speaker}: ${message.text}`]);
