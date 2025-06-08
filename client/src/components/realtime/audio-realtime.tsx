@@ -23,9 +23,10 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sessionInitializedRef = useRef(false);
-  const audioQueueRef = useRef<Uint8Array[]>([]);
+  const audioBufferRef = useRef<number[]>([]);
   const isPlayingRef = useRef(false);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const playbackQueueRef = useRef<string[]>([]);
   const { toast } = useToast();
 
   // Auto-start session when component mounts
@@ -90,16 +91,28 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
 
   const playAudioBuffer = useCallback(async (audioData: ArrayBuffer) => {
     try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      // Accumulate audio data instead of playing immediately
+      const pcmData = new Int16Array(audioData);
+      for (let i = 0; i < pcmData.length; i++) {
+        audioBufferRef.current.push(pcmData[i] / 32768.0);
       }
       
+      console.log(`[AUDIO] Accumulated ${pcmData.length} samples, total: ${audioBufferRef.current.length}`);
+    } catch (error) {
+      console.error('[AUDIO] Error accumulating audio:', error);
+    }
+  }, []);
+
+  const playAccumulatedAudio = useCallback(async () => {
+    if (!audioContextRef.current || audioBufferRef.current.length === 0) return;
+    
+    try {
       // Ensure audio context is running
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
       
-      // Stop any currently playing audio to prevent overlaps
+      // Stop any currently playing audio
       if (currentSourceRef.current) {
         try {
           currentSourceRef.current.stop();
@@ -109,47 +122,35 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         currentSourceRef.current = null;
       }
 
-      try {
-        // Try standard audio decoding first
-        const audioBuffer = await audioContextRef.current.decodeAudioData(audioData);
-        const source = audioContextRef.current.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContextRef.current.destination);
-        
-        // Track the current source to prevent overlaps
-        currentSourceRef.current = source;
-        source.onended = () => {
-          currentSourceRef.current = null;
-        };
-        
-        source.start();
-        console.log('[AUDIO] Playing GPT-4o voice response');
-      } catch (decodeError) {
-        // Fallback: handle PCM16 data manually
-        console.log('[AUDIO] Using PCM16 fallback conversion');
-        const pcmData = new Int16Array(audioData);
-        const audioBuffer = audioContextRef.current.createBuffer(1, pcmData.length, 24000);
-        const channelData = audioBuffer.getChannelData(0);
-        
-        for (let i = 0; i < pcmData.length; i++) {
-          channelData[i] = pcmData[i] / 32768.0;
-        }
-        
-        const source = audioContextRef.current.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContextRef.current.destination);
-        
-        // Track the current source to prevent overlaps
-        currentSourceRef.current = source;
-        source.onended = () => {
-          currentSourceRef.current = null;
-        };
-        
-        source.start();
-        console.log('[AUDIO] PCM16 audio playback successful');
+      // Create audio buffer from accumulated samples
+      const sampleCount = audioBufferRef.current.length;
+      const audioBuffer = audioContextRef.current.createBuffer(1, sampleCount, 24000);
+      const channelData = audioBuffer.getChannelData(0);
+      
+      for (let i = 0; i < sampleCount; i++) {
+        channelData[i] = audioBufferRef.current[i];
       }
+      
+      // Play the complete accumulated audio
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+      
+      currentSourceRef.current = source;
+      source.onended = () => {
+        currentSourceRef.current = null;
+        isPlayingRef.current = false;
+      };
+      
+      source.start();
+      isPlayingRef.current = true;
+      
+      console.log(`[AUDIO] Playing accumulated audio: ${sampleCount} samples`);
+      
+      // Clear the buffer after playing
+      audioBufferRef.current = [];
     } catch (error) {
-      console.error('[AUDIO] Error playing audio:', error);
+      console.error('[AUDIO] Error playing accumulated audio:', error);
     }
   }, []);
 
@@ -249,6 +250,10 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
               console.log(`[AUDIO] ${timestamp} Audio delta received - base64 length: ${message.audio?.length || 0}`);
               const audioData = Uint8Array.from(atob(message.audio), c => c.charCodeAt(0));
               playAudioBuffer(audioData.buffer);
+              
+            } else if (message.type === 'audio_done') {
+              console.log(`[AUDIO] ${timestamp} Audio complete - playing accumulated audio`);
+              playAccumulatedAudio();
               
             } else if (message.type === 'transcript') {
               console.log(`[AUDIO] ${timestamp} Transcript: ${message.speaker}: ${message.text}`);

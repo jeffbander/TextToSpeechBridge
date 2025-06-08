@@ -206,6 +206,15 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         }
         break;
         
+      case 'response.audio.done':
+        // Signal audio completion to trigger accumulated playback
+        if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
+          session.websocket.send(JSON.stringify({
+            type: 'audio_done'
+          }));
+        }
+        break;
+        
       case 'conversation.item.input_audio_transcription.completed':
         const transcript = message.transcript;
         session.transcript.push(`Patient: ${transcript}`);
