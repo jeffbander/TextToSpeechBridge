@@ -5,8 +5,12 @@ class AudioManager {
   private currentSource: AudioBufferSourceNode | null = null;
   private isPlaying: boolean = false;
   private audioBuffer: number[] = [];
+  private instanceId: string;
   
-  private constructor() {}
+  private constructor() {
+    this.instanceId = Math.random().toString(36).substring(7);
+    console.log(`[AUDIO-MANAGER] Creating new instance: ${this.instanceId}`);
+  }
   
   static getInstance(): AudioManager {
     if (!AudioManager.instance) {
@@ -47,26 +51,30 @@ class AudioManager {
       this.currentSource = null;
     }
     this.isPlaying = false;
-    this.audioBuffer = [];
+    // Don't clear audioBuffer here - only clear after successful playback
   }
   
   // Add audio data to buffer (for streaming)
   addAudioData(pcmData: Int16Array): void {
+    const beforeLength = this.audioBuffer.length;
     for (let i = 0; i < pcmData.length; i++) {
       this.audioBuffer.push(pcmData[i] / 32768.0);
     }
+    const afterLength = this.audioBuffer.length;
+    console.log(`[AUDIO-MANAGER-${this.instanceId}] Buffer: ${beforeLength} → ${afterLength} (+${pcmData.length} samples)`);
   }
   
   // Play accumulated audio buffer
   async playAccumulatedAudio(): Promise<void> {
-    console.log('[AUDIO-MANAGER] playAccumulatedAudio called - buffer length:', this.audioBuffer.length, 'context:', !!this.audioContext);
+    const bufferLengthAtStart = this.audioBuffer.length;
+    console.log(`[AUDIO-MANAGER-${this.instanceId}] playAccumulatedAudio called - buffer length:`, bufferLengthAtStart, 'context:', !!this.audioContext);
     
     if (!this.audioContext) {
       console.log('[AUDIO-MANAGER] No AudioContext available');
       return;
     }
     
-    if (this.audioBuffer.length === 0) {
+    if (bufferLengthAtStart === 0) {
       console.log('[AUDIO-MANAGER] No audio samples to play');
       return;
     }
@@ -85,12 +93,25 @@ class AudioManager {
         console.log('[AUDIO-MANAGER] AudioContext state after resume:', this.audioContext.state);
       }
       
-      // Stop any previous audio first
-      this.stopCurrentAudio();
+      // Stop any previous audio source but preserve buffer
+      if (this.currentSource) {
+        try {
+          this.currentSource.stop();
+          this.currentSource.disconnect();
+        } catch (e) {
+          // Source may already be stopped
+        }
+        this.currentSource = null;
+      }
       
       // Create audio buffer from accumulated samples
       const sampleCount = this.audioBuffer.length;
-      console.log('[AUDIO-MANAGER] Creating AudioBuffer with', sampleCount, 'samples at 24kHz');
+      console.log('[AUDIO-MANAGER] About to create AudioBuffer - current buffer length:', sampleCount, 'initial length:', bufferLengthAtStart);
+      
+      if (sampleCount === 0) {
+        console.error('[AUDIO-MANAGER] Buffer was cleared between start and playback! Initial:', bufferLengthAtStart, 'Current:', sampleCount);
+        return;
+      }
       
       const audioBuffer = this.audioContext.createBuffer(1, sampleCount, 24000);
       const channelData = audioBuffer.getChannelData(0);

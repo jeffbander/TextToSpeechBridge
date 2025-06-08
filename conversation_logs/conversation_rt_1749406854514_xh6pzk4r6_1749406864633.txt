@@ -1,0 +1,20 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749406854514_xh6pzk4r6
+Patient: Test Patient (ID: 2)
+Call ID: 1749406853915
+Duration: 10 seconds
+Date: 2025-06-08T18:20:54.514Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[6:20:57 PM] AI: Hello! This is your follow-up call from the healthcare team. How have you been feeling since your last appointment? Are you noticing any
+
+[6:21:02 PM] PATIENT: Can you hear me now?
+
+
+[6:21:03 PM] AI: I'm sorry to hear that you're having trouble with your hearing. Is this something new, or have you experienced hearing difficulties before? Let's make sure we address this concern.
+
+─────────────────────────────────────────────────────────
+End of Conversation
