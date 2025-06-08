@@ -73,7 +73,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         for (let i = 0; i < inputBuffer.length; i++) {
           const sample = Math.abs(inputBuffer[i]);
           if (sample > audioLevel) audioLevel = sample;
-          if (sample > 0.001) hasAudio = true;
+          if (sample > 0.1) hasAudio = true;
         }
         
         // Debug logging every few seconds
@@ -82,7 +82,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         }
         
         if (wsRef.current?.readyState === WebSocket.OPEN && isRecordingRef.current) {
-          if (audioLevel > 0.001) {
+          if (audioLevel > 0.1) {
             console.log(`[AUDIO] Voice detected - level: ${audioLevel.toFixed(4)}`);
           }
           
@@ -107,9 +107,14 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
             // Count silence frames
             silenceCountRef.current++;
             
-            // If 1 second of silence after speech, trigger audio completion
-            if (silenceCountRef.current > 24 && lastAudioTimeRef.current > 0 && Date.now() - lastAudioTimeRef.current > 1000) {
-              console.log(`[AUDIO] Detected end of patient speech - triggering audio completion`);
+            // Debug silence detection every few frames
+            if (silenceCountRef.current % 10 === 0 && lastAudioTimeRef.current > 0) {
+              console.log(`[AUDIO] Silence count: ${silenceCountRef.current}, last audio: ${Date.now() - lastAudioTimeRef.current}ms ago`);
+            }
+            
+            // If silence detected after speech, trigger audio completion (reduced threshold for better responsiveness)
+            if (silenceCountRef.current > 12 && lastAudioTimeRef.current > 0) {
+              console.log(`[AUDIO] Detected end of patient speech - triggering audio completion after ${silenceCountRef.current} silent frames`);
               wsRef.current.send(JSON.stringify({
                 type: 'audio_input_complete'
               }));
