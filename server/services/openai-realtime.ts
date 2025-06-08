@@ -158,22 +158,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     switch (message.type) {
       case 'session.created':
         console.log(`✅ OpenAI session created for ${sessionId}`);
-        // Auto-trigger conversation start after session is ready
-        setTimeout(() => {
-          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-            console.log(`🎯 Auto-starting GPT-4o conversation for ${session.patientName}`);
-            
-            // Create response to begin conversation immediately
-            session.openaiWs.send(JSON.stringify({
-              type: 'response.create',
-              response: {
-                modalities: ['text', 'audio']
-              }
-            }));
-            
-            console.log(`🎵 GPT-4o greeting triggered for ${sessionId}`);
-          }
-        }, 100);
+        // Session ready - wait for explicit start command
         break;
         
       case 'conversation.item.created':
@@ -258,21 +243,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       patientName: session.patientName
     }));
     
-    // Auto-start conversation when client connects
-    setTimeout(() => {
-      if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-        console.log(`🎯 Auto-starting GPT-4o conversation for ${session.patientName}`);
-        
-        session.openaiWs.send(JSON.stringify({
-          type: 'response.create',
-          response: {
-            modalities: ['text', 'audio']
-          }
-        }));
-        
-        console.log(`🎵 GPT-4o conversation initiated for ${sessionId}`);
-      }
-    }, 300);
+    // Wait for explicit start command - no auto-triggering
     
     // Initialize OpenAI connection when client connects
     this.initializeOpenAIRealtime(sessionId)
@@ -364,24 +335,11 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'start_conversation':
-        // Begin the conversation with initial greeting
+        // Begin the conversation with initial greeting - SINGLE TRIGGER ONLY
         if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-          console.log(`🎯 Triggering GPT-4o conversation for ${session.patientName}`);
+          console.log(`🎯 SINGLE GPT-4o conversation starting for ${session.patientName}`);
           
-          // Send system message to establish context
-          session.openaiWs.send(JSON.stringify({
-            type: 'conversation.item.create',
-            item: {
-              type: 'message',
-              role: 'system',
-              content: [{
-                type: 'input_text',
-                text: `You are conducting a post-discharge follow-up call for ${session.patientName}. Start with a warm greeting and ask how they are feeling after their recent hospital discharge.`
-              }]
-            }
-          }));
-          
-          // Create response immediately to trigger GPT-4o
+          // Create response immediately to trigger ONE GPT-4o instance
           session.openaiWs.send(JSON.stringify({
             type: 'response.create',
             response: {
@@ -389,7 +347,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
             }
           }));
           
-          console.log(`🎵 GPT-4o response triggered for ${sessionId}`);
+          console.log(`🎵 SINGLE GPT-4o response triggered for ${sessionId}`);
         } else {
           console.log(`❌ OpenAI WebSocket not ready for ${sessionId}`);
         }
