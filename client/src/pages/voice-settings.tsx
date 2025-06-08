@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Volume2, Play, Settings, Users, TestTube2 } from "lucide-react";
+import { Volume2, Play, Settings, Users, TestTube2, MessageSquare, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
@@ -35,9 +35,22 @@ interface TestPromptData {
   voiceProfileId: string;
 }
 
+interface PromptTemplate {
+  id: string;
+  name: string;
+  condition: string;
+  urgencyLevel: 'low' | 'medium' | 'high' | 'critical';
+  systemPrompt: string;
+  initialGreeting: string;
+  followUpQuestions: string[];
+  escalationTriggers: string[];
+}
+
 export default function VoiceSettings() {
   const { toast } = useToast();
   const [selectedProfile, setSelectedProfile] = useState<string>('');
+  const [selectedPromptTemplate, setSelectedPromptTemplate] = useState<string>('');
+  const [editingPrompt, setEditingPrompt] = useState<PromptTemplate | null>(null);
   const [testData, setTestData] = useState<TestPromptData>({
     patientName: 'John Smith',
     condition: 'cardiac monitoring',
@@ -307,6 +320,173 @@ export default function VoiceSettings() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Patient Prompts Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Patient Conversation Prompts
+          </CardTitle>
+          <CardDescription>
+            Customize AI conversation prompts for different medical conditions and scenarios
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Prompt Templates List */}
+          <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Cardiac Surgery Template */}
+              <Card className="border-2 hover:border-blue-200 cursor-pointer">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">Cardiac Surgery Follow-up</CardTitle>
+                    <Badge variant="secondary">Medium</Badge>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Post-operative cardiac surgery patients
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">Initial Greeting:</div>
+                    <div className="text-xs bg-gray-50 p-2 rounded border">
+                      "Hello [Patient], this is your healthcare assistant calling for your follow-up after your recent cardiac surgery. How have you been feeling since your visit?"
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      <Badge variant="outline" className="text-xs">5 follow-up questions</Badge>
+                      <Button variant="ghost" size="sm" className="h-6 px-2">
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Diabetes Management Template */}
+              <Card className="border-2 hover:border-green-200 cursor-pointer">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">Diabetes Management</CardTitle>
+                    <Badge variant="secondary">Medium</Badge>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Diabetes monitoring and medication adherence
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">Initial Greeting:</div>
+                    <div className="text-xs bg-gray-50 p-2 rounded border">
+                      "Hello [Patient], this is your diabetes care team checking in. How have your blood sugar levels been lately?"
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      <Badge variant="outline" className="text-xs">4 follow-up questions</Badge>
+                      <Button variant="ghost" size="sm" className="h-6 px-2">
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Urgent Care Template */}
+              <Card className="border-2 hover:border-red-200 cursor-pointer">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">Urgent Follow-up</CardTitle>
+                    <Badge variant="destructive">Critical</Badge>
+                  </div>
+                  <CardDescription className="text-xs">
+                    High-priority patient concerns requiring immediate attention
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    <div className="text-xs text-muted-foreground">Initial Greeting:</div>
+                    <div className="text-xs bg-gray-50 p-2 rounded border">
+                      "Hello [Patient], this is your healthcare team calling urgently. We need to check on you immediately. How are you feeling right now?"
+                    </div>
+                    <div className="flex items-center justify-between mt-3">
+                      <Badge variant="outline" className="text-xs">3 escalation triggers</Badge>
+                      <Button variant="ghost" size="sm" className="h-6 px-2">
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Create New Template Button */}
+            <div className="flex justify-center pt-4">
+              <Button variant="outline" className="w-full max-w-md">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Create New Prompt Template
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Quick Prompt Customization */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span className="text-sm font-medium">Quick Customization</span>
+            </div>
+            
+            <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="greeting-style">Greeting Style</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select greeting style" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="professional">Professional & Clinical</SelectItem>
+                      <SelectItem value="warm">Warm & Caring</SelectItem>
+                      <SelectItem value="urgent">Direct & Urgent</SelectItem>
+                      <SelectItem value="friendly">Friendly & Conversational</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="question-focus">Question Focus</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Primary focus area" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="symptoms">Symptom Assessment</SelectItem>
+                      <SelectItem value="medication">Medication Adherence</SelectItem>
+                      <SelectItem value="recovery">Recovery Progress</SelectItem>
+                      <SelectItem value="lifestyle">Lifestyle & Activities</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="custom-questions">Custom Follow-up Questions</Label>
+                <Textarea
+                  id="custom-questions"
+                  placeholder="Enter custom questions, one per line..."
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button className="w-32">
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
         </div>
