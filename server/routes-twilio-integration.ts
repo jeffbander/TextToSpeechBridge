@@ -10,7 +10,13 @@ export function registerTwilioIntegrationRoutes(app: Express) {
   // Start automated patient call with GPT-4o integration
   app.post("/api/twilio/call-patient", async (req, res) => {
     try {
+      console.log(`[TWILIO-INTEGRATION] Received request body:`, req.body);
+      
       const { patientId, urgencyLevel = 'medium', visitReason, medications = [] } = req.body;
+      
+      if (!patientId) {
+        return res.status(400).json({ message: "Patient ID is required" });
+      }
       
       console.log(`[TWILIO-INTEGRATION] Starting automated call for patient ID: ${patientId}`);
       
@@ -56,13 +62,16 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       console.log(`[TWILIO-INTEGRATION] Created GPT-4o session ${sessionId} for patient ${patient.name}`);
 
       // Generate Twilio webhook URL for this specific session
-      const webhookUrl = `${process.env.REPLIT_URL || 'https://localhost:5000'}/api/twilio/webhook/${sessionId}`;
+      const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'https://localhost:5000';
+      const webhookUrl = `${baseUrl}/api/twilio/webhook/${sessionId}`;
+      
+      console.log(`[TWILIO-INTEGRATION] Using webhook URL: ${webhookUrl}`);
       
       // Make the Twilio call
       const twilioCallSid = await twilioService.makeCall({
         to: patient.phoneNumber,
         url: webhookUrl,
-        statusCallback: `${process.env.REPLIT_URL || 'https://localhost:5000'}/api/twilio/status/${call.id}`,
+        statusCallback: `${baseUrl}/api/twilio/status/${call.id}`,
         statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
       });
 
@@ -84,7 +93,15 @@ export function registerTwilioIntegrationRoutes(app: Express) {
 
     } catch (error) {
       console.error('[TWILIO-INTEGRATION] Error starting automated call:', error);
-      res.status(500).json({ message: "Failed to start automated call" });
+      console.error('[TWILIO-INTEGRATION] Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        patientId: req.body.patientId
+      });
+      res.status(500).json({ 
+        message: "Failed to start automated call",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
