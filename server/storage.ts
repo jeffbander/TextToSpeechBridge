@@ -356,7 +356,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPendingScheduledCalls(): Promise<ScheduledCall[]> {
-    return await db.select().from(scheduledCalls).where(eq(scheduledCalls.status, 'pending'));
+    return await db.select().from(scheduledCalls).where(eq(scheduledCalls.completed, false));
   }
 
   async createScheduledCall(insertScheduledCall: InsertScheduledCall): Promise<ScheduledCall> {

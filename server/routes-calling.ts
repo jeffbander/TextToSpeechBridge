@@ -82,14 +82,17 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      const callsToday = calls.filter(call => 
-        call.startedAt && call.startedAt >= today
-      ).length;
+      const callsToday = calls.filter(call => {
+        if (!call.startedAt) return false;
+        const callDate = new Date(call.startedAt);
+        return callDate >= today;
+      }).length;
       
-      const completedToday = calls.filter(call => 
-        call.status === 'completed' && 
-        call.startedAt && call.startedAt >= today
-      ).length;
+      const completedToday = calls.filter(call => {
+        if (!call.startedAt || call.status !== 'completed') return false;
+        const callDate = new Date(call.startedAt);
+        return callDate >= today;
+      }).length;
       
       const successRate = callsToday > 0 ? (completedToday / callsToday * 100).toFixed(1) : '0.0';
       
@@ -102,7 +105,8 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
         pendingCalls: (await storage.getPendingScheduledCalls()).length
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+      console.error('Dashboard stats error:', error);
+      res.status(500).json({ message: "Failed to fetch dashboard stats", error: error.message });
     }
   });
 
