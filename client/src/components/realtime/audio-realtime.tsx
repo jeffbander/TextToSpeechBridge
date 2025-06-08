@@ -350,9 +350,13 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         {/* Control Buttons */}
         <div className="flex gap-2 justify-center">
           {status === 'idle' && (
-            <Button onClick={startSession} className="flex items-center gap-2">
+            <Button 
+              onClick={startSession} 
+              disabled={isCreatingSession}
+              className="flex items-center gap-2"
+            >
               <Phone className="w-4 h-4" />
-              Start Session
+              {isCreatingSession ? 'Creating Session...' : 'Start Session'}
             </Button>
           )}
           
@@ -392,8 +396,12 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           )}
           
           {(status === 'connecting' || status === 'error') && (
-            <Button onClick={startSession} variant="outline">
-              Retry Connection
+            <Button 
+              onClick={startSession} 
+              disabled={isCreatingSession}
+              variant="outline"
+            >
+              {isCreatingSession ? 'Retrying...' : 'Retry Connection'}
             </Button>
           )}
         </div>
