@@ -21,6 +21,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const wsRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const sessionInitializedRef = useRef(false);
   const { toast } = useToast();
 
   const initializeAudio = useCallback(async () => {
@@ -116,9 +117,19 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   }, []);
 
   const startSession = async () => {
+    // Prevent duplicate session creation from React re-renders
+    if (sessionInitializedRef.current) {
+      console.log('[AUDIO] Session already initialized, skipping duplicate');
+      return;
+    }
+    
+    sessionInitializedRef.current = true;
+    
     try {
       setStatus('connecting');
       setTranscript([]);
+      
+      console.log('[AUDIO] Creating SINGLE session for', patientName);
       
       const response = await fetch('/api/realtime/session', {
         method: 'POST',
@@ -127,6 +138,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       });
       
       if (!response.ok) {
+        sessionInitializedRef.current = false;
         throw new Error('Failed to create session');
       }
       
@@ -296,6 +308,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
     
     setIsRecording(false);
     setConversationStarted(false);
+    sessionInitializedRef.current = false;
   };
 
   const getStatusBadge = () => {

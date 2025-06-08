@@ -155,6 +155,7 @@ export default function RealtimePage() {
       ) : (
         selectedPatient && sessionCallId && (
           <AudioRealtime
+            key={`session-${selectedPatient.id}-${sessionCallId}`}
             patientId={selectedPatient.id}
             patientName={selectedPatient.name}
             callId={sessionCallId}
