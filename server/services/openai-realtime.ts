@@ -19,6 +19,11 @@ export interface RealtimeSession {
   transcript: string[];
   audioBuffer: Buffer[];
   currentResponse?: string;
+  conversationLog: Array<{
+    timestamp: Date;
+    speaker: 'ai' | 'patient';
+    text: string;
+  }>;
 }
 
 export class OpenAIRealtimeService {
@@ -53,6 +58,7 @@ export class OpenAIRealtimeService {
       startedAt: new Date(),
       transcript: [],
       audioBuffer: [],
+      conversationLog: [],
       currentResponse: ''
     };
     
@@ -218,6 +224,11 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       case 'conversation.item.input_audio_transcription.completed':
         const transcript = message.transcript;
         session.transcript.push(`Patient: ${transcript}`);
+        session.conversationLog.push({
+          timestamp: new Date(),
+          speaker: 'patient',
+          text: transcript
+        });
         console.log(`🎤 Patient said: ${transcript}`);
         break;
         
@@ -248,10 +259,16 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'response.done':
-        // Complete response - add to transcript
+        // Complete response - add to transcript and conversation log
         if (session.currentResponse && session.currentResponse.trim()) {
-          session.transcript.push(`AI: ${session.currentResponse.trim()}`);
-          console.log(`🤖 AI said: ${session.currentResponse.trim()}`);
+          const aiResponse = session.currentResponse.trim();
+          session.transcript.push(`AI: ${aiResponse}`);
+          session.conversationLog.push({
+            timestamp: new Date(),
+            speaker: 'ai',
+            text: aiResponse
+          });
+          console.log(`🤖 AI said: ${aiResponse}`);
           session.currentResponse = '';
         }
         // Keep session alive - don't close after response
@@ -434,13 +451,32 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
   
   private async saveSessionData(session: RealtimeSession) {
     try {
-      // Here you would save the session data to your storage
+      const duration = Date.now() - session.startedAt.getTime();
+      
       console.log(`💾 Saving session data for ${session.id}:`, {
         patientId: session.patientId,
         callId: session.callId,
-        duration: Date.now() - session.startedAt.getTime(),
+        duration: duration,
         transcriptLength: session.transcript.length
       });
+      
+      // Log complete conversation
+      if (session.conversationLog.length > 0) {
+        console.log(`\n📞 COMPLETE CONVERSATION LOG - Session ${session.id}`);
+        console.log(`👤 Patient: ${session.patientName}`);
+        console.log(`⏱️  Duration: ${Math.round(duration / 1000)}s`);
+        console.log(`📅 Date: ${session.startedAt.toISOString()}`);
+        console.log(`─────────────────────────────────────────────────────────`);
+        
+        session.conversationLog.forEach((entry, index) => {
+          const timestamp = entry.timestamp.toLocaleTimeString();
+          const speaker = entry.speaker === 'ai' ? '🤖 AI' : '👤 Patient';
+          console.log(`[${timestamp}] ${speaker}: ${entry.text}`);
+        });
+        
+        console.log(`─────────────────────────────────────────────────────────\n`);
+      }
+      
     } catch (error) {
       console.error(`❌ Error saving session data:`, error);
     }
