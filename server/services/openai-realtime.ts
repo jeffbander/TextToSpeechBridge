@@ -273,7 +273,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     });
   }
   
-  private handleClientMessage(sessionId: string, message: any) {
+  handleClientMessage(sessionId: string, message: any) {
     const session = this.sessions.get(sessionId);
     if (!session || !session.openaiWs) {
       console.log(`❌ No session found for ${sessionId} or no OpenAI connection`);

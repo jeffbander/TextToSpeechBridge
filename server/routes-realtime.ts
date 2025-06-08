@@ -79,10 +79,12 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
                 message: 'WebSocket connection working properly',
                 timestamp: new Date().toISOString()
               }));
+              return;
             }
             
-            // Forward all other messages to OpenAI realtime service
-            // The service will handle audio processing and conversation flow
+            // Forward all messages to OpenAI realtime service
+            openaiRealtimeService.handleClientMessage(sessionId, message);
+            
           } catch (error) {
             console.error(`[REALTIME-WS] Message parse error:`, error);
           }
