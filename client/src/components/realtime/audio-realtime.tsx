@@ -17,6 +17,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const [isRecording, setIsRecording] = useState(false);
   const [conversationStarted, setConversationStarted] = useState(false);
   const [transcript, setTranscript] = useState<string[]>([]);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   
   const wsRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -117,13 +118,14 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   }, []);
 
   const startSession = async () => {
-    // Prevent duplicate session creation from React re-renders
-    if (sessionInitializedRef.current) {
-      console.log('[AUDIO] Session already initialized, skipping duplicate');
+    // Prevent duplicate session creation from React re-renders and rapid clicks
+    if (sessionInitializedRef.current || isCreatingSession) {
+      console.log('[AUDIO] Session already initialized or being created, skipping duplicate');
       return;
     }
     
     sessionInitializedRef.current = true;
+    setIsCreatingSession(true);
     
     try {
       setStatus('connecting');
@@ -139,6 +141,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       
       if (!response.ok) {
         sessionInitializedRef.current = false;
+        setIsCreatingSession(false);
         throw new Error('Failed to create session');
       }
       
@@ -174,6 +177,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         console.log('[AUDIO] WebSocket connected');
         clearTimeout(connectionTimeout);
         setStatus('connected');
+        setIsCreatingSession(false);
         initializeAudio();
         
         toast({
@@ -211,6 +215,8 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       websocket.onerror = (error) => {
         console.error('[AUDIO] WebSocket error:', error);
         clearTimeout(connectionTimeout);
+        sessionInitializedRef.current = false;
+        setIsCreatingSession(false);
         setStatus('error');
         cleanup();
         toast({
@@ -309,6 +315,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
     setIsRecording(false);
     setConversationStarted(false);
     sessionInitializedRef.current = false;
+    setIsCreatingSession(false);
   };
 
   const getStatusBadge = () => {
