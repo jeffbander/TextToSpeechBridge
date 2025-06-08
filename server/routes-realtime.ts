@@ -139,6 +139,22 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
     console.log(`[REALTIME] WebSocket server configured for /realtime path`);
   }
 
+  // Monitor active GPT-4o sessions
+  app.get("/api/realtime/status", (req, res) => {
+    const activeSessions = openaiRealtimeService.getAllActiveSessions();
+    res.json({
+      totalSessions: activeSessions.length,
+      sessions: activeSessions.map(s => ({
+        id: s.id,
+        patientName: s.patientName,
+        patientId: s.patientId,
+        isActive: s.isActive,
+        duration: Date.now() - s.startedAt.getTime(),
+        transcriptLength: s.transcript.length
+      }))
+    });
+  });
+
   // GPT-4o real-time session management
   app.post("/api/realtime/session", async (req, res) => {
     try {
