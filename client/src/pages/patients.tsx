@@ -130,47 +130,7 @@ export default function Patients() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-surface shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <Heart className="text-medical-blue text-2xl mr-3" />
-                <span className="text-xl font-semibold text-gray-900">CardioCare AI</span>
-              </div>
-              <nav className="hidden md:ml-10 md:flex md:space-x-8">
-                <Link href="/">
-                  <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium cursor-pointer">Dashboard</span>
-                </Link>
-                <Link href="/patients">
-                  <span className="text-medical-blue border-b-2 border-medical-blue px-1 pb-4 text-sm font-medium cursor-pointer">Patients</span>
-                </Link>
-                <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Calls</span>
-                <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium">Reports</span>
-                <Link href="/voice-settings">
-                  <span className="text-gray-500 hover:text-gray-700 px-1 pb-4 text-sm font-medium cursor-pointer">Settings</span>
-                </Link>
-              </nav>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/voice-settings">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Volume2 className="h-4 w-4" />
-                  Voice Settings
-                </Button>
-              </Link>
-              <button className="relative p-2 text-gray-400 hover:text-gray-500">
-                <Bell className="h-6 w-6" />
-              </button>
-              <div className="flex items-center space-x-3">
-                <User className="h-8 w-8 rounded-full bg-gray-200 p-1" />
-                <span className="text-sm font-medium text-gray-700">Dr. Sarah Chen</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navigation />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
