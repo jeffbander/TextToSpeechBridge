@@ -174,7 +174,8 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       }, 10000);
       
       websocket.onopen = () => {
-        console.log('[AUDIO] WebSocket connected');
+        const timestamp = new Date().toISOString();
+        console.log(`[AUDIO] ${timestamp} WebSocket connected - readyState: ${websocket.readyState}`);
         clearTimeout(connectionTimeout);
         setStatus('connected');
         setIsCreatingSession(false);
@@ -182,6 +183,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         
         // Auto-start conversation and recording immediately after connection
         setTimeout(() => {
+          console.log(`[AUDIO] ${new Date().toISOString()} Auto-starting conversation after 1s delay`);
           startConversation();
           setIsRecording(true);
         }, 1000);
@@ -194,32 +196,47 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
 
       websocket.onmessage = (event) => {
         try {
+          const timestamp = new Date().toISOString();
+          
           if (event.data instanceof ArrayBuffer) {
+            console.log(`[AUDIO] ${timestamp} Received ArrayBuffer audio data - size: ${event.data.byteLength}`);
             playAudioBuffer(event.data);
           } else {
             const message = JSON.parse(event.data);
+            console.log(`[AUDIO] ${timestamp} Received message: ${message.type}`);
             
             if (message.type === 'connection_established') {
-              console.log('[AUDIO] Session confirmed:', message.sessionId);
-              // Session ready - wait for manual start button click
+              console.log(`[AUDIO] ${timestamp} Session confirmed: ${message.sessionId}`);
               
             } else if (message.type === 'audio_delta') {
-              // Handle base64 audio chunks from GPT-4o
+              console.log(`[AUDIO] ${timestamp} Audio delta received - base64 length: ${message.audio?.length || 0}`);
               const audioData = Uint8Array.from(atob(message.audio), c => c.charCodeAt(0));
               playAudioBuffer(audioData.buffer);
+              
             } else if (message.type === 'transcript') {
+              console.log(`[AUDIO] ${timestamp} Transcript: ${message.speaker}: ${message.text}`);
               setTranscript(prev => [...prev, `${message.speaker}: ${message.text}`]);
+              
             } else if (message.type === 'audio_transcript_delta') {
+              console.log(`[AUDIO] ${timestamp} Transcript delta: "${message.text}"`);
               setConversationStarted(true);
+              
+            } else if (message.type === 'session_ready') {
+              console.log(`[AUDIO] ${timestamp} Session ready signal received`);
+              
+            } else {
+              console.log(`[AUDIO] ${timestamp} Unknown message type: ${message.type}`, message);
             }
           }
         } catch (error) {
-          console.error('[AUDIO] Message processing error:', error);
+          console.error(`[AUDIO] ${new Date().toISOString()} Message processing error:`, error);
         }
       };
 
       websocket.onerror = (error) => {
-        console.error('[AUDIO] WebSocket error:', error);
+        const timestamp = new Date().toISOString();
+        console.error(`[AUDIO] ${timestamp} WebSocket error:`, error);
+        console.log(`[AUDIO] ${timestamp} WebSocket state: ${websocket.readyState}`);
         clearTimeout(connectionTimeout);
         sessionInitializedRef.current = false;
         setIsCreatingSession(false);
@@ -232,8 +249,10 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         });
       };
 
-      websocket.onclose = () => {
-        console.log('[AUDIO] Connection closed');
+      websocket.onclose = (event) => {
+        const timestamp = new Date().toISOString();
+        console.log(`[AUDIO] ${timestamp} Connection closed - Code: ${event.code}, Reason: ${event.reason || 'No reason'}, Clean: ${event.wasClean}`);
+        console.log(`[AUDIO] ${timestamp} Final WebSocket state: ${websocket.readyState}`);
         clearTimeout(connectionTimeout);
         setStatus('idle');
         cleanup();
@@ -260,7 +279,9 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       return;
     }
 
-    console.log('[AUDIO] Starting conversation - SINGLE TRIGGER');
+    const timestamp = new Date().toISOString();
+    console.log(`[AUDIO] ${timestamp} Starting conversation - SINGLE TRIGGER`);
+    console.log(`[AUDIO] ${timestamp} WebSocket readyState: ${wsRef.current.readyState}`);
     wsRef.current.send(JSON.stringify({
       type: 'start_conversation'
     }));
