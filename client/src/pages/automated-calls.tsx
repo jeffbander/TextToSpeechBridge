@@ -221,7 +221,7 @@ export default function AutomatedCallsPage() {
                   Initiate Automated Patient Call
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Configure Automated Call</DialogTitle>
                 </DialogHeader>
@@ -349,13 +349,15 @@ export default function AutomatedCallsPage() {
                     </div>
                   )}
 
-                  <Button 
-                    onClick={handleStartCall} 
-                    disabled={startCallMutation.isPending || !selectedPatientId}
-                    className="w-full"
-                  >
-                    {startCallMutation.isPending ? 'Initiating Call...' : 'Start Automated Call'}
-                  </Button>
+                  <div className="sticky bottom-0 bg-background pt-4 border-t">
+                    <Button 
+                      onClick={handleStartCall} 
+                      disabled={startCallMutation.isPending || !selectedPatientId}
+                      className="w-full"
+                    >
+                      {startCallMutation.isPending ? 'Initiating Call...' : 'Start Automated Call'}
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
