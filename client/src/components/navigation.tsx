@@ -1,4 +1,4 @@
-import { Heart, User, Volume2, FileText, Settings, Bot, BarChart3, Phone } from "lucide-react";
+import { Heart, User, Volume2, FileText, Settings, Bot, BarChart3, Phone, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 
@@ -12,6 +12,7 @@ export default function Navigation() {
     { href: "/automated-calls", label: "Auto Calls", icon: Phone },
     { href: "/conversation-logs", label: "Reports", icon: FileText },
     { href: "/voice-settings", label: "Voice Settings", icon: Settings },
+    { href: "/patient-prompts", label: "Patient Prompts", icon: MessageSquare },
   ];
 
   return (

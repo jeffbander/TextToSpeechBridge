@@ -18,6 +18,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/patients" component={Patients} />
       <Route path="/voice-settings" component={VoiceSettings} />
+      <Route path="/patient-prompts" component={PatientPrompts} />
       <Route path="/realtime" component={RealtimePage} />
       <Route path="/conversation-logs" component={ConversationLogs} />
       <Route path="/automated-calls" component={AutomatedCallsPage} />
