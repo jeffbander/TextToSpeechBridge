@@ -296,8 +296,15 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>GPT-4o Voice Session - {patientName}</span>
-          {getStatusBadge()}
+          <span>Single GPT-4o Session - {patientName}</span>
+          <div className="flex items-center gap-2">
+            {getStatusBadge()}
+            {status === 'connected' && (
+              <Badge variant="outline" className="text-xs">
+                Session Active - Single AI Instance
+              </Badge>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -349,13 +356,23 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           </div>
         )}
 
+        {/* Session Status */}
+        {status === 'connected' && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="text-sm font-medium text-green-800">Single AI Session Active</div>
+            <div className="text-xs text-green-600 mt-1">
+              One GPT-4o instance for {patientName} | Use 'End Session' to stop completely
+            </div>
+          </div>
+        )}
+
         {/* Instructions */}
         <div className="text-sm text-gray-600 text-center">
-          {status === 'idle' && "Click 'Start Session' to begin the GPT-4o voice conversation"}
-          {status === 'connecting' && "Establishing secure connection to GPT-4o..."}
-          {status === 'connected' && !isRecording && "Click 'Start Recording' to speak with GPT-4o"}
-          {status === 'connected' && isRecording && "Speak now - GPT-4o is listening"}
-          {status === 'error' && "Connection failed. Please try again"}
+          {status === 'idle' && "Start a new conversation with one AI agent"}
+          {status === 'connecting' && "Connecting to single AI instance..."}
+          {status === 'connected' && !isRecording && "AI ready - click 'Start Recording' to speak"}
+          {status === 'connected' && isRecording && "Recording voice input for AI"}
+          {status === 'error' && "Connection failed - retry to establish single session"}
         </div>
       </CardContent>
     </Card>

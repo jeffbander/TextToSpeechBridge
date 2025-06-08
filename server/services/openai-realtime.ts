@@ -23,16 +23,24 @@ export interface RealtimeSession {
 
 export class OpenAIRealtimeService {
   private sessions: Map<string, RealtimeSession> = new Map();
+  private activePatients: Set<number> = new Set();
   
   async createRealtimeSession(patientId: number, patientName: string, callId: number): Promise<string> {
+    // Prevent multiple sessions for the same patient completely
+    if (this.activePatients.has(patientId)) {
+      throw new Error(`Patient ${patientName} already has an active session. Only one conversation per patient allowed.`);
+    }
+    
     // Clean up any existing sessions for this patient to prevent multiple GPT-4o instances
     const existingSessions = Array.from(this.sessions.entries());
     for (const [id, session] of existingSessions) {
       if (session.patientId === patientId && session.isActive) {
-        console.log(`🧹 Cleaning up duplicate session ${id} for patient ${patientName}`);
+        console.log(`🧹 Terminating duplicate session ${id} for patient ${patientName}`);
         await this.endSession(id);
       }
     }
+    
+    this.activePatients.add(patientId);
     
     const sessionId = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -399,6 +407,9 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     
     session.isActive = false;
     
+    // Remove patient from active set to allow new sessions
+    this.activePatients.delete(session.patientId);
+    
     if (session.openaiWs) {
       session.openaiWs.close();
     }
@@ -407,7 +418,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       session.websocket.close();
     }
     
-    console.log(`🔴 Ended realtime session ${sessionId}`);
+    console.log(`🔴 Ended realtime session ${sessionId} for patient ${session.patientName}`);
     
     // Save session transcript and analysis
     await this.saveSessionData(session);
