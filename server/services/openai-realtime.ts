@@ -113,7 +113,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
             type: 'server_vad',
             threshold: 0.5,
             prefix_padding_ms: 300,
-            silence_duration_ms: 1000
+            silence_duration_ms: 2000
           }
         }
       };
@@ -143,7 +143,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           type: 'response.create',
           response: {
             modalities: ['text', 'audio'],
-            instructions: 'After your greeting, wait for the patient to respond. Do not end the conversation immediately.'
+            instructions: 'After your greeting, wait for the patient to respond. Keep the conversation active and continue listening for patient input. Do not end the session.'
           }
         };
         
@@ -245,6 +245,8 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           console.log(`🤖 AI said: ${session.currentResponse.trim()}`);
           session.currentResponse = '';
         }
+        // Keep session alive - don't close after response
+        console.log(`🔄 Session ${sessionId} staying active for patient response`);
         break;
         
       case 'error':
@@ -313,28 +315,50 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     
     switch (message.type) {
       case 'audio_input':
-        // Store audio chunks for batch processing
+        // Forward audio directly to OpenAI for real-time conversation
         if (session.openaiWs.readyState === WebSocket.OPEN && message.audio) {
           try {
-            // Create proper PCM16 buffer from audio samples
+            // Convert audio to base64 for OpenAI
             const pcmBuffer = Buffer.alloc(message.audio.length * 2);
             for (let i = 0; i < message.audio.length; i++) {
               const sample = Math.max(-32768, Math.min(32767, Math.round(message.audio[i])));
               pcmBuffer.writeInt16LE(sample, i * 2);
             }
-            session.audioBuffer.push(pcmBuffer);
             
-            console.log(`🎵 Audio chunk accumulated: ${message.audio.length} samples for session ${sessionId}`);
+            const base64Audio = pcmBuffer.toString('base64');
+            
+            // Send audio to OpenAI for real-time processing
+            session.openaiWs.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: base64Audio
+            }));
+            
+            console.log(`🎤 Streaming audio to OpenAI: ${message.audio.length} samples for session ${sessionId}`);
           } catch (error) {
-            console.error(`❌ Error accumulating audio for session ${sessionId}:`, error);
+            console.error(`❌ Error streaming audio for session ${sessionId}:`, error);
           }
         }
         break;
         
       case 'audio_input_complete':
-        // Handle audio input completion - no new AI response trigger needed
-        console.log(`🔇 Audio input complete for session ${sessionId} - REMOVED DUPLICATE GPT-4o TRIGGER`);
-        // Only clear audio buffer, conversation continues from existing trigger
+        // Commit audio buffer and generate AI response for continuous conversation
+        if (session.openaiWs.readyState === WebSocket.OPEN) {
+          console.log(`🔇 Audio input complete for session ${sessionId} - committing buffer and generating response`);
+          
+          // Commit the audio buffer to trigger processing
+          session.openaiWs.send(JSON.stringify({
+            type: 'input_audio_buffer.commit'
+          }));
+          
+          // Generate AI response to continue conversation
+          session.openaiWs.send(JSON.stringify({
+            type: 'response.create',
+            response: {
+              modalities: ['text', 'audio'],
+              instructions: 'Continue the healthcare conversation naturally. Respond to what the patient just said and ask appropriate follow-up questions.'
+            }
+          }));
+        }
         session.audioBuffer = [];
         break;
         
