@@ -1,0 +1,15 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749412302340_s7apxhev9
+Patient: Test Patient (ID: 2)
+Call ID: 1
+Duration: 34 seconds
+Date: 2025-06-08T19:51:42.340Z
+Total Exchanges: 1
+
+─────────────────────────────────────────────────────────
+
+[7:51:53 PM] AI: Hello, this is Dr. Wellman calling for a follow-up with Test Patient. I wanted to check in and see how you've been feeling since your last appointment. How has your recovery been going? Are there any concerns or improvements you'd like to discuss?
+
+─────────────────────────────────────────────────────────
+End of Conversation

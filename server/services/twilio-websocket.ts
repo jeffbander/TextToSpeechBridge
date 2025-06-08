@@ -14,6 +14,9 @@ export class TwilioWebSocketHandler {
       return;
     }
 
+    // Initialize OpenAI connection immediately
+    this.initializeCallSession(sessionId, null);
+
     ws.on('message', (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
@@ -25,7 +28,8 @@ export class TwilioWebSocketHandler {
             
           case 'start':
             console.log(`[TWILIO-WS] Call started for session: ${sessionId}`);
-            this.initializeCallSession(sessionId, message);
+            // Send initial greeting via OpenAI
+            this.sendInitialGreeting(sessionId);
             break;
             
           case 'media':
@@ -69,6 +73,36 @@ export class TwilioWebSocketHandler {
       
     } catch (error) {
       console.error(`[TWILIO-WS] Error initializing call session:`, error);
+    }
+  }
+
+  private sendInitialGreeting(sessionId: string) {
+    try {
+      const session = openaiRealtimeService.getActiveSession(sessionId);
+      if (!session) return;
+
+      // Get patient-specific greeting from the session metadata
+      const greeting = `Hello, this is Dr. Wellman calling for a follow-up with ${session.patientName}. I wanted to check in and see how you've been feeling since your last appointment. How has your recovery been going? Are there any concerns or improvements you'd like to discuss?`;
+      
+      // Send greeting to OpenAI to generate speech
+      openaiRealtimeService.handleClientMessage(sessionId, {
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'assistant',
+          content: [{ type: 'text', text: greeting }]
+        }
+      });
+
+      // Trigger response generation
+      openaiRealtimeService.handleClientMessage(sessionId, {
+        type: 'response.create'
+      });
+
+      console.log(`[TWILIO-WS] Initial greeting sent for session: ${sessionId}`);
+      
+    } catch (error) {
+      console.error(`[TWILIO-WS] Error sending initial greeting:`, error);
     }
   }
 

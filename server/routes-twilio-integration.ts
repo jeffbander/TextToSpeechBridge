@@ -3,6 +3,7 @@ import { storage } from "./storage";
 import { twilioService } from "./services/twilio";
 import { patientPromptManager } from "./services/patient-prompt-manager";
 import { openaiRealtimeService } from "./services/openai-realtime";
+import OpenAI from "openai";
 
 export function registerTwilioIntegrationRoutes(app: Express) {
   console.log("[TWILIO-INTEGRATION] Initializing Twilio-to-GPT-4o integration routes");
@@ -120,13 +121,23 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         return res.status(404).send('<Response><Say>Session not found</Say><Hangup/></Response>');
       }
 
-      // Generate TwiML that connects to GPT-4o real-time audio
+      // Get patient data and generate context
+      const patient = await storage.getPatient(session.patientId);
+      if (!patient) {
+        return res.status(404).send('<Response><Say>Patient information not found</Say><Hangup/></Response>');
+      }
+
+      const patientContext = patientPromptManager.generatePatientSpecificPrompt({
+        patient,
+        urgencyLevel: 'medium'
+      });
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna-Neural">Hello, connecting you to your healthcare assistant.</Say>
-  <Connect>
-    <Stream url="wss://${req.get('host')}/ws/twilio/${sessionId}" />
-  </Connect>
+  <Gather input="speech" action="/api/twilio/process-speech/${sessionId}" method="POST" speechTimeout="auto" timeout="10">
+    <Say voice="Polly.Joanna-Neural">${patientContext.initialGreeting}</Say>
+  </Gather>
+  <Say voice="Polly.Joanna-Neural">Thank you for your time. Take care and feel free to call if you have any concerns.</Say>
 </Response>`;
 
       res.type('text/xml').send(twiml);
@@ -136,6 +147,103 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       res.status(500).send('<Response><Say>Connection error</Say><Hangup/></Response>');
     }
   });
+
+  // Process patient speech and generate AI response
+  app.post("/api/twilio/process-speech/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { SpeechResult, Confidence } = req.body;
+      
+      console.log(`[TWILIO-SPEECH] Processing speech for session ${sessionId}: "${SpeechResult}" (confidence: ${Confidence})`);
+
+      // Get the active session
+      const session = openaiRealtimeService.getActiveSession(sessionId);
+      if (!session) {
+        return res.status(404).send('<Response><Say>Session expired</Say><Hangup/></Response>');
+      }
+
+      // Process the patient's speech with GPT-4o
+      if (SpeechResult && SpeechResult.trim()) {
+        // Add patient's speech to conversation log
+        session.conversationLog.push({
+          timestamp: new Date(),
+          speaker: 'patient',
+          text: SpeechResult
+        });
+
+        // Generate AI response using OpenAI
+        const response = await generateAIResponse(sessionId, SpeechResult);
+        
+        // Add AI response to conversation log
+        session.conversationLog.push({
+          timestamp: new Date(),
+          speaker: 'ai',
+          text: response
+        });
+
+        // Continue conversation with follow-up question
+        const followUpTwiML = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Gather input="speech" action="/api/twilio/process-speech/${sessionId}" method="POST" speechTimeout="auto" timeout="15">
+    <Say voice="Polly.Joanna-Neural">${response}</Say>
+  </Gather>
+  <Say voice="Polly.Joanna-Neural">Thank you for sharing. Is there anything else you'd like to discuss about your health?</Say>
+  <Gather input="speech" action="/api/twilio/process-speech/${sessionId}" method="POST" speechTimeout="auto" timeout="10">
+    <Say voice="Polly.Joanna-Neural">Please let me know if you have any other concerns.</Say>
+  </Gather>
+  <Say voice="Polly.Joanna-Neural">Thank you for your time. Take care and remember to follow your treatment plan. Goodbye.</Say>
+</Response>`;
+
+        res.type('text/xml').send(followUpTwiML);
+      } else {
+        // No speech detected, ask again
+        const clarificationTwiML = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Gather input="speech" action="/api/twilio/process-speech/${sessionId}" method="POST" speechTimeout="auto" timeout="10">
+    <Say voice="Polly.Joanna-Neural">I'm sorry, I didn't catch that. Could you please repeat how you've been feeling?</Say>
+  </Gather>
+  <Say voice="Polly.Joanna-Neural">Thank you for your time. Have a great day.</Say>
+</Response>`;
+
+        res.type('text/xml').send(clarificationTwiML);
+      }
+
+    } catch (error) {
+      console.error('[TWILIO-SPEECH] Error processing speech:', error);
+      res.status(500).send('<Response><Say>Sorry, there was an error. Please call back later.</Say><Hangup/></Response>');
+    }
+  });
+
+  // Helper method for generating AI responses
+  async function generateAIResponse(sessionId: string, patientInput: string): Promise<string> {
+    try {
+      const session = openaiRealtimeService.getActiveSession(sessionId);
+      if (!session) return "Thank you for calling.";
+
+      // Create context-aware prompt
+      const prompt = `You are Dr. Wellman conducting a post-discharge follow-up call with ${session.patientName}. 
+      
+Patient just said: "${patientInput}"
+
+Respond as a caring healthcare provider. Ask relevant follow-up questions about their recovery, symptoms, medications, or concerns. Keep responses conversational and under 50 words.`;
+
+      // Use OpenAI to generate contextual response
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 100,
+        temperature: 0.7
+      });
+
+      return completion.choices[0].message.content || "Thank you for sharing that with me.";
+      
+    } catch (error) {
+      console.error('[AI-RESPONSE] Error generating response:', error);
+      return "Thank you for that information. How else are you feeling?";
+    }
+  }
 
   // Twilio call status updates
   app.post("/api/twilio/status/:callId", async (req, res) => {
