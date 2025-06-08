@@ -27,6 +27,8 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const isPlayingRef = useRef(false);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const playbackQueueRef = useRef<string[]>([]);
+  const silenceCountRef = useRef(0);
+  const lastAudioTimeRef = useRef<number>(0);
   const { toast } = useToast();
 
   // Auto-start session when component mounts
@@ -59,17 +61,42 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         if (wsRef.current?.readyState === WebSocket.OPEN && isRecording) {
           const inputBuffer = event.inputBuffer.getChannelData(0);
           
-          // Convert float32 to PCM16 (24kHz mono)
-          const pcm16 = new Int16Array(inputBuffer.length);
-          for (let i = 0; i < inputBuffer.length; i++) {
-            const sample = Math.max(-1, Math.min(1, inputBuffer[i]));
-            pcm16[i] = Math.floor(sample * 32767);
-          }
+          // Check for actual audio input (not just silence)
+          const hasAudio = inputBuffer.some(sample => Math.abs(sample) > 0.01);
           
-          wsRef.current.send(JSON.stringify({
-            type: 'audio_input',
-            audio: Array.from(pcm16)
-          }));
+          if (hasAudio) {
+            // Convert float32 to PCM16 (24kHz mono)
+            const pcm16 = new Int16Array(inputBuffer.length);
+            for (let i = 0; i < inputBuffer.length; i++) {
+              const sample = Math.max(-1, Math.min(1, inputBuffer[i]));
+              pcm16[i] = Math.floor(sample * 32767);
+            }
+            
+            console.log(`[AUDIO] Sending patient audio: ${pcm16.length} samples`);
+            wsRef.current.send(JSON.stringify({
+              type: 'audio_input',
+              audio: Array.from(pcm16)
+            }));
+            
+            // Reset silence counter when audio detected
+            silenceCountRef.current = 0;
+            lastAudioTimeRef.current = Date.now();
+          } else {
+            // Count silence frames
+            silenceCountRef.current++;
+            
+            // If 1 second of silence after speech, trigger audio completion
+            if (silenceCountRef.current > 24 && lastAudioTimeRef.current > 0 && Date.now() - lastAudioTimeRef.current > 1000) {
+              console.log(`[AUDIO] Detected end of patient speech - triggering audio completion`);
+              wsRef.current.send(JSON.stringify({
+                type: 'audio_input_complete'
+              }));
+              
+              // Reset counters
+              silenceCountRef.current = 0;
+              lastAudioTimeRef.current = 0;
+            }
+          }
         }
       };
       

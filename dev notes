@@ -55,3 +55,67 @@ Voice recordings captured successfully with authentic patient speech
 AI transcription processing functional
 Complete voice interaction pipeline operational
 The system now successfully processes real patient calls from initiation through AI analysis, capturing authentic voice data and providing intelligent healthcare interactions.
+
+## CRITICAL SOLUTION: Single Voice Audio Playback Fix
+
+### Problem: Multiple Overlapping AI Voices
+The OpenAI Realtime API sends audio in chunks (deltas), and the original implementation was playing each chunk immediately, creating multiple overlapping audio streams that sounded like several AI voices talking at once.
+
+### Root Cause Analysis
+- Each `response.audio.delta` message created a separate AudioBufferSourceNode
+- Multiple audio sources played simultaneously causing audio overlap
+- No coordination between audio chunks resulted in cacophony
+
+### Solution: Audio Accumulation Strategy
+**File: client/src/components/realtime/audio-realtime.tsx**
+
+#### Key Changes:
+1. **Audio Buffer Accumulation**
+```javascript
+const audioBufferRef = useRef<number[]>([]);
+const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+const playAudioBuffer = useCallback(async (audioData: ArrayBuffer) => {
+  // Accumulate audio data instead of playing immediately
+  const pcmData = new Int16Array(audioData);
+  for (let i = 0; i < pcmData.length; i++) {
+    audioBufferRef.current.push(pcmData[i] / 32768.0);
+  }
+});
+```
+
+2. **Triggered Playback on Completion**
+```javascript
+const playAccumulatedAudio = useCallback(async () => {
+  // Stop any currently playing audio
+  if (currentSourceRef.current) {
+    currentSourceRef.current.stop();
+    currentSourceRef.current = null;
+  }
+  
+  // Create single audio buffer from all accumulated samples
+  const audioBuffer = audioContextRef.current.createBuffer(1, sampleCount, 24000);
+  // Play complete accumulated audio as one continuous stream
+});
+```
+
+3. **Server-Side Completion Signal**
+**File: server/services/openai-realtime.ts**
+```javascript
+case 'response.audio.done':
+  // Signal audio completion to trigger accumulated playback
+  session.websocket.send(JSON.stringify({ type: 'audio_done' }));
+```
+
+#### Message Flow:
+1. OpenAI sends multiple `audio_delta` messages → Accumulate samples
+2. OpenAI sends `audio.done` message → Trigger single playback
+3. Client plays complete accumulated audio as one continuous voice
+
+### Result:
+- Single, clear AI voice instead of multiple overlapping voices
+- Smooth, natural speech playback
+- Complete audio streams without interruption
+- Professional healthcare conversation experience
+
+This solution transforms chaotic overlapping audio into professional, single-voice AI interactions suitable for healthcare applications.
