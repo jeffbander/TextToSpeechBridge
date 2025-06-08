@@ -180,9 +180,10 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         setIsCreatingSession(false);
         initializeAudio();
         
-        // Auto-start conversation immediately after connection
+        // Auto-start conversation and recording immediately after connection
         setTimeout(() => {
           startConversation();
+          setIsRecording(true);
         }, 1000);
         
         toast({
@@ -374,22 +375,17 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           )}
           
           {(status === 'connected' || conversationStarted) && (
-            <>
-              <Button
-                onClick={toggleRecording}
-                variant={isRecording ? "destructive" : "default"}
-                className="flex items-center gap-2"
-                size="lg"
-              >
-                {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                {isRecording ? 'Stop Speaking' : 'Speak to AI'}
-              </Button>
+            <div className="flex flex-col items-center gap-4">
+              <div className="text-center">
+                <div className="text-sm text-green-600 font-medium">AI is speaking...</div>
+                <div className="text-xs text-gray-500">Microphone is active - speak normally</div>
+              </div>
               
-              <Button onClick={endSession} variant="outline" className="flex items-center gap-2" size="lg">
+              <Button onClick={endSession} variant="destructive" className="flex items-center gap-2" size="lg">
                 <PhoneOff className="w-5 h-5" />
                 End Call
               </Button>
-            </>
+            </div>
           )}
           
           {status === 'error' && (

@@ -101,9 +101,9 @@ export default function RealtimePage() {
       {!isSessionActive ? (
         <Card>
           <CardHeader>
-            <CardTitle>Start Real-time Session</CardTitle>
+            <CardTitle>AI Voice Call</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Select a patient to begin a live GPT-4o voice conversation
+              Select a patient and start an AI call. The AI will speak immediately and listen for responses.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -131,12 +131,12 @@ export default function RealtimePage() {
             </div>
 
             {selectedPatient && (
-              <div className="p-4 bg-muted rounded-lg">
-                <h4 className="font-medium">Selected Patient</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Name: {selectedPatient.name}</p>
-                  <p>Phone: {selectedPatient.phoneNumber}</p>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-medium text-blue-900">Ready to Call</h4>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>Patient: {selectedPatient.name}</p>
                   <p>Condition: {selectedPatient.condition}</p>
+                  <p className="text-xs mt-2 font-medium">Click below to start the AI voice call</p>
                 </div>
               </div>
             )}
