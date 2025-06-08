@@ -261,16 +261,18 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'response.audio_transcript.delta':
-        // Handle audio transcript and build complete response
+        // Handle audio transcript separately to avoid duplication
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
           session.websocket.send(JSON.stringify({
             type: 'audio_transcript_delta',
             text: message.delta
           }));
         }
-        // Accumulate audio transcript for complete response
-        if (!session.currentResponse) session.currentResponse = '';
-        session.currentResponse += message.delta;
+        // Only use audio transcript if no text response is being accumulated
+        if (!session.currentResponse) {
+          session.currentResponse = '';
+        }
+        // Don't duplicate - audio transcript is the same as text response
         break;
         
       case 'response.done':

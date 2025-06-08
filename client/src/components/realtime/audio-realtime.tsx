@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { audioManager } from '@/lib/audio-manager';
 
 interface AudioRealtimeProps {
   patientId: number;
@@ -166,14 +167,21 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         await audioContextRef.current.resume();
       }
       
-      // Stop any currently playing audio
+      // Stop any currently playing audio to prevent overlap/duplication
       if (currentSourceRef.current) {
         try {
           currentSourceRef.current.stop();
+          currentSourceRef.current.disconnect();
         } catch (e) {
           // Source may already be stopped
         }
         currentSourceRef.current = null;
+      }
+      
+      // Prevent multiple simultaneous playbacks
+      if (isPlayingRef.current) {
+        console.log(`[AUDIO] Blocking new playback - already playing audio`);
+        return;
       }
 
       // Create audio buffer from accumulated samples
