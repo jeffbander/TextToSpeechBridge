@@ -109,7 +109,7 @@ export default function Dashboard() {
                 <Volume2 className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{activeCalls?.length || 0}</div>
+                <div className="text-2xl font-bold">{Array.isArray(activeCalls) ? activeCalls.length : 0}</div>
                 <p className="text-xs text-muted-foreground">Currently in progress</p>
               </CardContent>
             </Card>
@@ -163,7 +163,7 @@ export default function Dashboard() {
               <CardContent>
                 {activeCallsLoading ? (
                   <div className="text-sm text-gray-500">Loading active calls...</div>
-                ) : activeCalls.length > 0 ? (
+                ) : Array.isArray(activeCalls) && activeCalls.length > 0 ? (
                   <div className="space-y-2">
                     {activeCalls.map((call) => (
                       <div key={call.id} className="flex items-center justify-between p-2 bg-green-50 rounded-lg">
