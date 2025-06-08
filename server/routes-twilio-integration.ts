@@ -13,7 +13,15 @@ export function registerTwilioIntegrationRoutes(app: Express) {
     try {
       console.log(`[TWILIO-INTEGRATION] Received request body:`, req.body);
       
-      const { patientId, urgencyLevel = 'medium', visitReason, medications = [] } = req.body;
+      const { 
+        patientId, 
+        urgencyLevel = 'medium', 
+        visitReason, 
+        medications = [], 
+        customInstructions,
+        useCustomPrompt,
+        generatedPrompt 
+      } = req.body;
       
       if (!patientId) {
         return res.status(400).json({ message: "Patient ID is required" });
@@ -36,8 +44,15 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         urgencyLevel: urgencyLevel as 'low' | 'medium' | 'high' | 'critical'
       };
 
-      // Generate patient-specific system prompt
-      const systemPrompt = patientPromptManager.createTwilioSystemPrompt(patientContext);
+      // Use custom prompt if provided, otherwise generate patient-specific system prompt
+      let systemPrompt;
+      if (useCustomPrompt && generatedPrompt) {
+        systemPrompt = generatedPrompt.systemPrompt;
+        console.log(`[TWILIO-INTEGRATION] Using custom prompt for ${patient.name}`);
+      } else {
+        systemPrompt = patientPromptManager.createTwilioSystemPrompt(patientContext);
+        console.log(`[TWILIO-INTEGRATION] Using standard prompt for ${patient.name}`);
+      }
       
       // Create call record
       const call = await storage.createCall({
@@ -48,7 +63,10 @@ export function registerTwilioIntegrationRoutes(app: Express) {
           systemPrompt,
           urgencyLevel,
           visitReason,
-          medications
+          medications,
+          customInstructions,
+          useCustomPrompt,
+          customPromptData: useCustomPrompt ? generatedPrompt : null
         }
       });
 
