@@ -224,18 +224,20 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     
     switch (message.type) {
       case 'audio_input':
-        // Process WebM audio and convert to PCM16 for OpenAI
+        // Convert PCM16 audio data for OpenAI real-time API
         if (session.openaiWs.readyState === WebSocket.OPEN && message.audio) {
           try {
-            // For now, skip complex conversion and let OpenAI handle the audio format
-            const audioBase64 = Buffer.from(message.audio).toString('base64');
+            // Convert audio array to Int16Array PCM16 format
+            const pcm16Array = new Int16Array(message.audio);
+            const audioBuffer = Buffer.from(pcm16Array.buffer);
+            const audioBase64 = audioBuffer.toString('base64');
             
             session.openaiWs.send(JSON.stringify({
               type: 'input_audio_buffer.append',
               audio: audioBase64
             }));
             
-            console.log(`🎵 Audio chunk sent to OpenAI (${message.audio.length} bytes) for session ${sessionId}`);
+            console.log(`🎵 Audio chunk sent to OpenAI (${message.audio.length} samples) for session ${sessionId}`);
           } catch (error) {
             console.error(`❌ Error processing audio for session ${sessionId}:`, error);
           }

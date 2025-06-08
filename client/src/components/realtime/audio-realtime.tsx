@@ -24,34 +24,45 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
 
   const initializeAudio = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContextRef.current = new AudioContext();
-      
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
       });
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
-          event.data.arrayBuffer().then(buffer => {
-            const audioContext = new AudioContext();
-            audioContext.decodeAudioData(buffer).then(audioBuffer => {
-              const pcmData = audioBuffer.getChannelData(0);
-              const pcm16 = new Int16Array(pcmData.length);
-              for (let i = 0; i < pcmData.length; i++) {
-                pcm16[i] = Math.max(-32768, Math.min(32767, pcmData[i] * 32768));
-              }
-              
-              wsRef.current?.send(JSON.stringify({
-                type: 'audio_input',
-                audio: Array.from(pcm16)
-              }));
-            });
-          });
+      
+      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      
+      // Create audio processor for real-time PCM16 conversion
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      
+      processor.onaudioprocess = (event) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN && isRecording) {
+          const inputBuffer = event.inputBuffer.getChannelData(0);
+          
+          // Convert float32 to PCM16 (24kHz mono)
+          const pcm16 = new Int16Array(inputBuffer.length);
+          for (let i = 0; i < inputBuffer.length; i++) {
+            const sample = Math.max(-1, Math.min(1, inputBuffer[i]));
+            pcm16[i] = Math.floor(sample * 32767);
+          }
+          
+          wsRef.current.send(JSON.stringify({
+            type: 'audio_input',
+            audio: Array.from(pcm16)
+          }));
         }
       };
-
-      console.log('[AUDIO] Microphone access granted');
+      
+      source.connect(processor);
+      processor.connect(audioContextRef.current.destination);
+      
+      mediaRecorderRef.current = { processor, source } as any;
+      
+      console.log('[AUDIO] Microphone initialized for 24kHz PCM16');
     } catch (error) {
       console.error('[AUDIO] Microphone access denied:', error);
       toast({
@@ -60,7 +71,7 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         variant: "destructive"
       });
     }
-  }, [toast]);
+  }, [toast, isRecording]);
 
   const playAudioBuffer = useCallback(async (audioData: ArrayBuffer) => {
     try {
@@ -196,21 +207,21 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
     }
 
     if (isRecording) {
-      mediaRecorderRef.current?.stop();
       setIsRecording(false);
       
       wsRef.current.send(JSON.stringify({
         type: 'audio_input_complete'
       }));
+      
+      console.log('[AUDIO] Recording stopped');
     } else {
-      if (mediaRecorderRef.current?.state === 'inactive') {
-        mediaRecorderRef.current.start(100);
-        setIsRecording(true);
-        
-        wsRef.current.send(JSON.stringify({
-          type: 'start_conversation'
-        }));
-      }
+      setIsRecording(true);
+      
+      wsRef.current.send(JSON.stringify({
+        type: 'start_conversation'
+      }));
+      
+      console.log('[AUDIO] Recording started');
     }
   };
 
@@ -226,8 +237,19 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       wsRef.current = null;
     }
     
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
+    if (mediaRecorderRef.current) {
+      const recorder = mediaRecorderRef.current as any;
+      if (recorder.processor) {
+        recorder.processor.disconnect();
+      }
+      if (recorder.source) {
+        recorder.source.disconnect();
+      }
+    }
+    
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
     }
     
     setIsRecording(false);
