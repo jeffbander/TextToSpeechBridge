@@ -74,7 +74,8 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       const sessionId = await openaiRealtimeService.createRealtimeSession(
         patient.id,
         patient.name,
-        call.id
+        call.id,
+        systemPrompt
       );
 
       // Configure the session with patient-specific prompt

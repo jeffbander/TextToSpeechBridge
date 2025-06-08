@@ -19,6 +19,7 @@ export interface RealtimeSession {
   transcript: string[];
   audioBuffer: Buffer[];
   currentResponse?: string;
+  customSystemPrompt?: string;
   conversationLog: Array<{
     timestamp: Date;
     speaker: 'ai' | 'patient';
@@ -30,7 +31,7 @@ export class OpenAIRealtimeService {
   private sessions: Map<string, RealtimeSession> = new Map();
   private activePatients: Set<number> = new Set();
   
-  async createRealtimeSession(patientId: number, patientName: string, callId: number): Promise<string> {
+  async createRealtimeSession(patientId: number, patientName: string, callId: number, customSystemPrompt?: string): Promise<string> {
     // Clean up any existing sessions for this patient FIRST
     const existingSessions = Array.from(this.sessions.entries());
     for (const [id, session] of existingSessions) {
@@ -59,7 +60,8 @@ export class OpenAIRealtimeService {
       transcript: [],
       audioBuffer: [],
       conversationLog: [],
-      currentResponse: ''
+      currentResponse: '',
+      customSystemPrompt
     };
     
     this.sessions.set(sessionId, session);
@@ -87,12 +89,8 @@ export class OpenAIRealtimeService {
     openaiWs.on('open', () => {
       console.log(`🔴 OpenAI Realtime connected for session ${sessionId}`);
       
-      // Configure the session with healthcare-specific instructions
-      const sessionConfig = {
-        type: 'session.update',
-        session: {
-          modalities: ['text', 'audio'],
-          instructions: `You are a compassionate healthcare AI assistant conducting a post-discharge follow-up call for ${session.patientName}. 
+      // Configure the session with custom or default healthcare-specific instructions
+      const instructions = session.customSystemPrompt || `You are a compassionate healthcare AI assistant conducting a post-discharge follow-up call for ${session.patientName}. 
           
 Your role:
 - Ask about the patient's current health status and recovery
@@ -108,7 +106,13 @@ Guidelines:
 - Provide clear next steps when needed
 - End the call when appropriate
 
-Patient context: This is a routine post-discharge follow-up call to ensure proper recovery.`,
+Patient context: This is a routine post-discharge follow-up call to ensure proper recovery.`;
+
+      const sessionConfig = {
+        type: 'session.update',
+        session: {
+          modalities: ['text', 'audio'],
+          instructions,
           voice: 'alloy',
           input_audio_format: 'pcm16',
           output_audio_format: 'pcm16',
@@ -125,6 +129,12 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       };
       
       openaiWs.send(JSON.stringify(sessionConfig));
+      
+      if (session.customSystemPrompt) {
+        console.log(`🔴 Using custom system prompt for ${session.patientName}`);
+      } else {
+        console.log(`🔴 Using default system prompt for ${session.patientName}`);
+      }
       
       // Start the conversation immediately after session config
       setTimeout(() => {
