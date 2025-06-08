@@ -61,8 +61,13 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         if (wsRef.current?.readyState === WebSocket.OPEN && isRecording) {
           const inputBuffer = event.inputBuffer.getChannelData(0);
           
-          // Check for actual audio input (not just silence)
-          const hasAudio = inputBuffer.some(sample => Math.abs(sample) > 0.01);
+          // Check for actual audio input (lower threshold for better sensitivity)
+          const hasAudio = inputBuffer.some(sample => Math.abs(sample) > 0.001);
+          const audioLevel = Math.max(...inputBuffer.map(s => Math.abs(s)));
+          
+          if (audioLevel > 0.001) {
+            console.log(`[AUDIO] Audio detected - level: ${audioLevel.toFixed(4)}`);
+          }
           
           if (hasAudio) {
             // Convert float32 to PCM16 (24kHz mono)
