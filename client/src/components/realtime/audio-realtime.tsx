@@ -146,71 +146,20 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
 
   const playAudioBuffer = useCallback(async (audioData: ArrayBuffer) => {
     try {
-      // Accumulate audio data instead of playing immediately
+      // Use singleton audio manager to prevent duplication
       const pcmData = new Int16Array(audioData);
-      for (let i = 0; i < pcmData.length; i++) {
-        audioBufferRef.current.push(pcmData[i] / 32768.0);
-      }
+      audioManager.addAudioData(pcmData);
       
-      console.log(`[AUDIO] Accumulated ${pcmData.length} samples, total: ${audioBufferRef.current.length}`);
+      console.log(`[AUDIO] Added ${pcmData.length} samples to singleton manager`);
     } catch (error) {
-      console.error('[AUDIO] Error accumulating audio:', error);
+      console.error('[AUDIO] Error adding audio data:', error);
     }
   }, []);
 
   const playAccumulatedAudio = useCallback(async () => {
-    if (!audioContextRef.current || audioBufferRef.current.length === 0) return;
-    
     try {
-      // Ensure audio context is running
-      if (audioContextRef.current.state === 'suspended') {
-        await audioContextRef.current.resume();
-      }
-      
-      // Stop any currently playing audio to prevent overlap/duplication
-      if (currentSourceRef.current) {
-        try {
-          currentSourceRef.current.stop();
-          currentSourceRef.current.disconnect();
-        } catch (e) {
-          // Source may already be stopped
-        }
-        currentSourceRef.current = null;
-      }
-      
-      // Prevent multiple simultaneous playbacks
-      if (isPlayingRef.current) {
-        console.log(`[AUDIO] Blocking new playback - already playing audio`);
-        return;
-      }
-
-      // Create audio buffer from accumulated samples
-      const sampleCount = audioBufferRef.current.length;
-      const audioBuffer = audioContextRef.current.createBuffer(1, sampleCount, 24000);
-      const channelData = audioBuffer.getChannelData(0);
-      
-      for (let i = 0; i < sampleCount; i++) {
-        channelData[i] = audioBufferRef.current[i];
-      }
-      
-      // Play the complete accumulated audio
-      const source = audioContextRef.current.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContextRef.current.destination);
-      
-      currentSourceRef.current = source;
-      source.onended = () => {
-        currentSourceRef.current = null;
-        isPlayingRef.current = false;
-      };
-      
-      source.start();
-      isPlayingRef.current = true;
-      
-      console.log(`[AUDIO] Playing accumulated audio: ${sampleCount} samples`);
-      
-      // Clear the buffer after playing
-      audioBufferRef.current = [];
+      // Use singleton audio manager to ensure only one audio stream plays
+      await audioManager.playAccumulatedAudio();
     } catch (error) {
       console.error('[AUDIO] Error playing accumulated audio:', error);
     }

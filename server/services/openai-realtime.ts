@@ -248,16 +248,14 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'response.text.delta':
-        // Handle text responses and build transcript
+        // Handle text responses but don't accumulate if audio transcript is primary
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
           session.websocket.send(JSON.stringify({
             type: 'text_delta',
             text: message.delta
           }));
         }
-        // Accumulate response text for transcript
-        if (!session.currentResponse) session.currentResponse = '';
-        session.currentResponse += message.delta;
+        // Skip text accumulation to prevent duplication with audio transcript
         break;
         
       case 'response.audio_transcript.delta':
@@ -268,11 +266,9 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
             text: message.delta
           }));
         }
-        // Only use audio transcript if no text response is being accumulated
-        if (!session.currentResponse) {
-          session.currentResponse = '';
-        }
-        // Don't duplicate - audio transcript is the same as text response
+        // Use audio transcript as the primary response accumulator
+        if (!session.currentResponse) session.currentResponse = '';
+        session.currentResponse += message.delta;
         break;
         
       case 'response.done':
