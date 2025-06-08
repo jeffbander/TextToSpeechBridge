@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,15 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
   const audioContextRef = useRef<AudioContext | null>(null);
   const sessionInitializedRef = useRef(false);
   const { toast } = useToast();
+
+  // Auto-start session when component mounts
+  useEffect(() => {
+    if (status === 'idle' && !sessionInitializedRef.current) {
+      console.log(`[AUDIO] Auto-starting session on mount for ${patientName}`);
+      // Start immediately when component loads
+      setTimeout(() => startSession(), 100);
+    }
+  }, [patientName]);
 
   const initializeAudio = useCallback(async () => {
     try {
@@ -375,37 +384,19 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Single Button Flow */}
+        {/* Automated Status Display - No Manual Buttons */}
         <div className="flex flex-col items-center gap-4">
-          {status === 'idle' && (
-            <div className="text-center">
-              <div className="text-sm text-gray-600 mb-2">Ready to start AI call</div>
-              <Button 
-                onClick={startSession} 
-                disabled={isCreatingSession}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                size="lg"
-              >
-                <Phone className="w-5 h-5" />
-                {isCreatingSession ? 'Starting...' : 'Begin AI Call'}
-              </Button>
-            </div>
-          )}
-          
           {status === 'connecting' && (
             <div className="text-center">
-              <div className="text-sm text-blue-600 mb-2">Connecting to AI...</div>
-              <Button disabled className="flex items-center gap-2" size="lg">
-                <Phone className="w-5 h-5 animate-pulse" />
-                Connecting...
-              </Button>
+              <div className="text-lg text-blue-600 font-medium mb-2">Connecting to AI...</div>
+              <div className="text-sm text-gray-600">Establishing voice session</div>
             </div>
           )}
           
           {(status === 'connected' || conversationStarted) && (
             <div className="text-center">
-              <div className="text-sm text-green-600 font-medium mb-1">AI Call Active</div>
-              <div className="text-xs text-gray-500 mb-4">AI is speaking - microphone is listening</div>
+              <div className="text-lg text-green-600 font-medium mb-1">AI Call Active</div>
+              <div className="text-sm text-gray-600 mb-4">AI is speaking - microphone is listening</div>
               
               <Button onClick={endSession} variant="destructive" className="flex items-center gap-2" size="lg">
                 <PhoneOff className="w-5 h-5" />
@@ -416,15 +407,8 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
           
           {status === 'error' && (
             <div className="text-center">
-              <div className="text-sm text-red-600 mb-2">Connection failed</div>
-              <Button 
-                onClick={startSession} 
-                disabled={isCreatingSession}
-                variant="outline"
-                size="lg"
-              >
-                {isCreatingSession ? 'Retrying...' : 'Try Again'}
-              </Button>
+              <div className="text-lg text-red-600 font-medium mb-2">Connection Failed</div>
+              <div className="text-sm text-gray-600 mb-4">Please try starting the call again</div>
             </div>
           )}
         </div>
