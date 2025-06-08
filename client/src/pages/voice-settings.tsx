@@ -588,6 +588,197 @@ export default function VoiceSettings() {
       </Card>
         </div>
       </main>
+
+      {/* Template Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Prompt Template</DialogTitle>
+            <DialogDescription>
+              Customize the AI conversation prompts for this medical condition
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editForm && (
+            <div className="space-y-6 pt-4">
+              {/* Basic Information */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="templateName">Template Name</Label>
+                  <Input
+                    id="templateName"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="e.g., Cardiac Surgery Follow-up"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="condition">Medical Condition</Label>
+                  <Input
+                    id="condition"
+                    value={editForm.condition}
+                    onChange={(e) => setEditForm({ ...editForm, condition: e.target.value })}
+                    placeholder="e.g., Post-cardiac surgery"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="urgencyLevel">Urgency Level</Label>
+                <Select 
+                  value={editForm.urgencyLevel} 
+                  onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => 
+                    setEditForm({ ...editForm, urgencyLevel: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* System Prompt */}
+              <div className="space-y-2">
+                <Label htmlFor="systemPrompt">System Prompt</Label>
+                <Textarea
+                  id="systemPrompt"
+                  value={editForm.systemPrompt}
+                  onChange={(e) => setEditForm({ ...editForm, systemPrompt: e.target.value })}
+                  placeholder="You are a healthcare AI assistant..."
+                  className="min-h-20"
+                />
+              </div>
+
+              {/* Initial Greeting */}
+              <div className="space-y-2">
+                <Label htmlFor="initialGreeting">Initial Greeting</Label>
+                <Textarea
+                  id="initialGreeting"
+                  value={editForm.initialGreeting}
+                  onChange={(e) => setEditForm({ ...editForm, initialGreeting: e.target.value })}
+                  placeholder="Hello [Patient], this is your healthcare team..."
+                  className="min-h-20"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use [Patient] as a placeholder for the patient's name
+                </p>
+              </div>
+
+              {/* Follow-up Questions */}
+              <div className="space-y-2">
+                <Label>Follow-up Questions</Label>
+                <div className="space-y-2">
+                  {editForm.followUpQuestions.map((question, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={question}
+                        onChange={(e) => {
+                          const newQuestions = [...editForm.followUpQuestions];
+                          newQuestions[index] = e.target.value;
+                          setEditForm({ ...editForm, followUpQuestions: newQuestions });
+                        }}
+                        placeholder="Enter follow-up question"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newQuestions = editForm.followUpQuestions.filter((_, i) => i !== index);
+                          setEditForm({ ...editForm, followUpQuestions: newQuestions });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditForm({ 
+                        ...editForm, 
+                        followUpQuestions: [...editForm.followUpQuestions, ''] 
+                      });
+                    }}
+                  >
+                    Add Question
+                  </Button>
+                </div>
+              </div>
+
+              {/* Escalation Triggers */}
+              <div className="space-y-2">
+                <Label>Escalation Triggers</Label>
+                <div className="space-y-2">
+                  {editForm.escalationTriggers.map((trigger, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={trigger}
+                        onChange={(e) => {
+                          const newTriggers = [...editForm.escalationTriggers];
+                          newTriggers[index] = e.target.value;
+                          setEditForm({ ...editForm, escalationTriggers: newTriggers });
+                        }}
+                        placeholder="Enter escalation trigger"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newTriggers = editForm.escalationTriggers.filter((_, i) => i !== index);
+                          setEditForm({ ...editForm, escalationTriggers: newTriggers });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditForm({ 
+                        ...editForm, 
+                        escalationTriggers: [...editForm.escalationTriggers, ''] 
+                      });
+                    }}
+                  >
+                    Add Trigger
+                  </Button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    updateTemplateMutation.mutate(editForm);
+                    setIsEditDialogOpen(false);
+                  }}
+                  disabled={updateTemplateMutation.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateTemplateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
