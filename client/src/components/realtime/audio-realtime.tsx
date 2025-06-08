@@ -228,14 +228,20 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
         clearTimeout(connectionTimeout);
         setStatus('connected');
         setIsCreatingSession(false);
-        initializeAudio();
-        
-        // Auto-start conversation and recording immediately after connection
-        setTimeout(() => {
-          console.log(`[AUDIO] ${new Date().toISOString()} Auto-starting conversation after 1s delay`);
-          startConversation();
-          updateRecordingState(true);
-        }, 1000);
+        // Initialize audio manager first with user interaction context
+        audioManager.initialize().then(() => {
+          console.log(`[AUDIO] Audio manager initialized successfully`);
+          initializeAudio();
+          
+          // Auto-start conversation and recording immediately after connection
+          setTimeout(() => {
+            console.log(`[AUDIO] ${new Date().toISOString()} Auto-starting conversation after 1s delay`);
+            startConversation();
+            updateRecordingState(true);
+          }, 1000);
+        }).catch((error) => {
+          console.error(`[AUDIO] Failed to initialize audio manager:`, error);
+        });
         
         toast({
           title: "Connected",
