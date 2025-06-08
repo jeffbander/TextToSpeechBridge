@@ -58,15 +58,25 @@ export default function AudioRealtime({ patientId, patientName, callId, onEnd }:
       const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
       
       processor.onaudioprocess = (event) => {
+        const inputBuffer = event.inputBuffer.getChannelData(0);
+        let audioLevel = 0;
+        let hasAudio = false;
+        
+        // Process buffer samples
+        for (let i = 0; i < inputBuffer.length; i++) {
+          const sample = Math.abs(inputBuffer[i]);
+          if (sample > audioLevel) audioLevel = sample;
+          if (sample > 0.001) hasAudio = true;
+        }
+        
+        // Debug logging every few seconds
+        if (Date.now() % 3000 < 100) {
+          console.log(`[AUDIO] Processor: WS=${wsRef.current?.readyState}, Recording=${isRecording}, Level=${audioLevel.toFixed(4)}`);
+        }
+        
         if (wsRef.current?.readyState === WebSocket.OPEN && isRecording) {
-          const inputBuffer = event.inputBuffer.getChannelData(0);
-          
-          // Check for actual audio input (lower threshold for better sensitivity)
-          const hasAudio = inputBuffer.some(sample => Math.abs(sample) > 0.001);
-          const audioLevel = Math.max(...inputBuffer.map(s => Math.abs(s)));
-          
           if (audioLevel > 0.001) {
-            console.log(`[AUDIO] Audio detected - level: ${audioLevel.toFixed(4)}`);
+            console.log(`[AUDIO] Voice detected - level: ${audioLevel.toFixed(4)}`);
           }
           
           if (hasAudio) {
