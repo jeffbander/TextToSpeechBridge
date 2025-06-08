@@ -12,6 +12,8 @@ import {
   type Alert,
   type InsertAlert
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Patients
@@ -235,4 +237,169 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  constructor() {
+    this.initializeSampleData();
+  }
+
+  private async initializeSampleData() {
+    try {
+      // Check if data already exists
+      const existingPatients = await db.select().from(patients);
+      if (existingPatients.length > 0) {
+        console.log('Database already contains patient data, skipping initialization');
+        return;
+      }
+
+      // Add sample patients
+      const samplePatients = [
+        {
+          name: "Abe, Jennifer",
+          phoneNumber: "+15551234567",
+          email: "jennifer.abe@email.com",
+          dateOfBirth: "1975-03-15",
+          mrn: "MRN001",
+          gender: "Female",
+          address: "123 Main St, Anytown, ST 12345",
+          systemId: "SYS001",
+          condition: "Post-Cardiac Surgery",
+          riskLevel: "medium" as const
+        },
+        {
+          name: "Johnson, Michael",
+          phoneNumber: "+15551234569",
+          email: "michael.johnson@email.com",
+          dateOfBirth: "1962-08-22",
+          mrn: "MRN002",
+          gender: "Male",
+          address: "456 Oak Ave, Somewhere, ST 67890",
+          systemId: "SYS002",
+          condition: "CHF Follow-up",
+          riskLevel: "high" as const
+        },
+        {
+          name: "Garcia, Maria",
+          phoneNumber: "+15551234571",
+          email: "maria.garcia@email.com",
+          dateOfBirth: "1989-12-03",
+          mrn: "MRN003",
+          gender: "Female",
+          address: "789 Pine Rd, Elsewhere, ST 54321",
+          systemId: "SYS003",
+          condition: "Diabetes Management",
+          riskLevel: "low" as const
+        }
+      ];
+
+      await db.insert(patients).values(samplePatients);
+      console.log('Database initialized with sample patient data');
+    } catch (error) {
+      console.error('Error initializing sample data:', error);
+    }
+  }
+
+  async getPatients(): Promise<Patient[]> {
+    return await db.select().from(patients);
+  }
+
+  async getPatient(id: number): Promise<Patient | undefined> {
+    const [patient] = await db.select().from(patients).where(eq(patients.id, id));
+    return patient || undefined;
+  }
+
+  async createPatient(insertPatient: InsertPatient): Promise<Patient> {
+    const [patient] = await db
+      .insert(patients)
+      .values(insertPatient)
+      .returning();
+    return patient;
+  }
+
+  async getCalls(): Promise<Call[]> {
+    return await db.select().from(calls);
+  }
+
+  async getCall(id: number): Promise<Call | undefined> {
+    const [call] = await db.select().from(calls).where(eq(calls.id, id));
+    return call || undefined;
+  }
+
+  async getActiveCallsByPatientId(patientId: number): Promise<Call[]> {
+    return await db.select().from(calls).where(
+      and(eq(calls.patientId, patientId), eq(calls.status, 'in_progress'))
+    );
+  }
+
+  async getActiveCalls(): Promise<Call[]> {
+    return await db.select().from(calls).where(eq(calls.status, 'in_progress'));
+  }
+
+  async createCall(insertCall: InsertCall): Promise<Call> {
+    const [call] = await db
+      .insert(calls)
+      .values(insertCall)
+      .returning();
+    return call;
+  }
+
+  async updateCall(id: number, updates: Partial<Call>): Promise<Call | undefined> {
+    const [call] = await db
+      .update(calls)
+      .set(updates)
+      .where(eq(calls.id, id))
+      .returning();
+    return call || undefined;
+  }
+
+  async getScheduledCalls(): Promise<ScheduledCall[]> {
+    return await db.select().from(scheduledCalls);
+  }
+
+  async getPendingScheduledCalls(): Promise<ScheduledCall[]> {
+    return await db.select().from(scheduledCalls).where(eq(scheduledCalls.status, 'pending'));
+  }
+
+  async createScheduledCall(insertScheduledCall: InsertScheduledCall): Promise<ScheduledCall> {
+    const [scheduledCall] = await db
+      .insert(scheduledCalls)
+      .values(insertScheduledCall)
+      .returning();
+    return scheduledCall;
+  }
+
+  async updateScheduledCall(id: number, updates: Partial<ScheduledCall>): Promise<ScheduledCall | undefined> {
+    const [scheduledCall] = await db
+      .update(scheduledCalls)
+      .set(updates)
+      .where(eq(scheduledCalls.id, id))
+      .returning();
+    return scheduledCall || undefined;
+  }
+
+  async getAlerts(): Promise<Alert[]> {
+    return await db.select().from(alerts);
+  }
+
+  async getUnresolvedAlerts(): Promise<Alert[]> {
+    return await db.select().from(alerts).where(eq(alerts.resolved, false));
+  }
+
+  async createAlert(insertAlert: InsertAlert): Promise<Alert> {
+    const [alert] = await db
+      .insert(alerts)
+      .values(insertAlert)
+      .returning();
+    return alert;
+  }
+
+  async updateAlert(id: number, updates: Partial<Alert>): Promise<Alert | undefined> {
+    const [alert] = await db
+      .update(alerts)
+      .set(updates)
+      .where(eq(alerts.id, id))
+      .returning();
+    return alert || undefined;
+  }
+}
+
+export const storage = new DatabaseStorage();
