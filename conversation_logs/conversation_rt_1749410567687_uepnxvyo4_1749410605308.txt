@@ -1,0 +1,32 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749410567687_uepnxvyo4
+Patient: Test Patient (ID: 2)
+Call ID: 1749410567179
+Duration: 38 seconds
+Date: 2025-06-08T19:22:47.688Z
+Total Exchanges: 8
+
+─────────────────────────────────────────────────────────
+
+[7:22:52 PM] AI: Hello, this is your healthcare follow-up call. My name is [Your Name]. May I please speak with Test Patient? How have you been feeling since your last appointment?
+
+[7:22:57 PM] AI: I'm sorry, I didn’t quite catch that. How have you been feeling since your last appointment?
+
+[7:23:00 PM] PATIENT: ss-ss-s-s-s-s-s-s-s-s-s-ss-
+
+
+[7:23:03 PM] AI: It sounds like you're dealing with quite a bit. Can you tell me more about the symptoms or issues you're experiencing? This will help us figure out the best way to support your recovery.
+
+[7:23:07 PM] PATIENT: Please, please. I'm feeling OK. Thanks.
+
+
+[7:23:08 PM] AI: I'm glad to hear that you're feeling okay. Have you noticed any changes or improvements in your condition since your last visit? It's important for us to track your progress.
+
+[7:23:16 PM] PATIENT: We said yeah, yeah
+
+
+[7:23:19 PM] AI: That's good to hear! Have you been able to follow the treatment plan or medications we discussed during your last appointment? If there have been any challenges, let us know so we can help adjust your care plan.
+
+─────────────────────────────────────────────────────────
+End of Conversation

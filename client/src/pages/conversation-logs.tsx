@@ -31,7 +31,7 @@ export default function ConversationLogs() {
   });
 
   const { data: logContent, isLoading: isLoadingContent, error: contentError } = useQuery<ConversationContent>({
-    queryKey: ['/api/conversation-logs', selectedLog],
+    queryKey: [`/api/conversation-logs/${selectedLog}`],
     enabled: !!selectedLog,
   });
 
