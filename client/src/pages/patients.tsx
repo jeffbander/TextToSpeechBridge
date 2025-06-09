@@ -23,6 +23,8 @@ const formSchema = insertPatientSchema.extend({
   dateOfBirth: z.string().min(1, "Date of birth is required"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   gender: z.enum(["Male", "Female", "Other"]),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -42,7 +44,8 @@ export default function Patients() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       phoneNumber: "",
       email: "",
       dateOfBirth: "",
@@ -78,13 +81,10 @@ export default function Patients() {
   });
 
   const onSubmit = (data: FormData) => {
-    // Generate system ID if not provided
+    // Generate system ID using firstName/lastName and dateOfBirth
     if (!data.systemId) {
-      const nameParts = data.name.split(", ");
-      const lastName = nameParts[0] || "";
-      const firstName = nameParts[1] || "";
-      const dobFormatted = data.dateOfBirth.replace(/\//g, "_");
-      data.systemId = `${lastName}_${firstName}__${dobFormatted}`;
+      const dobFormatted = data.dateOfBirth.replace(/-/g, "/");
+      data.systemId = `${data.lastName}_${data.firstName}__${dobFormatted}`;
     }
     addPatientMutation.mutate(data);
   };

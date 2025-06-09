@@ -136,18 +136,18 @@ export function registerPatientPromptRoutes(app: Express) {
 
       // Format for testing display
       const testResult = {
-        patientName: patient.name,
+        patientName: `${patient.firstName} ${patient.lastName}`,
         scenario: scenario || 'Standard follow-up',
         voiceProfile: voiceProfileId || 'default',
         systemPrompt: patientPrompt.systemPrompt,
-        personalizedGreeting: patientPrompt.initialGreeting.replace('[Patient]', patient.name.split(',')[1]?.trim() || patient.name),
+        personalizedGreeting: patientPrompt.initialGreeting.replace('[Patient]', patient.firstName),
         followUpQuestions: patientPrompt.followUpQuestions,
         escalationTriggers: patientPrompt.escalationTriggers,
         closingInstructions: patientPrompt.closingInstructions,
         generatedAt: new Date()
       };
 
-      console.log(`[PATIENT-PROMPTS] Generated test prompt for patient: ${patient.name}`);
+      console.log(`[PATIENT-PROMPTS] Generated test prompt for patient: ${patient.firstName} ${patient.lastName}`);
       res.json(testResult);
 
     } catch (error) {
