@@ -4,14 +4,15 @@ import { z } from "zod";
 
 export const patients = pgTable("patients", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   phoneNumber: text("phone_number").notNull(),
   email: text("email"),
   dateOfBirth: text("date_of_birth").notNull(),
   mrn: text("mrn").notNull(), // Medical Record Number
   gender: text("gender").notNull(),
   address: text("address").notNull(),
-  systemId: text("system_id").notNull(),
+  systemId: text("system_id").notNull(), // Format: Last_First__MM/DD/YYYY
   condition: text("condition").notNull(), // CHF, Post-Surgery, etc.
   lastDischarge: timestamp("last_discharge"),
   riskLevel: text("risk_level").notNull().default("low"), // low, medium, high
