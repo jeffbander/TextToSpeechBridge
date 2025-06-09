@@ -305,9 +305,22 @@ export class OpenAIRealtimeService {
         console.log(`📡 Stream SID: ${message.streamSid}`);
       }
       
+      // Initialize OpenAI connection if not already connected
+      if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
+        console.log(`🔗 Initializing OpenAI connection for session ${sessionId}`);
+        this.initializeOpenAIRealtime(sessionId);
+      }
+      
       console.log(`🎯 Audio streaming ready - GPT-4o will initiate conversation based on system prompt`);
     } else if (message.event === 'media') {
       console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);
+      
+      // Initialize OpenAI connection if not already connected and we're receiving audio
+      if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
+        console.log(`🔗 Auto-initializing OpenAI connection on first audio for session ${sessionId}`);
+        this.initializeOpenAIRealtime(sessionId);
+      }
+      
       if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
         const audioData = message.media.payload;
         console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}`);
@@ -318,6 +331,8 @@ export class OpenAIRealtimeService {
         };
         
         session.openaiWs.send(JSON.stringify(audioMessage));
+      } else {
+        console.log(`❌ Cannot forward audio - OpenAI WebSocket not ready for session ${sessionId}`);
       }
     } else if (message.event === 'stop') {
       console.log(`🛑 Audio streaming stopped for session ${sessionId}`);
@@ -355,8 +370,7 @@ export class OpenAIRealtimeService {
     await storage.updateCall(session.callId, {
       status: 'completed',
       duration: Math.floor(duration / 1000),
-      transcript: session.transcript.join(' '),
-      summary: `Real-time conversation completed. ${session.conversationLog.length} exchanges recorded.`
+      transcript: session.transcript.join(' ')
     });
 
     await this.saveTranscriptToFile(session);
