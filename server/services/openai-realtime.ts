@@ -70,7 +70,7 @@ export class OpenAIRealtimeService {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    console.log(`🔑 Using OpenAI API key: ${process.env.OPENAI_API_KEY ? 'Present' : 'Missing'}`);
+    console.log(`🔑 Using OpenAI API key: ${process.env.OPENAI_API_KEY ? 'Present (length: ' + process.env.OPENAI_API_KEY.length + ')' : 'Missing'}`);
     
     const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
       headers: {
@@ -79,11 +79,12 @@ export class OpenAIRealtimeService {
       }
     });
 
-    console.log(`🌐 WebSocket created for ${sessionId}, state: ${openaiWs.readyState}`);
+    console.log(`🌐 WebSocket created for ${sessionId}, initial state: ${openaiWs.readyState}`);
+    console.log(`🔗 WebSocket URL: wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`);
     session.openaiWs = openaiWs;
 
     openaiWs.on('open', () => {
-      console.log(`🔗 OpenAI WebSocket connected for session ${sessionId}`);
+      console.log(`✅ OpenAI WebSocket OPENED for session ${sessionId}, state: ${openaiWs.readyState}`);
       
       const patient = session.patientName;
       
