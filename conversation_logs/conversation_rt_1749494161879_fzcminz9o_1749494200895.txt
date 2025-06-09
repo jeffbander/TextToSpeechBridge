@@ -1,0 +1,16 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749494161879_fzcminz9o
+Patient: Jeff Bander (ID: 7)
+Call ID: 60
+Duration: 39 seconds
+Date: 2025-06-09T18:36:01.879Z
+Total Exchanges: 1
+
+─────────────────────────────────────────────────────────
+
+[6:36:06 PM] AI: Hello, Jeff Bander! I'm your AI assistant, here to help you with any questions or tasks you might have today. How can I assist you?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

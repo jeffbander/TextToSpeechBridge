@@ -69,14 +69,21 @@ export class OpenAIRealtimeService {
       throw new Error(`Session ${sessionId} not found`);
     }
 
+    // Close existing connection if any
+    if (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED) {
+      session.openaiWs.removeAllListeners();
+      session.openaiWs.close();
+      session.openaiWs = null;
+    }
+
+    console.log(`🔗 Attempting OpenAI realtime connection for session ${sessionId}`);
+
     const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'OpenAI-Beta': 'realtime=v1'
       }
     });
-
-    console.log(`🔗 Attempting OpenAI realtime connection for session ${sessionId}`);
 
     session.openaiWs = openaiWs;
 
@@ -149,6 +156,20 @@ export class OpenAIRealtimeService {
         console.log(`🔴 Using default system prompt for ${session.patientName}`);
       }
       
+      // Flush any buffered audio packets
+      if (session.audioBuffer.length > 0) {
+        console.log(`🔄 Flushing ${session.audioBuffer.length} buffered audio packets`);
+        session.audioBuffer.forEach((audioData, index) => {
+          const audioMessage = {
+            type: 'input_audio_buffer.append',
+            audio: audioData.toString('base64')
+          };
+          openaiWs.send(JSON.stringify(audioMessage));
+          console.log(`📤 Sent buffered audio packet ${index + 1}/${session.audioBuffer.length}`);
+        });
+        session.audioBuffer = []; // Clear the buffer
+      }
+
       // Send initial conversation starter to trigger GPT-4o response
       setTimeout(() => {
         if (openaiWs.readyState === WebSocket.OPEN && !session.conversationStarted) {
@@ -164,7 +185,7 @@ export class OpenAIRealtimeService {
           console.log(`🎬 Sending conversation starter for ${sessionId}`);
           openaiWs.send(JSON.stringify(startMessage));
         }
-      }, 1000);
+      }, 1500);
       
       session.isActive = true;
     });
@@ -188,14 +209,18 @@ export class OpenAIRealtimeService {
     
     openaiWs.on('error', (error) => {
       console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error);
-      session.isActive = false;
-      // Don't close the session immediately, let Twilio handle the cleanup
+      session.openaiWs = null;
     });
     
     openaiWs.on('close', (code, reason) => {
       console.log(`🔴 OpenAI WebSocket closed for session ${sessionId} - Code: ${code}, Reason: ${reason}`);
-      session.isActive = false;
-      // Keep the session alive for potential reconnection
+      session.openaiWs = null;
+      
+      // End session on unexpected closure to prevent hanging connections
+      if (code !== 1000 && session.isActive) {
+        console.log(`🛑 Ending session ${sessionId} due to unexpected WebSocket closure`);
+        session.isActive = false;
+      }
     });
     
     return openaiWs;
@@ -328,12 +353,6 @@ export class OpenAIRealtimeService {
     } else if (message.event === 'media') {
       console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);
       
-      // Initialize OpenAI connection if not already connected and we're receiving audio
-      if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
-        console.log(`🔗 Auto-initializing OpenAI connection on first audio for session ${sessionId}`);
-        this.initializeOpenAIRealtime(sessionId);
-      }
-      
       if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
         const audioData = message.media.payload;
         console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}`);
@@ -345,7 +364,9 @@ export class OpenAIRealtimeService {
         
         session.openaiWs.send(JSON.stringify(audioMessage));
       } else {
-        console.log(`❌ Cannot forward audio - OpenAI WebSocket not ready for session ${sessionId}`);
+        // Buffer audio if OpenAI is not ready yet
+        session.audioBuffer.push(Buffer.from(message.media.payload, 'base64'));
+        console.log(`📦 Buffered audio packet - buffer size: ${session.audioBuffer.length}`);
       }
     } else if (message.event === 'stop') {
       console.log(`🛑 Audio streaming stopped for session ${sessionId}`);
