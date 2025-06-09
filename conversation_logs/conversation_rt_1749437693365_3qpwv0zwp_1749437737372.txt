@@ -1,0 +1,30 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749437693365_3qpwv0zwp
+Patient: Jeff Bander (ID: 7)
+Call ID: 23
+Duration: 44 seconds
+Date: 2025-06-09T02:54:53.365Z
+Total Exchanges: 5
+
+─────────────────────────────────────────────────────────
+
+[2:55:05 AM] AI: Hello, this is Tziporah from Dr. Jeffrey Bander's office. May I speak with you for a moment to follow up on your recent appointment?
+
+
+[2:55:07 AM] PATIENT: Hello?
+
+
+
+[2:55:20 AM] AI: Thank you. I wanted to
+
+
+[2:55:20 AM] PATIENT: Yes, sure. We can help you with that.
+
+
+
+[2:55:20 AM] AI:  check in with you regarding your recent health updates. We noticed a change in your medication, and I wanted to see how you're feeling. Have you experienced any side effects or noticed any changes in your symptoms?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
