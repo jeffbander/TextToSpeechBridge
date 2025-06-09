@@ -70,7 +70,7 @@ export default function RealtimeCall({ patientId, patientName, callId, onEnd }: 
   const connectWebSocket = async (sessionId: string) => {
     try {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/realtime?session=${sessionId}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws/realtime?session=${sessionId}`;
       
       const ws = new WebSocket(wsUrl);
       websocketRef.current = ws;
