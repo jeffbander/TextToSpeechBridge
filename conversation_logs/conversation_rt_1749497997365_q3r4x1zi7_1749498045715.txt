@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749497997365_q3r4x1zi7
+Patient: Jeff Bander (ID: 7)
+Call ID: 72
+Duration: 48 seconds
+Date: 2025-06-09T19:39:57.365Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[7:40:05 PM] AI: Hello Jeff Bander, it's great to meet you! I'm here to assist you with anything you need. How can I help you today?
+
+
+[7:40:20 PM] PATIENT: When's the next appointment?
+
+
+
+[7:40:20 PM] AI: I'm sorry, but I don't have access to your appointment schedule. Please call Dr. Bander's office directly at 432 Bedford Ave, Williamsburg,
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

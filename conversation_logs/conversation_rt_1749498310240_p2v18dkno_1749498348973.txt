@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749498310240_p2v18dkno
+Patient: mills  reed (ID: 10)
+Call ID: 73
+Duration: 38 seconds
+Date: 2025-06-09T19:45:10.240Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[7:45:20 PM] AI: Hello Mills Reed! I'm here to assist you with any questions or tasks you might have. How can I help you today?
+
+
+[7:45:23 PM] AI: Hello Mills Reed, this is your healthcare team calling to check on your well-being. How are you feeling today?
+
+
+[7:45:24 PM] PATIENT: Hello.
+
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

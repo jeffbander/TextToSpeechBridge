@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { audioManager } from '@/lib/audio-manager';
 
 interface RealtimeCallProps {
   patientId: number;
@@ -31,7 +32,6 @@ export default function RealtimeCall({ patientId, patientName, callId, onEnd }: 
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
-  
   const { toast } = useToast();
 
   // Initialize real-time session

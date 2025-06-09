@@ -158,22 +158,8 @@ export class OpenAIRealtimeService {
         session.audioBuffer = []; // Clear the buffer
       }
 
-      // Send initial conversation starter to trigger GPT-4o response (critical for audio response)
-      setTimeout(() => {
-        if (openaiWs.readyState === WebSocket.OPEN && !session.conversationStarted) {
-          session.conversationStarted = true;
-          const startMessage = {
-            type: 'response.create',
-            response: {
-              modalities: ['text', 'audio'],
-              instructions: `Start the conversation by greeting ${session.patientName} and introducing yourself according to the system instructions.`
-            }
-          };
-          
-          console.log(`🎬 Sending conversation starter for ${sessionId}`);
-          openaiWs.send(JSON.stringify(startMessage));
-        }
-      }, 1500);
+      // Wait for patient to speak first - no automatic conversation starter
+      console.log(`🎧 Session ready - waiting for patient audio input`);
       
       session.isActive = true;
     });
