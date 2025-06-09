@@ -1,0 +1,21 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749434283574_q0dj73d2w
+Patient: Jeff Bander (ID: 7)
+Call ID: 11
+Duration: 132 seconds
+Date: 2025-06-09T01:58:03.574Z
+Total Exchanges: 4
+
+─────────────────────────────────────────────────────────
+
+[1:58:19 AM] PATIENT: I'll be in tomorrow late.
+
+[1:58:20 AM] AI: Great, Jeff! I'm glad you'll be coming in. How have you been feeling since your discharge? Any new symptoms or concerns? Are you managing well with your medications? Let me know if there's anything specific you'd like to discuss when you come in.
+
+[1:58:44 AM] PATIENT: yeah, just about whether or not each of the dilution equation will take place
+
+[1:58:45 AM] AI: Hi Jeff, I'm glad we're chatting. Let's focus on your recovery first. How are you feeling since leaving the hospital? Any issues with your medications or symptoms I should know about?
+
+─────────────────────────────────────────────────────────
+End of Conversation

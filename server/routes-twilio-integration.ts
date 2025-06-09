@@ -143,21 +143,33 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         return res.status(404).send('<Response><Say>Session not found</Say><Hangup/></Response>');
       }
 
-      // Get patient data and generate context
+      // Get patient data
       const patient = await storage.getPatient(session.patientId);
       if (!patient) {
         return res.status(404).send('<Response><Say>Patient information not found</Say><Hangup/></Response>');
       }
 
-      const patientContext = patientPromptManager.generatePatientSpecificPrompt({
-        patient,
-        urgencyLevel: 'medium'
-      });
+      // Use custom greeting from patient's custom prompt if available
+      let initialGreeting;
+      if (session.customSystemPrompt && session.customSystemPrompt.includes("Dr. Bander's office")) {
+        // Extract greeting from custom prompt or use a contextual one
+        initialGreeting = `Hello ${patient.firstName}, this is Tziporah calling from Dr. Bander's cardiology office at 432 Bedford Ave. I'm following up on your recent visit. How are you feeling today?`;
+      } else if (session.customSystemPrompt) {
+        // Use a generic greeting for other custom prompts
+        initialGreeting = `Hello ${patient.firstName}, I'm calling to check in with you. How are you doing?`;
+      } else {
+        // Fallback to standard prompt
+        const patientContext = patientPromptManager.generatePatientSpecificPrompt({
+          patient,
+          urgencyLevel: 'medium'
+        });
+        initialGreeting = patientContext.initialGreeting;
+      }
 
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" action="/api/twilio/process-speech/${sessionId}" method="POST" speechTimeout="auto" timeout="10">
-    <Say voice="Polly.Joanna-Neural">${patientContext.initialGreeting}</Say>
+    <Say voice="Polly.Joanna-Neural">${initialGreeting}</Say>
   </Gather>
   <Say voice="Polly.Joanna-Neural">Thank you for your time. Take care and feel free to call if you have any concerns.</Say>
 </Response>`;
