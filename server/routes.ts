@@ -263,14 +263,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🚀 Created GPT-4o real-time session: ${sessionId}`);
 
       // Generate TwiML to connect to real-time WebSocket
+      const wsUrl = `wss://${req.get('host')}/ws/realtime/${sessionId}`;
+      console.log(`🔗 WebSocket URL for session ${sessionId}: ${wsUrl}`);
+      
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="wss://${req.get('host')}/ws/realtime/${sessionId}" />
+    <Stream url="${wsUrl}" />
   </Connect>
 </Response>`;
 
       console.log(`📦 REAL-TIME TWIML SENT: ${twiml.length} bytes to Twilio`);
+      console.log(`📄 TwiML Content: ${twiml}`);
       res.type('text/xml').send(twiml);
     } catch (error) {
       console.error('TwiML generation error:', error);
