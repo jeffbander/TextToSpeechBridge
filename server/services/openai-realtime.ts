@@ -63,28 +63,22 @@ export class OpenAIRealtimeService {
   }
 
   async initializeOpenAIRealtime(sessionId: string): Promise<WebSocket> {
-    console.log(`🔌 Initializing OpenAI WebSocket for session ${sessionId}`);
-    
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    console.log(`🔑 Using OpenAI API key: ${process.env.OPENAI_API_KEY ? 'Present (length: ' + process.env.OPENAI_API_KEY.length + ')' : 'Missing'}`);
-    
-    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
+    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'OpenAI-Beta': 'realtime=v1'
       }
     });
 
-    console.log(`🌐 WebSocket created for ${sessionId}, initial state: ${openaiWs.readyState}`);
-    console.log(`🔗 WebSocket URL: wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`);
     session.openaiWs = openaiWs;
 
     openaiWs.on('open', () => {
-      console.log(`✅ OpenAI WebSocket OPENED for session ${sessionId}, state: ${openaiWs.readyState}`);
+      console.log(`🔗 OpenAI WebSocket connected for session ${sessionId}`);
       
       const patient = session.patientName;
       
@@ -160,20 +154,6 @@ export class OpenAIRealtimeService {
       openaiWs.send(JSON.stringify(sessionConfig));
       console.log(`⚙️ Session configuration sent for ${sessionId}`);
       
-      // Create initial response to start the conversation
-      setTimeout(() => {
-        const createResponse = {
-          type: 'response.create',
-          response: {
-            modalities: ['text', 'audio'],
-            instructions: 'Please greet the patient and introduce yourself as their healthcare assistant calling for a follow-up.'
-          }
-        };
-        
-        console.log(`🎬 Triggering initial AI response for ${sessionId}`);
-        openaiWs.send(JSON.stringify(createResponse));
-      }, 1000);
-      
       if (session.customSystemPrompt) {
         console.log(`🔴 Using custom system prompt for ${session.patientName}`);
       } else {
@@ -186,7 +166,7 @@ export class OpenAIRealtimeService {
     openaiWs.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(`📨 OpenAI message for ${sessionId}:`, message.type, JSON.stringify(message).substring(0, 200));
+        console.log(`📨 OpenAI message for ${sessionId}:`, message.type);
         this.handleOpenAIMessage(sessionId, message);
       } catch (error) {
         console.error(`❌ Error parsing OpenAI message for session ${sessionId}:`, error);
@@ -195,16 +175,11 @@ export class OpenAIRealtimeService {
     
     openaiWs.on('error', (error) => {
       console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error);
-      console.error(`❌ Error details:`, {
-        message: error.message,
-        code: error.code,
-        type: error.type
-      });
       session.isActive = false;
     });
     
-    openaiWs.on('close', (code, reason) => {
-      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId}, code: ${code}, reason: ${reason}`);
+    openaiWs.on('close', () => {
+      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId}`);
       session.isActive = false;
     });
     
@@ -220,38 +195,10 @@ export class OpenAIRealtimeService {
         console.log(`🎯 OpenAI session created for ${sessionId}`);
         break;
         
-      case 'session.updated':
-        console.log(`⚙️ OpenAI session configuration updated for ${sessionId}`);
-        break;
-        
-      case 'input_audio_buffer.committed':
-        console.log(`🎤 Audio input committed for ${sessionId}`);
-        break;
-        
-      case 'input_audio_buffer.speech_started':
-        console.log(`🗣️ Speech detected for ${sessionId}`);
-        break;
-        
-      case 'input_audio_buffer.speech_stopped':
-        console.log(`🤫 Speech ended for ${sessionId}`);
-        break;
-        
-      case 'response.created':
-        console.log(`🚀 Response creation started for ${sessionId}`);
-        break;
-        
-      case 'response.done':
-        console.log(`✅ Response completed for ${sessionId}`);
-        break;
-        
       case 'response.text.delta':
         if (message.delta) {
-          console.log(`🤖 AI text response for ${sessionId}:`, message.delta);
+          console.log(`🤖 AI response for ${sessionId}:`, message.delta);
         }
-        break;
-        
-      case 'error':
-        console.error(`❌ OpenAI error for ${sessionId}:`, message.error);
         break;
         
       case 'response.audio.delta':
@@ -331,48 +278,7 @@ export class OpenAIRealtimeService {
     }
     
     session.websocket = twilioWs;
-    console.log(`🔗 Twilio WebSocket connected to session ${sessionId}`);
-    
-    // Initialize OpenAI connection immediately when Twilio WebSocket connects
-    console.log(`🚀 Initializing OpenAI connection immediately for ${sessionId}`);
-    this.initializeOpenAIRealtime(sessionId);
-    
-    // Handle Twilio WebSocket messages (audio streaming format)
-    twilioWs.on('message', (data) => {
-      try {
-        const message = JSON.parse(data.toString());
-        console.log(`📨 Twilio message for ${sessionId}:`, message.event, JSON.stringify(message).substring(0, 100));
-        
-        if (message.event === 'connected') {
-          console.log(`📞 Twilio call connected for session ${sessionId}`);
-        } else if (message.event === 'start') {
-          console.log(`🎙️ Audio streaming started for session ${sessionId}`);
-          
-          // Store stream info for proper audio routing
-          if (message.streamSid) {
-            session.streamSid = message.streamSid;
-            console.log(`📡 Stream SID: ${message.streamSid}`);
-          }
-        } else if (message.event === 'media') {
-          // Forward Twilio audio to OpenAI
-          console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);
-          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-            const audioData = message.media.payload;
-            session.openaiWs.send(JSON.stringify({
-              type: 'input_audio_buffer.append',
-              audio: audioData
-            }));
-          } else {
-            console.log(`❌ Cannot forward audio - OpenAI WebSocket not ready. State: ${session.openaiWs?.readyState}`);
-          }
-        } else if (message.event === 'stop') {
-          console.log(`🛑 Audio streaming stopped for session ${sessionId}`);
-          this.endSession(sessionId);
-        }
-      } catch (error) {
-        console.error(`❌ Error parsing Twilio message for session ${sessionId}:`, error);
-      }
-    });
+    console.log(`🔗 Client WebSocket connected to session ${sessionId}`);
     
     twilioWs.on('close', () => {
       console.log(`🔗 Client disconnected from session ${sessionId}`);
@@ -382,15 +288,13 @@ export class OpenAIRealtimeService {
 
   handleClientMessage(sessionId: string, message: any) {
     const session = this.sessions.get(sessionId);
-    if (!session) {
-      console.error(`❌ Session ${sessionId} not found when handling client message`);
-      return;
-    }
+    if (!session) return;
     
-    console.log(`📨 Twilio message for ${sessionId}:`, message.event || 'unknown-event', JSON.stringify(message).substring(0, 100));
+    console.log(`📨 Twilio message for ${sessionId}:`, JSON.stringify(message).substring(0, 200));
     
     if (message.event === 'connected') {
       console.log(`📞 Twilio call connected for session ${sessionId}`);
+      this.initializeOpenAIRealtime(sessionId);
     } else if (message.event === 'start') {
       console.log(`🎙️ Audio streaming started for session ${sessionId}`);
       
@@ -398,10 +302,6 @@ export class OpenAIRealtimeService {
         session.streamSid = message.streamSid;
         console.log(`📡 Stream SID: ${message.streamSid}`);
       }
-      
-      // Initialize OpenAI connection when audio streaming starts
-      console.log(`🚀 Initializing OpenAI real-time connection for ${sessionId}`);
-      this.initializeOpenAIRealtime(sessionId);
       
       console.log(`🎯 Audio streaming ready - GPT-4o will initiate conversation based on system prompt`);
     } else if (message.event === 'media') {

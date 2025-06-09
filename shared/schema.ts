@@ -47,25 +47,6 @@ export const scheduledCalls = pgTable("scheduled_calls", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const callWorklist = pgTable("call_worklist", {
-  id: serial("id").primaryKey(),
-  patientId: integer("patient_id").references(() => patients.id).notNull(),
-  systemId: text("system_id").notNull(), // External system reference
-  dateOfService: timestamp("date_of_service").notNull(),
-  timeOfService: text("time_of_service").notNull(), // HH:MM format
-  customPrompt: text("custom_prompt").notNull(), // Specific questions/prompts for this call
-  status: text("status").notNull().default("pending"), // pending, scheduled, completed, failed
-  priority: text("priority").notNull().default("normal"), // urgent, high, normal, low
-  attemptCount: integer("attempt_count").default(0),
-  lastAttempt: timestamp("last_attempt"),
-  scheduledFor: timestamp("scheduled_for"), // When the call should be made
-  completedAt: timestamp("completed_at"),
-  callId: integer("call_id").references(() => calls.id),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 export const alerts = pgTable("alerts", {
   id: serial("id").primaryKey(),
   patientId: integer("patient_id").references(() => patients.id).notNull(),
@@ -92,12 +73,6 @@ export const insertScheduledCallSchema = createInsertSchema(scheduledCalls).omit
   createdAt: true,
 });
 
-export const insertCallWorklistSchema = createInsertSchema(callWorklist).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 export const insertAlertSchema = createInsertSchema(alerts).omit({
   id: true,
   createdAt: true,
@@ -109,7 +84,5 @@ export type Call = typeof calls.$inferSelect;
 export type InsertCall = z.infer<typeof insertCallSchema>;
 export type ScheduledCall = typeof scheduledCalls.$inferSelect;
 export type InsertScheduledCall = z.infer<typeof insertScheduledCallSchema>;
-export type CallWorklist = typeof callWorklist.$inferSelect;
-export type InsertCallWorklist = z.infer<typeof insertCallWorklistSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;

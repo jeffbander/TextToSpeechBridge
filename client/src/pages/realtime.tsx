@@ -3,14 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import AudioRealtime from '@/components/realtime/audio-realtime';
 import { Bot, Phone, User } from 'lucide-react';
 import Navigation from '@/components/navigation';
 
 interface Patient {
   id: number;
-  firstName: string;
-  lastName: string;
+  name: string;
   phoneNumber: string;
   condition: string;
 }
@@ -30,34 +29,18 @@ export default function RealtimePage() {
     if (!selectedPatient) return;
 
     try {
-      console.log(`[REALTIME-PAGE] Starting phone call for patient: ${selectedPatient.firstName} ${selectedPatient.lastName} (ID: ${selectedPatient.id})`);
+      console.log(`[REALTIME-PAGE] Starting session for patient: ${selectedPatient.name} (ID: ${selectedPatient.id})`);
       
-      // Make actual Twilio phone call
-      const callResponse = await fetch('/api/calls', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          patientId: selectedPatient.id,
-          callType: 'gpt4o_realtime',
-          customPrompt: `You are calling ${selectedPatient.firstName} ${selectedPatient.lastName} for a healthcare follow-up regarding their ${selectedPatient.condition}. Be professional, caring, and ask about their current symptoms and medication adherence.`
-        }),
-      });
-
-      if (!callResponse.ok) {
-        throw new Error(`Failed to start call: ${callResponse.statusText}`);
-      }
-
-      const callData = await callResponse.json();
-      console.log(`[REALTIME-PAGE] Phone call initiated - Call ID: ${callData.id}`);
+      // Create actual backend session
+      const callId = Date.now();
+      console.log(`[REALTIME-PAGE] Generated call ID: ${callId}`);
       
-      setSessionCallId(callData.id);
+      setSessionCallId(callId);
       setIsSessionActive(true);
       
-      console.log(`[REALTIME-PAGE] Phone call active - waiting for patient to answer`);
+      console.log(`[REALTIME-PAGE] Session state updated - isSessionActive: true, sessionCallId: ${callId}`);
     } catch (error) {
-      console.error('[REALTIME-PAGE] Error starting phone call:', error);
+      console.error('[REALTIME-PAGE] Error starting session:', error);
     }
   };
 
@@ -150,7 +133,7 @@ export default function RealtimePage() {
                   ) : (
                     patients.map((patient) => (
                       <SelectItem key={patient.id} value={patient.id.toString()}>
-                        {patient.firstName} {patient.lastName} - {patient.condition}
+                        {patient.name} - {patient.condition}
                       </SelectItem>
                     ))
                   )}
@@ -162,7 +145,7 @@ export default function RealtimePage() {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-blue-900">Ready to Call</h4>
                 <div className="text-sm text-blue-700 space-y-1">
-                  <p>Patient: {selectedPatient.firstName} {selectedPatient.lastName}</p>
+                  <p>Patient: {selectedPatient.name}</p>
                   <p>Condition: {selectedPatient.condition}</p>
                   <p className="text-xs mt-2 font-medium">Click below to start the AI voice call</p>
                 </div>
@@ -182,28 +165,13 @@ export default function RealtimePage() {
         </Card>
       ) : (
         selectedPatient && sessionCallId && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Phone Call Active</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h4 className="font-medium text-green-900">Calling {selectedPatient.firstName} {selectedPatient.lastName}</h4>
-                <p className="text-sm text-green-700">Phone: {selectedPatient.phoneNumber}</p>
-                <p className="text-sm text-green-700">Call ID: {sessionCallId}</p>
-                <p className="text-xs text-green-600 mt-2">The AI will begin speaking when the patient answers the phone.</p>
-              </div>
-              
-              <Button 
-                onClick={endRealtimeSession}
-                variant="destructive"
-                size="lg"
-                className="w-full"
-              >
-                End Call
-              </Button>
-            </CardContent>
-          </Card>
+          <AudioRealtime
+            key={`session-${selectedPatient.id}-${sessionCallId}`}
+            patientId={selectedPatient.id}
+            patientName={selectedPatient.name}
+            callId={sessionCallId}
+            onEnd={endRealtimeSession}
+          />
         )
       )}
 

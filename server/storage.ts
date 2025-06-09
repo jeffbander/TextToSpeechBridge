@@ -3,7 +3,6 @@ import {
   calls, 
   scheduledCalls, 
   alerts,
-  callWorklist,
   type Patient, 
   type InsertPatient,
   type Call,
@@ -11,9 +10,7 @@ import {
   type ScheduledCall,
   type InsertScheduledCall,
   type Alert,
-  type InsertAlert,
-  type CallWorklist,
-  type InsertCallWorklist
+  type InsertAlert
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -44,16 +41,6 @@ export interface IStorage {
   getUnresolvedAlerts(): Promise<Alert[]>;
   createAlert(alert: InsertAlert): Promise<Alert>;
   updateAlert(id: number, updates: Partial<Alert>): Promise<Alert | undefined>;
-  
-  // Call Worklist
-  getCallWorklist(): Promise<CallWorklist[]>;
-  getPendingCallWorklist(): Promise<CallWorklist[]>;
-  getCallWorklistBySystemId(systemId: string): Promise<CallWorklist | undefined>;
-  createCallWorklist(worklist: InsertCallWorklist): Promise<CallWorklist>;
-  updateCallWorklist(id: number, updates: Partial<CallWorklist>): Promise<CallWorklist | undefined>;
-  
-  // Patient by System ID
-  getPatientBySystemId(systemId: string): Promise<Patient | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -445,43 +432,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.id, id))
       .returning();
     return alert || undefined;
-  }
-
-  // Call Worklist operations
-  async getCallWorklist(): Promise<CallWorklist[]> {
-    return await db.select().from(callWorklist).orderBy(callWorklist.createdAt);
-  }
-
-  async getPendingCallWorklist(): Promise<CallWorklist[]> {
-    return await db.select().from(callWorklist).where(eq(callWorklist.status, 'pending'));
-  }
-
-  async getCallWorklistBySystemId(systemId: string): Promise<CallWorklist | undefined> {
-    const [item] = await db.select().from(callWorklist).where(eq(callWorklist.systemId, systemId));
-    return item || undefined;
-  }
-
-  async createCallWorklist(worklist: InsertCallWorklist): Promise<CallWorklist> {
-    const [item] = await db
-      .insert(callWorklist)
-      .values(worklist)
-      .returning();
-    return item;
-  }
-
-  async updateCallWorklist(id: number, updates: Partial<CallWorklist>): Promise<CallWorklist | undefined> {
-    const [item] = await db
-      .update(callWorklist)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(callWorklist.id, id))
-      .returning();
-    return item || undefined;
-  }
-
-  // Patient by System ID
-  async getPatientBySystemId(systemId: string): Promise<Patient | undefined> {
-    const [patient] = await db.select().from(patients).where(eq(patients.systemId, systemId));
-    return patient || undefined;
   }
 }
 
