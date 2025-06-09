@@ -133,7 +133,7 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
       });
     } catch (error) {
       console.error('Dashboard stats error:', error);
-      res.status(500).json({ message: "Failed to fetch dashboard stats", error: error.message });
+      res.status(500).json({ message: "Failed to fetch dashboard stats", error: error instanceof Error ? error.message : String(error) });
     }
   });
 

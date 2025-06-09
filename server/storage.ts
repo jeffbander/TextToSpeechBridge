@@ -70,7 +70,8 @@ export class MemStorage implements IStorage {
   private async initializeSampleData() {
     // Jennifer Abe patient data
     const jenniferAbe = {
-      name: "Abe, Jennifer",
+      firstName: "Jennifer",
+      lastName: "Abe",
       phoneNumber: "(929) 530-9452",
       email: null, // Missing email as specified
       dateOfBirth: "3/20/1986",
@@ -85,7 +86,8 @@ export class MemStorage implements IStorage {
 
     // Test patient with user's actual phone number
     const testPatient = {
-      name: "Test Patient",
+      firstName: "Test",
+      lastName: "Patient",
       phoneNumber: "+16465565559",
       email: "test@example.com",
       dateOfBirth: "1/1/1990",
