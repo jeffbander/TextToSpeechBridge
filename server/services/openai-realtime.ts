@@ -236,6 +236,18 @@ export class OpenAIRealtimeService {
             speaker: 'patient',
             text: message.transcript
           });
+          
+          // Manually trigger AI response since turn detection isn't working
+          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+            const responseMessage = {
+              type: 'response.create',
+              response: {
+                modalities: ['text', 'audio']
+              }
+            };
+            console.log(`🎬 Triggering AI response for ${sessionId} after patient speech`);
+            session.openaiWs.send(JSON.stringify(responseMessage));
+          }
         }
         break;
         

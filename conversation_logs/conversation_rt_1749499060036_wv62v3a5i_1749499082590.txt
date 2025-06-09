@@ -1,0 +1,21 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749499060036_wv62v3a5i
+Patient: Jeff Bander (ID: 7)
+Call ID: 75
+Duration: 22 seconds
+Date: 2025-06-09T19:57:40.036Z
+Total Exchanges: 2
+
+─────────────────────────────────────────────────────────
+
+[7:57:47 PM] PATIENT: Thank you.
+
+
+
+[7:58:01 PM] PATIENT: Yeah, Dorothy Lyons is not picking up. I did not get an email today saying that she was out. So maybe she's here.
+
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
