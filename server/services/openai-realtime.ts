@@ -333,6 +333,10 @@ export class OpenAIRealtimeService {
     session.websocket = twilioWs;
     console.log(`🔗 Twilio WebSocket connected to session ${sessionId}`);
     
+    // Initialize OpenAI connection immediately when Twilio WebSocket connects
+    console.log(`🚀 Initializing OpenAI connection immediately for ${sessionId}`);
+    this.initializeOpenAIRealtime(sessionId);
+    
     // Handle Twilio WebSocket messages (audio streaming format)
     twilioWs.on('message', (data) => {
       try {
@@ -341,9 +345,6 @@ export class OpenAIRealtimeService {
         
         if (message.event === 'connected') {
           console.log(`📞 Twilio call connected for session ${sessionId}`);
-          // Initialize OpenAI connection when Twilio connects
-          console.log(`🚀 Initializing OpenAI connection for ${sessionId}`);
-          this.initializeOpenAIRealtime(sessionId);
         } else if (message.event === 'start') {
           console.log(`🎙️ Audio streaming started for session ${sessionId}`);
           
