@@ -34,6 +34,16 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
         const sessionId = pathname.split('/ws/realtime/')[1];
         realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
           openaiRealtimeService.connectClientWebSocket(sessionId, websocket);
+          
+          // Handle Twilio audio messages
+          websocket.on('message', (data) => {
+            try {
+              const message = JSON.parse(data.toString());
+              openaiRealtimeService.handleClientMessage(sessionId, message);
+            } catch (error) {
+              console.error(`[REALTIME-WS] Error parsing Twilio message:`, error);
+            }
+          });
         });
       } else if (pathname?.startsWith('/ws/twilio/')) {
         console.log('[REALTIME] Handling Twilio WebSocket upgrade');
