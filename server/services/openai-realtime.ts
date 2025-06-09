@@ -488,10 +488,18 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         patientId: session.patientId,
         callId: session.callId,
         duration: duration,
-        transcriptLength: session.transcript.length
+        transcriptLength: session.transcript.length,
+        conversationLogLength: session.conversationLog.length
       });
       
-      // Log complete conversation
+      // Always save transcript, even if conversation log is empty (for debugging)
+      console.log(`🔍 Session ${session.id} conversation log entries: ${session.conversationLog.length}`);
+      console.log(`🔍 Session ${session.id} transcript entries: ${session.transcript.length}`);
+      
+      // Save transcript regardless of conversation log length for debugging
+      await this.saveTranscriptToFile(session);
+      
+      // Log complete conversation if available
       if (session.conversationLog.length > 0) {
         console.log(`\n📞 COMPLETE CONVERSATION LOG - Session ${session.id}`);
         console.log(`👤 Patient: ${session.patientName}`);
@@ -506,9 +514,8 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         });
         
         console.log(`─────────────────────────────────────────────────────────\n`);
-        
-        // Save transcript to file
-        await this.saveTranscriptToFile(session);
+      } else {
+        console.log(`📝 Session ${session.id} had no conversation exchanges to log`);
       }
       
     } catch (error) {
@@ -542,11 +549,25 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       content += `Total Exchanges: ${session.conversationLog.length}\n`;
       content += `\n─────────────────────────────────────────────────────────\n\n`;
       
-      session.conversationLog.forEach((entry, index) => {
-        const timestamp = entry.timestamp.toLocaleTimeString();
-        const speaker = entry.speaker === 'ai' ? 'AI' : 'PATIENT';
-        content += `[${timestamp}] ${speaker}: ${entry.text}\n\n`;
-      });
+      if (session.conversationLog.length > 0) {
+        session.conversationLog.forEach((entry, index) => {
+          const timestamp = entry.timestamp.toLocaleTimeString();
+          const speaker = entry.speaker === 'ai' ? 'AI' : 'PATIENT';
+          content += `[${timestamp}] ${speaker}: ${entry.text}\n\n`;
+        });
+      } else {
+        content += `No conversation exchanges recorded.\n`;
+        content += `Call may have ended before patient interaction or due to technical issues.\n\n`;
+        
+        // Include any transcript data if available
+        if (session.transcript.length > 0) {
+          content += `Raw Transcript Data:\n`;
+          session.transcript.forEach((entry, index) => {
+            content += `${index + 1}. ${entry}\n`;
+          });
+          content += `\n`;
+        }
+      }
       
       content += `─────────────────────────────────────────────────────────\n`;
       content += `End of Conversation\n`;
