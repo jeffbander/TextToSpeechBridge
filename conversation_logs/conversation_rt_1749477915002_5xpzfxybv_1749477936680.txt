@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749477915002_5xpzfxybv
+Patient: mills  reed (ID: 10)
+Call ID: 33
+Duration: 21 seconds
+Date: 2025-06-09T14:05:15.003Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation

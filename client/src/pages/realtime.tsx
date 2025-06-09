@@ -9,7 +9,8 @@ import Navigation from '@/components/navigation';
 
 interface Patient {
   id: number;
-  name: string;
+  firstName: string;
+  lastName: string;
   phoneNumber: string;
   condition: string;
 }
@@ -29,7 +30,7 @@ export default function RealtimePage() {
     if (!selectedPatient) return;
 
     try {
-      console.log(`[REALTIME-PAGE] Starting session for patient: ${selectedPatient.name} (ID: ${selectedPatient.id})`);
+      console.log(`[REALTIME-PAGE] Starting session for patient: ${selectedPatient.firstName} ${selectedPatient.lastName} (ID: ${selectedPatient.id})`);
       
       // Create actual backend session
       const callId = Date.now();
@@ -133,7 +134,7 @@ export default function RealtimePage() {
                   ) : (
                     patients.map((patient) => (
                       <SelectItem key={patient.id} value={patient.id.toString()}>
-                        {patient.name} - {patient.condition}
+                        {patient.firstName} {patient.lastName} - {patient.condition}
                       </SelectItem>
                     ))
                   )}
@@ -145,7 +146,7 @@ export default function RealtimePage() {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-blue-900">Ready to Call</h4>
                 <div className="text-sm text-blue-700 space-y-1">
-                  <p>Patient: {selectedPatient.name}</p>
+                  <p>Patient: {selectedPatient.firstName} {selectedPatient.lastName}</p>
                   <p>Condition: {selectedPatient.condition}</p>
                   <p className="text-xs mt-2 font-medium">Click below to start the AI voice call</p>
                 </div>
@@ -168,7 +169,7 @@ export default function RealtimePage() {
           <AudioRealtime
             key={`session-${selectedPatient.id}-${sessionCallId}`}
             patientId={selectedPatient.id}
-            patientName={selectedPatient.name}
+            patientName={`${selectedPatient.firstName} ${selectedPatient.lastName}`}
             callId={sessionCallId}
             onEnd={endRealtimeSession}
           />
