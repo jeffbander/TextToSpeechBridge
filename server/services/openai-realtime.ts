@@ -109,30 +109,8 @@ export class OpenAIRealtimeService {
       let selectedVoice = 'alloy'; // default voice
       let languageInstruction = '';
       
-      // Parse language preference from custom system prompt metadata
-      if (session.customSystemPrompt) {
-        // Look for language preference in various formats
-        const languagePatterns = [
-          /Language.*?:\s*([A-Za-z]+)/i,
-          /languagePreference.*?:\s*['""]([A-Za-z]+)['"]/i,
-          /speak.*?in\s+([A-Za-z]+)/i
-        ];
-        
-        let detectedLanguage = null;
-        for (const pattern of languagePatterns) {
-          const match = session.customSystemPrompt.match(pattern);
-          if (match) {
-            detectedLanguage = match[1];
-            break;
-          }
-        }
-        
-        if (detectedLanguage && detectedLanguage.toLowerCase() !== 'english') {
-          languageInstruction = `\n\nCRITICAL INSTRUCTION: You must conduct this ENTIRE conversation in ${detectedLanguage}. Speak fluently and naturally in ${detectedLanguage} from the very first greeting through the end of the call. Do not use English at any point during this conversation.`;
-          instructions += languageInstruction;
-          console.log(`🌐 Language preference detected: ${detectedLanguage} for patient ${session.patientName}`);
-        }
-      }
+      // Language preferences are handled in the system prompt without automatic triggering
+      console.log(`📋 Session configured for patient ${session.patientName} - ready for user interaction`);
       
       const sessionConfig = {
         type: 'session.update',
@@ -180,22 +158,8 @@ export class OpenAIRealtimeService {
         session.audioBuffer = []; // Clear the buffer
       }
 
-      // Send initial conversation starter to trigger GPT-4o response
-      setTimeout(() => {
-        if (openaiWs.readyState === WebSocket.OPEN && !session.conversationStarted) {
-          session.conversationStarted = true;
-          const startMessage = {
-            type: 'response.create',
-            response: {
-              modalities: ['text', 'audio'],
-              instructions: `Start the conversation by greeting ${session.patientName} and introducing yourself according to the system instructions.`
-            }
-          };
-          
-          console.log(`🎬 Sending conversation starter for ${sessionId}`);
-          openaiWs.send(JSON.stringify(startMessage));
-        }
-      }, 1500);
+      // Don't automatically start conversations - wait for user interaction
+      console.log(`⏸️ OpenAI connection ready for session ${sessionId} - waiting for user input`);
       
       session.isActive = true;
     });

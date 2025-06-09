@@ -149,25 +149,8 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         return res.status(404).send('<Response><Say>Patient information not found</Say><Hangup/></Response>');
       }
 
-      // Use custom greeting from patient's custom prompt if available
-      let initialGreeting;
-      if (session.customSystemPrompt && session.customSystemPrompt.includes("Dr. Bander's office")) {
-        // Extract greeting from custom prompt or use a contextual one
-        initialGreeting = `Hello ${patient.firstName}, this is Tziporah calling from Dr. Bander's cardiology office at 432 Bedford Ave. I'm following up on your recent visit. How are you feeling today?`;
-      } else if (session.customSystemPrompt) {
-        // Use a generic greeting for other custom prompts
-        initialGreeting = `Hello ${patient.firstName}, I'm calling to check in with you. How are you doing?`;
-      } else {
-        // Fallback to standard prompt
-        const patientContext = patientPromptManager.generatePatientSpecificPrompt({
-          patient,
-          urgencyLevel: 'medium'
-        });
-        initialGreeting = patientContext.initialGreeting;
-      }
-
-      // Initialize GPT-4o real-time connection for this session
-      await openaiRealtimeService.initializeOpenAIRealtime(sessionId);
+      // Connect to real-time session without auto-initiating conversation
+      console.log(`[TWILIO-WEBHOOK] Connecting to real-time session for ${patient.firstName}`);
 
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
