@@ -63,11 +63,15 @@ export class OpenAIRealtimeService {
   }
 
   async initializeOpenAIRealtime(sessionId: string): Promise<WebSocket> {
+    console.log(`🔌 Initializing OpenAI WebSocket for session ${sessionId}`);
+    
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
     }
 
+    console.log(`🔑 Using OpenAI API key: ${process.env.OPENAI_API_KEY ? 'Present' : 'Missing'}`);
+    
     const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -75,6 +79,7 @@ export class OpenAIRealtimeService {
       }
     });
 
+    console.log(`🌐 WebSocket created for ${sessionId}, state: ${openaiWs.readyState}`);
     session.openaiWs = openaiWs;
 
     openaiWs.on('open', () => {
@@ -336,7 +341,6 @@ export class OpenAIRealtimeService {
     
     if (message.event === 'connected') {
       console.log(`📞 Twilio call connected for session ${sessionId}`);
-      this.initializeOpenAIRealtime(sessionId);
     } else if (message.event === 'start') {
       console.log(`🎙️ Audio streaming started for session ${sessionId}`);
       
@@ -344,6 +348,10 @@ export class OpenAIRealtimeService {
         session.streamSid = message.streamSid;
         console.log(`📡 Stream SID: ${message.streamSid}`);
       }
+      
+      // Initialize OpenAI connection when audio streaming starts
+      console.log(`🚀 Initializing OpenAI real-time connection for ${sessionId}`);
+      this.initializeOpenAIRealtime(sessionId);
       
       console.log(`🎯 Audio streaming ready - GPT-4o will initiate conversation based on system prompt`);
     } else if (message.event === 'media') {
