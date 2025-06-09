@@ -48,10 +48,10 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       let systemPrompt;
       if (useCustomPrompt && generatedPrompt) {
         systemPrompt = generatedPrompt.systemPrompt;
-        console.log(`[TWILIO-INTEGRATION] Using custom prompt for ${patient.name}`);
+        console.log(`[TWILIO-INTEGRATION] Using custom prompt for ${patient.firstName} ${patient.lastName}`);
       } else {
         systemPrompt = patientPromptManager.createTwilioSystemPrompt(patientContext);
-        console.log(`[TWILIO-INTEGRATION] Using standard prompt for ${patient.name}`);
+        console.log(`[TWILIO-INTEGRATION] Using standard prompt for ${patient.firstName} ${patient.lastName}`);
       }
       
       // Create call record
@@ -73,13 +73,13 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       // Create GPT-4o realtime session for this call
       const sessionId = await openaiRealtimeService.createRealtimeSession(
         patient.id,
-        patient.name,
+        `${patient.firstName} ${patient.lastName}`,
         call.id,
         systemPrompt
       );
 
       // Configure the session with patient-specific prompt
-      console.log(`[TWILIO-INTEGRATION] Created GPT-4o session ${sessionId} for patient ${patient.name}`);
+      console.log(`[TWILIO-INTEGRATION] Created GPT-4o session ${sessionId} for patient ${patient.firstName} ${patient.lastName}`);
 
       // Generate Twilio webhook URL for this specific session
       console.log(`[TWILIO-INTEGRATION] REPLIT_DOMAINS env var:`, process.env.REPLIT_DOMAINS);
@@ -110,7 +110,7 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         callId: call.id,
         sessionId,
         twilioCallSid,
-        message: `Automated call initiated for ${patient.name}`
+        message: `Automated call initiated for ${patient.firstName} ${patient.lastName}`
       });
 
     } catch (error) {

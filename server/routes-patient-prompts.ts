@@ -55,7 +55,7 @@ export function registerPatientPromptRoutes(app: Express) {
 
       const generatedPrompt: GeneratedPatientPrompt = {
         patientId,
-        patientName: patient.name,
+        patientName: `${patient.firstName} ${patient.lastName}`,
         templateUsed: requestData.templateId,
         systemPrompt: patientPrompt.systemPrompt,
         initialGreeting: patientPrompt.initialGreeting,
@@ -66,7 +66,7 @@ export function registerPatientPromptRoutes(app: Express) {
         generatedAt: new Date()
       };
 
-      console.log(`[PATIENT-PROMPTS] Generated personalized prompt for patient: ${patient.name}`);
+      console.log(`[PATIENT-PROMPTS] Generated personalized prompt for patient: ${patient.firstName} ${patient.lastName}`);
       res.json(generatedPrompt);
 
     } catch (error) {
@@ -98,10 +98,10 @@ export function registerPatientPromptRoutes(app: Express) {
       // Generate Twilio-specific system prompt
       const twilioSystemPrompt = patientPromptManager.createTwilioSystemPrompt(patientContext);
 
-      console.log(`[PATIENT-PROMPTS] Generated Twilio system prompt for patient: ${patient.name}`);
+      console.log(`[PATIENT-PROMPTS] Generated Twilio system prompt for patient: ${patient.firstName} ${patient.lastName}`);
       res.json({
         patientId,
-        patientName: patient.name,
+        patientName: `${patient.firstName} ${patient.lastName}`,
         twilioSystemPrompt,
         generatedAt: new Date()
       });

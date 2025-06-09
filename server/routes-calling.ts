@@ -229,7 +229,7 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
 
         await storage.updateCall(call.id, { twilioCallSid });
         
-        broadcastUpdate('callStarted', { call: { ...call, patientName: patient.name } });
+        broadcastUpdate('callStarted', { call: { ...call, patientName: `${patient.firstName} ${patient.lastName}` } });
         
         res.json({ 
           success: true, 
