@@ -134,7 +134,7 @@ export class OpenAIRealtimeService {
             prefix_padding_ms: 500,
             silence_duration_ms: 3000
           },
-          temperature: 0.3,
+          temperature: 0.6,
           max_response_output_tokens: 300
         }
       };
