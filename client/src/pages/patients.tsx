@@ -31,6 +31,8 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function Patients() {
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+  const [isEditPatientOpen, setIsEditPatientOpen] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<any>(null);
   const [selectedPatientForPrompt, setSelectedPatientForPrompt] = useState<any>(null);
   const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
@@ -80,13 +82,59 @@ export default function Patients() {
     },
   });
 
+  const editPatientMutation = useMutation({
+    mutationFn: async (data: FormData & { id: number }) => {
+      return apiRequest("PUT", `/api/patients/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/patients'] });
+      setIsEditPatientOpen(false);
+      setEditingPatient(null);
+      form.reset();
+      toast({
+        title: "Patient Updated",
+        description: "Patient information has been successfully updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update patient. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: FormData) => {
     // Generate system ID using firstName/lastName and dateOfBirth
     if (!data.systemId) {
       const dobFormatted = data.dateOfBirth.replace(/-/g, "/");
       data.systemId = `${data.lastName}_${data.firstName}__${dobFormatted}`;
     }
-    addPatientMutation.mutate(data);
+    
+    if (editingPatient) {
+      editPatientMutation.mutate({ ...data, id: editingPatient.id });
+    } else {
+      addPatientMutation.mutate(data);
+    }
+  };
+
+  const openEditDialog = (patient: any) => {
+    setEditingPatient(patient);
+    form.reset({
+      firstName: patient.firstName || "",
+      lastName: patient.lastName || "",
+      phoneNumber: patient.phoneNumber || "",
+      email: patient.email || "",
+      dateOfBirth: patient.dateOfBirth || "",
+      mrn: patient.mrn || "",
+      gender: patient.gender || "Female",
+      address: patient.address || "",
+      systemId: patient.systemId || "",
+      condition: patient.condition || "",
+      riskLevel: patient.riskLevel || "low",
+    });
+    setIsEditPatientOpen(true);
   };
 
   const getRiskLevelColor = (riskLevel: string) => {
@@ -161,12 +209,25 @@ export default function Patients() {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="name"
+                    name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Patient Name *</FormLabel>
+                        <FormLabel>First Name *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Last, First" {...field} />
+                          <Input placeholder="First Name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Last Name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -368,7 +429,7 @@ export default function Patients() {
                       <User className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">{patient.name}</CardTitle>
+                      <CardTitle className="text-lg">{patient.firstName} {patient.lastName}</CardTitle>
                       <CardDescription>MRN: {patient.mrn}</CardDescription>
                     </div>
                   </div>
@@ -435,6 +496,14 @@ export default function Patients() {
                       System ID: {patient.systemId}
                     </div>
                     <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openEditDialog(patient)}
+                      >
+                        <User className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
