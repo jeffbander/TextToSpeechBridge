@@ -43,6 +43,7 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
           // Try to get session ID from query parameters or headers
           const urlParts = url.parse(request.url!, true);
           sessionId = urlParts.query.session as string || '';
+          console.log(`[REALTIME] Parsed URL: ${request.url}, Query:`, urlParts.query);
           
           // If no session in query, check if we can derive it from call context
           if (!sessionId && headers['x-twilio-call-sid']) {
