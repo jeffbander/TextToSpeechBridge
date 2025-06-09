@@ -169,6 +169,8 @@ export class MemStorage implements IStorage {
       id,
       patientId: insertCall.patientId,
       status: insertCall.status,
+      callType: insertCall.callType ?? null,
+      metadata: insertCall.metadata ?? null,
       duration: insertCall.duration ?? null,
       outcome: insertCall.outcome ?? null,
       transcript: insertCall.transcript ?? null,
