@@ -119,6 +119,9 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
 
       // Use default voice for now - can be enhanced later with patient preferences
       const selectedVoice = 'shimmer'; // Changed from alloy to shimmer for a softer, more caring voice
+      
+      console.log(`🎤 Selected voice: ${selectedVoice}`);
+      console.log(`🔧 Configuring OpenAI session...`);
 
       const sessionConfig = {
         type: 'session.update',
@@ -126,8 +129,8 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           modalities: ['text', 'audio'],
           instructions,
           voice: selectedVoice,
-          input_audio_format: 'pcm16',
-          output_audio_format: 'pcm16',
+          input_audio_format: 'g711_ulaw',
+          output_audio_format: 'g711_ulaw',
           input_audio_transcription: {
             model: 'whisper-1'
           },
@@ -140,7 +143,9 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         }
       };
       
+      console.log(`📋 Session config:`, JSON.stringify(sessionConfig, null, 2));
       openaiWs.send(JSON.stringify(sessionConfig));
+      console.log(`⚙️ Session configuration sent for ${sessionId}`);
       
       if (session.customSystemPrompt) {
         console.log(`🔴 Using custom system prompt for ${session.patientName}`);
@@ -231,14 +236,19 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         
       case 'response.audio.delta':
         // Stream audio back to Twilio in media format
+        console.log(`🔊 Sending audio delta to Twilio - payload length: ${message.delta?.length || 0}`);
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
-          session.websocket.send(JSON.stringify({
+          const audioResponse = {
             event: 'media',
             streamSid: session.id,
             media: {
               payload: message.delta
             }
-          }));
+          };
+          console.log(`📤 Twilio audio response:`, JSON.stringify(audioResponse).substring(0, 150));
+          session.websocket.send(JSON.stringify(audioResponse));
+        } else {
+          console.log(`❌ Cannot send audio to Twilio - WebSocket not ready. State: ${session.websocket?.readyState}`);
         }
         break;
         
@@ -343,6 +353,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     twilioWs.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
+        console.log(`📨 Twilio message for ${sessionId}:`, JSON.stringify(message).substring(0, 200));
         
         if (message.event === 'connected') {
           console.log(`📞 Twilio call connected for session ${sessionId}`);
@@ -374,12 +385,16 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           }
         } else if (message.event === 'media') {
           // Forward Twilio audio to OpenAI
+          console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);
           if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
             const audioData = message.media.payload;
+            console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}`);
             session.openaiWs.send(JSON.stringify({
               type: 'input_audio_buffer.append',
               audio: audioData
             }));
+          } else {
+            console.log(`❌ Cannot forward audio - OpenAI WebSocket not ready. State: ${session.openaiWs?.readyState}`);
           }
         } else if (message.event === 'stop') {
           console.log(`🛑 Audio streaming stopped for session ${sessionId}`);

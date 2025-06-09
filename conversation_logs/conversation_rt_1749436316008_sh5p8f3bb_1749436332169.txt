@@ -1,0 +1,17 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749436316008_sh5p8f3bb
+Patient: Jeff Bander (ID: 7)
+Call ID: 16
+Duration: 16 seconds
+Date: 2025-06-09T02:31:56.009Z
+Total Exchanges: 2
+
+─────────────────────────────────────────────────────────
+
+[2:32:02 AM] AI: Hi Jeff, this is just a follow-up call to see howHi you're doing. How Jeff, has your recovery been going since your last this is visit just? a follow-up call to check in on how you’re feeling and see how your recovery is going.
+
+[2:32:03 AM] AI: How have you been doing lately?
+
+─────────────────────────────────────────────────────────
+End of Conversation
