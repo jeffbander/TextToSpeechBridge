@@ -69,10 +69,20 @@ export class OpenAIRealtimeService {
       throw new Error(`Session ${sessionId} not found`);
     }
 
+    // Prevent multiple simultaneous connection attempts
+    if (session.openaiWs && session.openaiWs.readyState === WebSocket.CONNECTING) {
+      console.log(`⏳ OpenAI connection already in progress for session ${sessionId}`);
+      return session.openaiWs;
+    }
+
     // Close existing connection if any
     if (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED) {
-      session.openaiWs.removeAllListeners();
-      session.openaiWs.close();
+      try {
+        session.openaiWs.removeAllListeners();
+        session.openaiWs.close();
+      } catch (error) {
+        console.log(`⚠️ Error closing existing WebSocket: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
       session.openaiWs = null;
     }
 
@@ -208,8 +218,9 @@ export class OpenAIRealtimeService {
     });
     
     openaiWs.on('error', (error) => {
-      console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error);
+      console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error.message);
       session.openaiWs = null;
+      // Prevent crash by handling the error gracefully
     });
     
     openaiWs.on('close', (code, reason) => {
