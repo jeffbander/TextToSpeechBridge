@@ -43,11 +43,12 @@ export class PatientPromptManager {
 
   private buildSystemPrompt(context: PatientContext): string {
     const { patient, recentVisitReason, currentMedications, knownConditions, urgencyLevel } = context;
+    const patientName = `${patient.firstName} ${patient.lastName}`;
     
-    return `You are a healthcare AI assistant conducting a follow-up call for ${patient.name}.
+    return `You are a healthcare AI assistant conducting a follow-up call for ${patientName}.
 
 PATIENT INFORMATION:
-- Name: ${patient.name}
+- Name: ${patientName}
 - Phone: ${patient.phoneNumber}
 - Primary Condition: ${patient.condition}
 - Recent Visit Reason: ${recentVisitReason || 'General follow-up'}
@@ -82,16 +83,17 @@ RESPONSE FORMAT:
 
   private buildInitialGreeting(context: PatientContext): string {
     const { patient, recentVisitReason, urgencyLevel } = context;
+    const patientName = `${patient.firstName} ${patient.lastName}`;
     
     if (urgencyLevel === 'critical' || urgencyLevel === 'high') {
-      return `Hello ${patient.name}, this is your healthcare team calling. We need to check on you urgently regarding your recent ${recentVisitReason || 'visit'}. How are you feeling right now?`;
+      return `Hello ${patientName}, this is your healthcare team calling. We need to check on you urgently regarding your recent ${recentVisitReason || 'visit'}. How are you feeling right now?`;
     }
     
     if (recentVisitReason) {
-      return `Hello ${patient.name}, this is your healthcare assistant calling for your follow-up after your recent ${recentVisitReason}. How have you been feeling since your visit?`;
+      return `Hello ${patientName}, this is your healthcare assistant calling for your follow-up after your recent ${recentVisitReason}. How have you been feeling since your visit?`;
     }
     
-    return `Hello ${patient.name}, this is your healthcare team calling to check on your well-being. How are you feeling today?`;
+    return `Hello ${patientName}, this is your healthcare team calling to check on your well-being. How are you feeling today?`;
   }
 
   private buildFollowUpQuestions(context: PatientContext): string[] {

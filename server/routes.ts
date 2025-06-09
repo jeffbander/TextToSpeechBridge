@@ -106,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const patient = patients.find(p => p.id === alert.patientId);
           return {
             ...alert,
-            patientName: patient?.name || 'Unknown',
+            patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown',
             phoneNumber: patient?.phoneNumber || ''
           };
         });
@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const patient = patients.find(p => p.id === call.patientId);
         return {
           ...call,
-          patientName: patient?.name || 'Unknown',
+          patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown',
           phoneNumber: patient?.phoneNumber || ''
         };
       });
@@ -248,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).type('text/xml').send('<?xml version="1.0" encoding="UTF-8"?><Response><Say>Patient not found</Say></Response>');
       }
 
-      console.log(`👤 PATIENT FOUND: ${patient.name}`);
+      console.log(`👤 PATIENT FOUND: ${patient.firstName} ${patient.lastName}`);
 
       let script;
       if (call.customPrompt) {
