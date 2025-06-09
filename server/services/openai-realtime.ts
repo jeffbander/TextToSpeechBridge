@@ -237,18 +237,35 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'response.audio.delta':
-        // Stream audio back to Twilio with proper formatting
+        // Stream audio back to Twilio in chunks using proper media stream format
         console.log(`🔊 Sending audio delta to Twilio - payload length: ${message.delta?.length || 0}`);
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN && message.delta) {
-          // Send audio immediately without extra formatting - let Twilio handle the streaming
-          const audioMessage = {
-            event: 'media',
-            media: {
-              payload: message.delta
+          // Split the large audio payload into smaller chunks for better streaming
+          const chunkSize = 320; // Standard G.711 chunk size for 20ms audio
+          const audioData = message.delta;
+          
+          for (let i = 0; i < audioData.length; i += chunkSize) {
+            const chunk = audioData.slice(i, i + chunkSize);
+            
+            if (!session.outboundChunkCount) {
+              session.outboundChunkCount = 0;
             }
-          };
-          console.log(`📤 Twilio raw audio:`, JSON.stringify(audioMessage).substring(0, 100));
-          session.websocket.send(JSON.stringify(audioMessage));
+            
+            const mediaMessage = {
+              event: 'media',
+              streamSid: session.streamSid || session.id,
+              media: {
+                track: 'outbound',
+                chunk: session.outboundChunkCount.toString(),
+                timestamp: (session.outboundChunkCount * 20).toString(), // 20ms intervals
+                payload: chunk
+              }
+            };
+            
+            session.outboundChunkCount++;
+            session.websocket.send(JSON.stringify(mediaMessage));
+          }
+          console.log(`📤 Sent ${Math.ceil(audioData.length / chunkSize)} audio chunks to Twilio`);
         } else {
           console.log(`❌ Cannot send audio to Twilio - WebSocket not ready. State: ${session.websocket?.readyState}`);
         }

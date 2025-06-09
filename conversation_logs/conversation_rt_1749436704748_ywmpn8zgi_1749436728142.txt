@@ -1,0 +1,28 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749436704748_ywmpn8zgi
+Patient: Jeff Bander (ID: 7)
+Call ID: 18
+Duration: 23 seconds
+Date: 2025-06-09T02:38:24.748Z
+Total Exchanges: 6
+
+─────────────────────────────────────────────────────────
+
+[2:38:32 AM] AI: Hola, Jeff.Hi Jeff, ¿Cómo has this is just estado? a follow-up call Quería ver cómo te has sentido to check in on you. How have desde la última vez que hablamos. you been feeling lately? Are you noticing ¿Cómo va tu recuperación? any improvements in your recovery?
+
+[2:38:37 AM] PATIENT: There's no dilation. Well...
+
+
+[2:38:39 AM] AI: That’s good to hear there’s no dilation. Are you feeling any shortness of breath or any swelling in your legs or ankles? I just want to make sure we’re covering all bases.
+
+[2:38:44 AM] PATIENT: You just don't live in it.
+
+
+[2:38:44 AM] AI: I understand. Some light-headedness can happen. Have you noticed if it’s happening more when you stand up or change positions quickly?
+
+[2:38:47 AM] PATIENT: Bye. Bye. Bye. 
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
