@@ -20,6 +20,8 @@ export interface RealtimeSession {
   audioBuffer: Buffer[];
   currentResponse?: string;
   customSystemPrompt?: string;
+  streamSid?: string;
+  outboundChunkCount?: number;
   conversationLog: Array<{
     timestamp: Date;
     speaker: 'ai' | 'patient';
@@ -235,18 +237,18 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'response.audio.delta':
-        // Stream audio back to Twilio in media format
+        // Stream audio back to Twilio with proper formatting
         console.log(`🔊 Sending audio delta to Twilio - payload length: ${message.delta?.length || 0}`);
-        if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
-          const audioResponse = {
+        if (session.websocket && session.websocket.readyState === WebSocket.OPEN && message.delta) {
+          // Send audio immediately without extra formatting - let Twilio handle the streaming
+          const audioMessage = {
             event: 'media',
-            streamSid: session.id,
             media: {
               payload: message.delta
             }
           };
-          console.log(`📤 Twilio audio response:`, JSON.stringify(audioResponse).substring(0, 150));
-          session.websocket.send(JSON.stringify(audioResponse));
+          console.log(`📤 Twilio raw audio:`, JSON.stringify(audioMessage).substring(0, 100));
+          session.websocket.send(JSON.stringify(audioMessage));
         } else {
           console.log(`❌ Cannot send audio to Twilio - WebSocket not ready. State: ${session.websocket?.readyState}`);
         }
@@ -361,6 +363,13 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           this.initializeOpenAIRealtime(sessionId);
         } else if (message.event === 'start') {
           console.log(`🎙️ Audio streaming started for session ${sessionId}`);
+          
+          // Store stream info for proper audio routing
+          if (message.streamSid) {
+            session.streamSid = message.streamSid;
+            console.log(`📡 Stream SID: ${message.streamSid}`);
+          }
+          
           // Send initial greeting via OpenAI
           if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
             let greeting;

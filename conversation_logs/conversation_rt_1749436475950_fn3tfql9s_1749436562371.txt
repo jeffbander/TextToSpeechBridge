@@ -1,0 +1,30 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749436475950_fn3tfql9s
+Patient: Jeff Bander (ID: 7)
+Call ID: 17
+Duration: 86 seconds
+Date: 2025-06-09T02:34:35.950Z
+Total Exchanges: 7
+
+─────────────────────────────────────────────────────────
+
+[2:34:42 AM] AI: Hi Jeff, this is just a follow-up call to see how you’re doing. How have you been feeling since your last appointment?Hi Jeff,
+
+[2:34:43 AM] AI: this is just a follow-up call to see how you're doing. How has your recovery been going so far? Are you feeling
+
+[2:34:48 AM] PATIENT: Still no audio here.
+
+
+[2:34:51 AM] AI: I’m sorry to hear your voice is a bit off. Are you feeling any discomfort in your throat or anything like that? Let me know if there’s anything I can do to help. Also, how have you been feeling overall since the last visit?
+
+[2:35:19 AM] PATIENT: I don't know why you can't find it. Foundation of Circles? What does that mean? There's no Foundation of Circles. Sorry. People don't feel PFS. And by the time I'm going to hang around the hall, they don't feel it. That's what I'm saying. Our main dinner is equal to PFS. Yeah. You want to write that down? What kind do you have?
+
+
+[2:35:22 AM] PATIENT: Yeah
+
+
+[2:35:24 AM] AI: I’m glad to hear you’re okay. Let me ask, since your last visit, have you noticed any shortness of breath or swelling in your legs? That’ll help us understand how you’re recovering.
+
+─────────────────────────────────────────────────────────
+End of Conversation
