@@ -120,7 +120,7 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
         const patient = patients.find(p => p.id === call.patientId);
         return {
           ...call,
-          patientName: patient?.name || 'Unknown',
+          patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown',
           phoneNumber: patient?.phoneNumber || '',
           condition: patient?.condition || ''
         };
@@ -146,7 +146,7 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
           const patient = patients.find(p => p.id === call.patientId);
           return {
             ...call,
-            patientName: patient?.name || 'Unknown',
+            patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown',
             phoneNumber: patient?.phoneNumber || '',
             condition: patient?.condition || ''
           };
@@ -183,7 +183,7 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
         script = customPrompt;
       } else {
         script = await openaiService.generateCallScript(
-          patient.name, 
+          `${patient.firstName} ${patient.lastName}`, 
           patient.condition, 
           callType,
           voiceProfile.personality

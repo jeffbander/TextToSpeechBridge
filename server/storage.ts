@@ -251,41 +251,44 @@ export class DatabaseStorage implements IStorage {
         return;
       }
 
-      // Add sample patients
+      // Add sample patients with firstName/lastName and proper systemId format
       const samplePatients = [
         {
-          name: "Abe, Jennifer",
+          firstName: "Jennifer",
+          lastName: "Abe",
           phoneNumber: "+15551234567",
           email: "jennifer.abe@email.com",
           dateOfBirth: "1975-03-15",
           mrn: "MRN001",
           gender: "Female",
           address: "123 Main St, Anytown, ST 12345",
-          systemId: "SYS001",
+          systemId: "Abe_Jennifer__03/15/1975",
           condition: "Post-Cardiac Surgery",
           riskLevel: "medium" as const
         },
         {
-          name: "Johnson, Michael",
+          firstName: "Michael",
+          lastName: "Johnson",
           phoneNumber: "+15551234569",
           email: "michael.johnson@email.com",
           dateOfBirth: "1962-08-22",
           mrn: "MRN002",
           gender: "Male",
           address: "456 Oak Ave, Somewhere, ST 67890",
-          systemId: "SYS002",
+          systemId: "Johnson_Michael__08/22/1962",
           condition: "CHF Follow-up",
           riskLevel: "high" as const
         },
         {
-          name: "Garcia, Maria",
+          firstName: "Maria",
+          lastName: "Garcia",
           phoneNumber: "+15551234571",
           email: "maria.garcia@email.com",
           dateOfBirth: "1989-12-03",
           mrn: "MRN003",
           gender: "Female",
           address: "789 Pine Rd, Elsewhere, ST 54321",
-          systemId: "SYS003",
+          systemId: "Garcia_Maria__12/03/1989",
           condition: "Diabetes Management",
           riskLevel: "low" as const
         }
