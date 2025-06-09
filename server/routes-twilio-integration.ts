@@ -242,19 +242,28 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       const session = openaiRealtimeService.getActiveSession(sessionId);
       if (!session) return "Thank you for calling.";
 
-      // Create context-aware prompt
-      const prompt = `You are Dr. Wellman conducting a post-discharge follow-up call with ${session.patientName}. 
-      
+      // Use session's custom prompt if available, otherwise use default
+      let basePrompt;
+      if (session.customSystemPrompt && session.customSystemPrompt.trim()) {
+        basePrompt = `${session.customSystemPrompt}
+        
+Patient just said: "${patientInput}"
+
+Based on your role and instructions above, provide an appropriate response. Keep it conversational and under 50 words.`;
+      } else {
+        basePrompt = `You are Dr. Wellman conducting a post-discharge follow-up call with ${session.patientName}. 
+        
 Patient just said: "${patientInput}"
 
 Respond as a caring healthcare provider. Ask relevant follow-up questions about their recovery, symptoms, medications, or concerns. Keep responses conversational and under 50 words.`;
+      }
 
       // Use OpenAI to generate contextual response
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: "user", content: basePrompt }],
         max_tokens: 100,
         temperature: 0.7
       });
