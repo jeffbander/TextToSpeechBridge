@@ -12,6 +12,7 @@ import { registerRealtimeRoutes } from "./routes-realtime";
 import { registerTwilioIntegrationRoutes } from "./routes-twilio-integration";
 import { registerPromptTemplateRoutes } from "./routes-prompt-templates";
 import { registerPatientPromptRoutes } from "./routes-patient-prompts";
+import { registerBasicVoiceRoutes } from "./routes-basic-voice";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -26,6 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerCallingRoutes(app, httpServer);
   registerRealtimeRoutes(app, httpServer);
   registerTwilioIntegrationRoutes(app);
+  registerBasicVoiceRoutes(app);
 
   // Shared endpoints that don't belong to calling or realtime modules
   
