@@ -27,7 +27,7 @@ interface PromptMetadata {
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   redFlags?: string[];
   culturalConsiderations?: string;
-  languagePreference?: 'English' | 'Spanish' | 'Chinese' | 'Russian' | 'Arabic' | 'French' | 'German' | 'Italian' | 'Portuguese' | 'Hebrew' | 'Yiddish' | 'Other';
+  languagePreference?: 'English' | 'Spanish' | 'Russian' | 'Hebrew' | 'Yiddish' | 'Ukrainian' | 'Creole' | 'Chinese' | 'Arabic' | 'French' | 'German' | 'Italian' | 'Portuguese' | 'Other';
 }
 
 interface PatientPromptData {
@@ -411,15 +411,17 @@ Example: "You are conducting a follow-up call with ${selectedPatient?.firstName 
                           <SelectContent>
                             <SelectItem value="English">English</SelectItem>
                             <SelectItem value="Spanish">Spanish (Español)</SelectItem>
-                            <SelectItem value="Chinese">Chinese (中文)</SelectItem>
                             <SelectItem value="Russian">Russian (Русский)</SelectItem>
+                            <SelectItem value="Hebrew">Hebrew (עברית)</SelectItem>
+                            <SelectItem value="Yiddish">Yiddish (ייִדיש)</SelectItem>
+                            <SelectItem value="Ukrainian">Ukrainian (Українська)</SelectItem>
+                            <SelectItem value="Creole">Creole</SelectItem>
+                            <SelectItem value="Chinese">Chinese (中文)</SelectItem>
                             <SelectItem value="Arabic">Arabic (العربية)</SelectItem>
                             <SelectItem value="French">French (Français)</SelectItem>
                             <SelectItem value="German">German (Deutsch)</SelectItem>
                             <SelectItem value="Italian">Italian (Italiano)</SelectItem>
                             <SelectItem value="Portuguese">Portuguese (Português)</SelectItem>
-                            <SelectItem value="Hebrew">Hebrew (עברית)</SelectItem>
-                            <SelectItem value="Yiddish">Yiddish (ייִדיש)</SelectItem>
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>

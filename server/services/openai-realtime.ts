@@ -89,17 +89,28 @@ export class OpenAIRealtimeService {
       let selectedVoice = 'alloy'; // default voice
       let languageInstruction = '';
       
-      // If there's a custom system prompt, check if it contains metadata for language preference
+      // Parse language preference from custom system prompt metadata
       if (session.customSystemPrompt) {
-        // Add language instruction based on metadata (this will be passed from the prompt metadata)
-        // For now, we'll enhance the instructions to include language guidance
-        const languageMatch = session.customSystemPrompt.match(/Language:\s*(\w+)/i);
-        if (languageMatch) {
-          const language = languageMatch[1];
-          if (language !== 'English') {
-            languageInstruction = `\n\nIMPORTANT: Conduct this entire conversation in ${language}. Speak naturally and fluently in ${language} throughout the call.`;
-            instructions += languageInstruction;
+        // Look for language preference in various formats
+        const languagePatterns = [
+          /Language.*?:\s*([A-Za-z]+)/i,
+          /languagePreference.*?:\s*['""]([A-Za-z]+)['"]/i,
+          /speak.*?in\s+([A-Za-z]+)/i
+        ];
+        
+        let detectedLanguage = null;
+        for (const pattern of languagePatterns) {
+          const match = session.customSystemPrompt.match(pattern);
+          if (match) {
+            detectedLanguage = match[1];
+            break;
           }
+        }
+        
+        if (detectedLanguage && detectedLanguage.toLowerCase() !== 'english') {
+          languageInstruction = `\n\nCRITICAL INSTRUCTION: You must conduct this ENTIRE conversation in ${detectedLanguage}. Speak fluently and naturally in ${detectedLanguage} from the very first greeting through the end of the call. Do not use English at any point during this conversation.`;
+          instructions += languageInstruction;
+          console.log(`🌐 Language preference detected: ${detectedLanguage} for patient ${session.patientName}`);
         }
       }
       

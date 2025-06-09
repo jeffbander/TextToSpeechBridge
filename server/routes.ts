@@ -392,8 +392,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { customPrompt, promptMetadata } = req.body;
       
+      // Enhance the custom prompt with language preference metadata for GPT-4o parsing
+      let enhancedPrompt = customPrompt;
+      if (promptMetadata?.languagePreference && promptMetadata.languagePreference !== 'English') {
+        // Add language instruction at the end of the prompt in a format the real-time service can parse
+        enhancedPrompt += `\n\nLanguage Preference: ${promptMetadata.languagePreference}`;
+      }
+      
       const updatedPatient = await storage.updatePatient(id, {
-        customPrompt,
+        customPrompt: enhancedPrompt,
         promptMetadata
       });
       
