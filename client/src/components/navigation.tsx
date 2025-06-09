@@ -12,8 +12,7 @@ export default function Navigation() {
     { href: "/automated-calls", label: "Auto Calls", icon: Phone },
     { href: "/conversation-logs", label: "Reports", icon: FileText },
     { href: "/voice-settings", label: "Voice Settings", icon: Settings },
-    { href: "/patient-prompts", label: "Patient Prompts", icon: MessageSquare },
-    { href: "/patient-prompts-manager", label: "Custom Prompts", icon: Brain },
+    { href: "/custom-prompts", label: "Custom Prompts", icon: Brain },
   ];
 
   return (

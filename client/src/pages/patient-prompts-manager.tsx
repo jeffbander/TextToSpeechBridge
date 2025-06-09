@@ -192,9 +192,9 @@ export default function PatientPromptsManager() {
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight">Patient Prompt Manager</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Custom Prompts</h1>
             <p className="text-muted-foreground">
-              Create custom conversation prompts and configurations for each patient's AI interactions
+              Create personalized conversation prompts and voice settings for each patient's AI calls
             </p>
           </div>
 
