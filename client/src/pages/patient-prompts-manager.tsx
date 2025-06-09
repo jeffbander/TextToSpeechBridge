@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -72,10 +72,11 @@ export default function PatientPromptsManager() {
 
   // Update prompt data when existing prompt is loaded
   React.useEffect(() => {
-    if (existingPrompt) {
+    if (existingPrompt && typeof existingPrompt === 'object') {
+      const prompt = existingPrompt as any;
       setPromptData({
-        customPrompt: existingPrompt.customPrompt || '',
-        promptMetadata: existingPrompt.promptMetadata || promptData.promptMetadata
+        customPrompt: prompt.customPrompt || '',
+        promptMetadata: prompt.promptMetadata || promptData.promptMetadata
       });
     }
   }, [existingPrompt]);
@@ -96,7 +97,7 @@ export default function PatientPromptsManager() {
         title: "Success",
         description: "Patient prompt saved successfully"
       });
-      queryClient.invalidateQueries([`/api/patients/${selectedPatientId}/prompt`]);
+      queryClient.invalidateQueries({ queryKey: [`/api/patients/${selectedPatientId}/prompt`] });
     },
     onError: (error) => {
       toast({

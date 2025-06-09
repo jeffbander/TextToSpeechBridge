@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Dashboard from "@/pages/dashboard";
 import VoiceSettings from "@/pages/voice-settings";
 import PatientPrompts from "@/pages/patient-prompts";
+import PatientPromptsManager from "@/pages/patient-prompts-manager";
 import Patients from "@/pages/patients";
 import RealtimePage from "@/pages/realtime";
 import ConversationLogs from "@/pages/conversation-logs";
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/patients" component={Patients} />
       <Route path="/voice-settings" component={VoiceSettings} />
       <Route path="/patient-prompts" component={PatientPrompts} />
+      <Route path="/patient-prompts-manager" component={PatientPromptsManager} />
       <Route path="/realtime" component={RealtimePage} />
       <Route path="/conversation-logs" component={ConversationLogs} />
       <Route path="/automated-calls" component={AutomatedCallsPage} />
