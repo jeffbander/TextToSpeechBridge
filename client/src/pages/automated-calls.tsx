@@ -13,13 +13,7 @@ import { format } from 'date-fns';
 import Navigation from '@/components/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-
-interface Patient {
-  id: number;
-  name: string;
-  phoneNumber: string;
-  condition: string;
-}
+import type { Patient } from '@/../../shared/schema';
 
 interface AutomatedCall {
   id: number;
@@ -236,7 +230,7 @@ export default function AutomatedCallsPage() {
                       <SelectContent>
                         {patients.map((patient) => (
                           <SelectItem key={patient.id} value={patient.id.toString()}>
-                            {patient.name} - {patient.condition}
+                            {patient.firstName} {patient.lastName} - {patient.condition}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -341,7 +335,7 @@ export default function AutomatedCallsPage() {
                     <div className="p-3 bg-muted rounded-lg">
                       <h4 className="font-medium">Selected Patient:</h4>
                       <p className="text-sm text-muted-foreground">
-                        {selectedPatient.name} - {selectedPatient.phoneNumber}
+                        {selectedPatient.firstName} {selectedPatient.lastName} - {selectedPatient.phoneNumber}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Condition: {selectedPatient.condition}
@@ -388,7 +382,7 @@ export default function AutomatedCallsPage() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium">{patient?.name || 'Unknown Patient'}</span>
+                            <span className="font-medium">{patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}</span>
                             {call.metadata.urgencyLevel && getUrgencyBadge(call.metadata.urgencyLevel)}
                           </div>
                           
