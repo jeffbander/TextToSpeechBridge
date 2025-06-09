@@ -148,16 +148,19 @@ export class OpenAIRealtimeService {
       
       // Send initial conversation starter to trigger GPT-4o response
       setTimeout(() => {
-        const startMessage = {
-          type: 'response.create',
-          response: {
-            modalities: ['text', 'audio'],
-            instructions: `Start the conversation by greeting ${session.patientName} and introducing yourself according to the system instructions.`
-          }
-        };
-        
-        console.log(`🎬 Sending conversation starter for ${sessionId}`);
-        openaiWs.send(JSON.stringify(startMessage));
+        if (openaiWs.readyState === WebSocket.OPEN && !session.conversationStarted) {
+          session.conversationStarted = true;
+          const startMessage = {
+            type: 'response.create',
+            response: {
+              modalities: ['text', 'audio'],
+              instructions: `Start the conversation by greeting ${session.patientName} and introducing yourself according to the system instructions.`
+            }
+          };
+          
+          console.log(`🎬 Sending conversation starter for ${sessionId}`);
+          openaiWs.send(JSON.stringify(startMessage));
+        }
       }, 1000);
       
       session.isActive = true;
@@ -167,6 +170,13 @@ export class OpenAIRealtimeService {
       try {
         const message = JSON.parse(data.toString());
         console.log(`📨 OpenAI message for ${sessionId}:`, message.type, message.delta ? `(${message.delta.length} chars)` : '');
+        
+        // Log detailed error information
+        if (message.type === 'error') {
+          console.error(`❌ OpenAI API Error for ${sessionId}:`, JSON.stringify(message, null, 2));
+          return;
+        }
+        
         this.handleOpenAIMessage(sessionId, message);
       } catch (error) {
         console.error(`❌ Error parsing OpenAI message for session ${sessionId}:`, error);
