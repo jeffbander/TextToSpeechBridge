@@ -108,12 +108,15 @@ Guidelines:
 
 Patient context: This is a routine post-discharge follow-up call to ensure proper recovery.`;
 
+      // Use default voice for now - can be enhanced later with patient preferences
+      const selectedVoice = 'shimmer'; // Changed from alloy to shimmer for a softer, more caring voice
+
       const sessionConfig = {
         type: 'session.update',
         session: {
           modalities: ['text', 'audio'],
           instructions,
-          voice: 'alloy',
+          voice: selectedVoice,
           input_audio_format: 'pcm16',
           output_audio_format: 'pcm16',
           input_audio_transcription: {

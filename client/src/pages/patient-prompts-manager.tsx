@@ -24,6 +24,7 @@ interface PromptMetadata {
   followUpActions?: string[];
   voiceTone?: 'formal' | 'friendly' | 'compassionate' | 'authoritative';
   conversationLength?: 'brief' | 'standard' | 'detailed';
+  voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   redFlags?: string[];
   culturalConsiderations?: string;
   languagePreference?: string;
@@ -50,6 +51,7 @@ export default function PatientPromptsManager() {
       followUpActions: [],
       voiceTone: 'friendly',
       conversationLength: 'standard',
+      voice: 'alloy',
       redFlags: [],
       culturalConsiderations: '',
       languagePreference: 'English'
@@ -365,6 +367,26 @@ Example: "You are conducting a follow-up call with ${selectedPatient?.firstName 
                             <SelectItem value="medium">Medium</SelectItem>
                             <SelectItem value="high">High</SelectItem>
                             <SelectItem value="critical">Critical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>GPT-4o Voice</Label>
+                        <Select
+                          value={promptData.promptMetadata.voice}
+                          onValueChange={(value) => updateMetadata('voice', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="alloy">Alloy (Balanced, neutral)</SelectItem>
+                            <SelectItem value="echo">Echo (Clear, articulate)</SelectItem>
+                            <SelectItem value="fable">Fable (Warm, storytelling)</SelectItem>
+                            <SelectItem value="onyx">Onyx (Deep, authoritative)</SelectItem>
+                            <SelectItem value="nova">Nova (Bright, energetic)</SelectItem>
+                            <SelectItem value="shimmer">Shimmer (Soft, gentle)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
