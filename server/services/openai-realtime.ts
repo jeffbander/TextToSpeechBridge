@@ -230,11 +230,14 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         break;
         
       case 'response.audio.delta':
-        // Stream audio back to client
+        // Stream audio back to Twilio in media format
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
           session.websocket.send(JSON.stringify({
-            type: 'audio_delta',
-            audio: message.delta
+            event: 'media',
+            streamSid: session.id,
+            media: {
+              payload: message.delta
+            }
           }));
         }
         break;
@@ -324,50 +327,70 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     }
   }
   
-  connectClientWebSocket(sessionId: string, clientWs: WebSocket) {
-    console.log(`🔍 Looking for session ${sessionId}, available sessions:`, Array.from(this.sessions.keys()));
+  connectClientWebSocket(sessionId: string, twilioWs: WebSocket) {
+    console.log(`🔍 Connecting Twilio WebSocket for session ${sessionId}`);
     const session = this.sessions.get(sessionId);
     if (!session) {
-      console.log(`❌ Session ${sessionId} not found in sessions map`);
-      clientWs.close(1000, 'Session not found');
+      console.log(`❌ Session ${sessionId} not found`);
+      twilioWs.close(1000, 'Session not found');
       return;
     }
     
-    session.websocket = clientWs;
-    console.log(`🔗 Client connected to realtime session ${sessionId}`);
+    session.websocket = twilioWs;
+    console.log(`🔗 Twilio WebSocket connected to session ${sessionId}`);
     
-    // Send session ready confirmation
-    clientWs.send(JSON.stringify({
-      type: 'session_ready',
-      sessionId: sessionId,
-      patientName: session.patientName
-    }));
-    
-    // Wait for explicit start command - no auto-triggering
-    
-    // Initialize OpenAI connection when client connects
-    this.initializeOpenAIRealtime(sessionId)
-      .then(() => {
-        console.log(`🔴 OpenAI connection established for session ${sessionId}`);
-      })
-      .catch((error) => {
-        console.error(`❌ OpenAI connection failed for session ${sessionId}:`, error);
-        clientWs.send(JSON.stringify({
-          type: 'error',
-          message: 'Failed to connect to AI service'
-        }));
-      });
-    
-    clientWs.on('message', (data) => {
+    // Handle Twilio WebSocket messages (audio streaming format)
+    twilioWs.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        this.handleClientMessage(sessionId, message);
+        
+        if (message.event === 'connected') {
+          console.log(`📞 Twilio call connected for session ${sessionId}`);
+          // Initialize OpenAI connection when Twilio connects
+          this.initializeOpenAIRealtime(sessionId);
+        } else if (message.event === 'start') {
+          console.log(`🎙️ Audio streaming started for session ${sessionId}`);
+          // Send initial greeting via OpenAI
+          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+            let greeting;
+            if (session.customSystemPrompt && session.customSystemPrompt.includes("Dr. Bander's office")) {
+              greeting = `Hello ${session.patientName}, this is Tziporah calling from Dr. Bander's cardiology office at 432 Bedford Ave. I'm following up on your recent visit. How are you feeling today?`;
+            } else {
+              greeting = `Hello ${session.patientName}, I'm calling to check in with you. How are you doing?`;
+            }
+            
+            session.openaiWs.send(JSON.stringify({
+              type: 'conversation.item.create',
+              item: {
+                type: 'message',
+                role: 'assistant',
+                content: [{ type: 'text', text: greeting }]
+              }
+            }));
+            
+            session.openaiWs.send(JSON.stringify({
+              type: 'response.create'
+            }));
+          }
+        } else if (message.event === 'media') {
+          // Forward Twilio audio to OpenAI
+          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+            const audioData = message.media.payload;
+            session.openaiWs.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: audioData
+            }));
+          }
+        } else if (message.event === 'stop') {
+          console.log(`🛑 Audio streaming stopped for session ${sessionId}`);
+          this.endSession(sessionId);
+        }
       } catch (error) {
-        console.error(`❌ Error parsing client message for session ${sessionId}:`, error);
+        console.error(`❌ Error parsing Twilio message for session ${sessionId}:`, error);
       }
     });
     
-    clientWs.on('close', () => {
+    twilioWs.on('close', () => {
       console.log(`🔗 Client disconnected from session ${sessionId}`);
       this.endSession(sessionId);
     });

@@ -1,0 +1,25 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749435729032_1bvy4ojb6
+Patient: Jeff Bander (ID: 7)
+Call ID: 14
+Duration: 174 seconds
+Date: 2025-06-09T02:22:09.032Z
+Total Exchanges: 6
+
+─────────────────────────────────────────────────────────
+
+[2:22:19 AM] PATIENT: Understated.
+
+[2:22:20 AM] AI: Hi [Patient Name], this is Tziporah from Dr. Bander’s office. I'm checking in after your recent visit. Could you clarify what you mean by "understated"? Are you experiencing any discomfort or symptoms we should be aware of? Your well-being is our priority.
+
+[2:22:42 AM] PATIENT: Where are you calling from?
+
+[2:22:43 AM] AI: Hi [Patient Name], this is Tziporah from Dr. Jeffrey Bander’s cardiology office at 432 Bedford Ave in Williamsburg. I’m calling to check in on you after your recent visit. How have you been feeling?
+
+[2:22:51 AM] PATIENT: A.
+
+[2:22:52 AM] AI: Hi, this is Tziporah from Dr. Bander’s office. I hope you're doing well. Could you please provide a bit more detail about how you've been feeling lately? Your recent notes didn't include much information, and we want to ensure you're doing okay.
+
+─────────────────────────────────────────────────────────
+End of Conversation

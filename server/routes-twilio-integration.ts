@@ -166,12 +166,14 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         initialGreeting = patientContext.initialGreeting;
       }
 
+      // Initialize GPT-4o real-time connection for this session
+      await openaiRealtimeService.initializeOpenAIRealtime(sessionId);
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="speech" action="/api/twilio/process-speech/${sessionId}" method="POST" speechTimeout="auto" timeout="10">
-    <Say voice="Polly.Joanna-Neural">${initialGreeting}</Say>
-  </Gather>
-  <Say voice="Polly.Joanna-Neural">Thank you for your time. Take care and feel free to call if you have any concerns.</Say>
+  <Connect>
+    <Stream url="wss://${req.get('host')}/ws/realtime/${sessionId}" />
+  </Connect>
 </Response>`;
 
       res.type('text/xml').send(twiml);

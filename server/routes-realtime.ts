@@ -29,6 +29,12 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
         realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
           realtimeWss!.emit('connection', websocket, request);
         });
+      } else if (pathname?.startsWith('/ws/realtime/')) {
+        console.log('[REALTIME] Handling GPT-4o realtime WebSocket upgrade');
+        const sessionId = pathname.split('/ws/realtime/')[1];
+        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          openaiRealtimeService.connectClientWebSocket(sessionId, websocket);
+        });
       } else if (pathname?.startsWith('/ws/twilio/')) {
         console.log('[REALTIME] Handling Twilio WebSocket upgrade');
         const sessionId = pathname.split('/ws/twilio/')[1];
