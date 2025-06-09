@@ -13,6 +13,7 @@ import { registerTwilioIntegrationRoutes } from "./routes-twilio-integration";
 import { registerPromptTemplateRoutes } from "./routes-prompt-templates";
 import { registerPatientPromptRoutes } from "./routes-patient-prompts";
 import { registerCSVImportRoutes } from "./routes-csv-import";
+import { openaiRealtimeService } from "./services/openai-realtime";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -250,37 +251,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`👤 PATIENT FOUND: ${patient.firstName} ${patient.lastName}`);
+      
+      // Create GPT-4o real-time session for this call
+      const sessionId = await openaiRealtimeService.createRealtimeSession(
+        patient.id, 
+        `${patient.firstName} ${patient.lastName}`, 
+        callId,
+        call.customPrompt || undefined
+      );
+      
+      console.log(`🚀 Created GPT-4o real-time session: ${sessionId}`);
 
-      let script;
-      if (call.customPrompt) {
-        console.log(`🎯 USING CUSTOM PROMPT`);
-        console.log(`📄 FIRST 50 CHARS: ${call.customPrompt.substring(0, 50)}`);
-        script = call.customPrompt;
-      } else {
-        console.log(`🔄 USING DEFAULT PROMPT`);
-        script = "Hello, this is CardioCare calling for your health check. How are you feeling today?";
-      }
+      // Generate TwiML to connect to real-time WebSocket
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Connect>
+    <Stream url="wss://${req.get('host')}/ws/realtime/${sessionId}" />
+  </Connect>
+</Response>`;
 
-      console.log(`🎤 FINAL SCRIPT LENGTH: ${script.length}`);
-      console.log(`🎤 OUTGOING PROMPT/GREETING: ${script}`);
-
-      const voiceProfile = voiceConfigManager.getProfileForCondition(patient.condition);
-      const twiml = twilioService.generateConversationalTwiML(script, callId, true);
-
-      console.log(`📦 TWIML SENT: ${twiml.length} bytes to Twilio`);
-
-      // Update call transcript
-      const currentTranscript = call.transcript ? JSON.parse(call.transcript) : [];
-      currentTranscript.push({
-        speaker: 'ai',
-        text: script,
-        timestamp: new Date().toISOString()
-      });
-
-      await storage.updateCall(callId, {
-        transcript: JSON.stringify(currentTranscript)
-      });
-
+      console.log(`📦 REAL-TIME TWIML SENT: ${twiml.length} bytes to Twilio`);
       res.type('text/xml').send(twiml);
     } catch (error) {
       console.error('TwiML generation error:', error);
