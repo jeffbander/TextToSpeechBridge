@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749439450547_xephoxc02
+Patient: Elizabeth Kershtein (ID: 6)
+Call ID: 28
+Duration: 61 seconds
+Date: 2025-06-09T03:24:10.547Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation

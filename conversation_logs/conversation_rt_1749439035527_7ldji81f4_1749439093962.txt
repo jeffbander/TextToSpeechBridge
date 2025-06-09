@@ -1,0 +1,56 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749439035527_7ldji81f4
+Patient: Jeff Bander (ID: 7)
+Call ID: 26
+Duration: 58 seconds
+Date: 2025-06-09T03:17:15.527Z
+Total Exchanges: 13
+
+─────────────────────────────────────────────────────────
+
+[3:17:24 AM] AI: Hello, this is Tziporah calling from Dr.
+
+
+[3:17:25 AM] PATIENT: Hello?
+
+
+
+[3:17:25 AM] AI:  Bander’s office. How are you today? I wanted to check in and see how you've been feeling since your recent appointment. Is there anything in particular you've noticed or any
+
+
+[3:17:27 AM] AI:  concerns you'd like to discuss?
+
+
+[3:17:42 AM] PATIENT: I'm good. Wait, who are you?
+
+
+
+[3:17:45 AM] AI: No problem at
+
+
+[3:17:45 AM] PATIENT: Wait, I'm sorry, where are you calling from?
+
+
+
+[3:17:45 AM] AI:  all. I’m Tziporah, calling from Dr. Jeffrey Bander’s cardiology office. We're just doing a routine follow-up to see how you're feeling. Is there anything
+
+
+[3:17:47 AM] AI:  specific you'd like to talk about regarding your health?
+
+
+[3:18:07 AM] AI: I'm here
+
+
+[3:18:07 AM] PATIENT: What are you doing right now?
+
+
+
+[3:18:07 AM] AI:  to check in on how you're doing, to see if you have any concerns or questions about your health, and to follow up on any recent tests or treatments. Is there anything specific you'd like to discuss,
+
+
+[3:18:09 AM] AI:  or any changes in your health that you've noticed?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
