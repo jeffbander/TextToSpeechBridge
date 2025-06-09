@@ -115,8 +115,21 @@ export default function RealtimeCall({ patientId, patientName, callId, onEnd }: 
   const handleWebSocketMessage = (message: any) => {
     switch (message.type) {
       case 'audio_delta':
-        // Play received audio
-        playAudioDelta(message.audio);
+        // Accumulate audio instead of playing immediately
+        try {
+          const audioData = new Uint8Array(atob(message.audio).split('').map(c => c.charCodeAt(0)));
+          const pcmData = new Int16Array(audioData.buffer);
+          audioManager.addAudioData(pcmData);
+        } catch (error) {
+          console.error('Error accumulating audio delta:', error);
+        }
+        break;
+        
+      case 'audio_done':
+        // Trigger accumulated audio playback when OpenAI completes response
+        audioManager.playAccumulatedAudio().catch(error => {
+          console.error('Error playing accumulated audio:', error);
+        });
         break;
         
       case 'text_delta':
