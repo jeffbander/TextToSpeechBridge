@@ -10,6 +10,7 @@ import Patients from "@/pages/patients";
 import RealtimePage from "@/pages/realtime";
 import ConversationLogs from "@/pages/conversation-logs";
 import AutomatedCallsPage from "@/pages/automated-calls";
+import CSVImport from "@/pages/csv-import";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/realtime" component={RealtimePage} />
       <Route path="/conversation-logs" component={ConversationLogs} />
       <Route path="/automated-calls" component={AutomatedCallsPage} />
+      <Route path="/csv-import" component={CSVImport} />
       <Route component={NotFound} />
     </Switch>
   );
