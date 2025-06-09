@@ -126,24 +126,10 @@ export class OpenAIRealtimeService {
             model: 'whisper-1'
           },
           turn_detection: {
-            type: 'semantic_vad',
-            eagerness: 'medium',
-            create_response: true,
-            interrupt_response: true,
-            fallback: {
-              type: 'server_vad',
-              threshold: 0.85,
-              silence_duration_ms: 2000,
-              prefix_padding_ms: 500
-            }
-          },
-          response_format: 'ssml',
-          tts: {
-            prosody: {
-              rate: '90%',
-              pitch: '0%'
-            },
-            stability: 0.40
+            type: 'server_vad',
+            threshold: 0.8,
+            prefix_padding_ms: 500,
+            silence_duration_ms: 3000
           },
           temperature: 0.3,
           max_response_output_tokens: 300
@@ -160,13 +146,27 @@ export class OpenAIRealtimeService {
         console.log(`🔴 Using default system prompt for ${session.patientName}`);
       }
       
+      // Send initial conversation starter to trigger GPT-4o response
+      setTimeout(() => {
+        const startMessage = {
+          type: 'response.create',
+          response: {
+            modalities: ['text', 'audio'],
+            instructions: `Start the conversation by greeting ${session.patientName} and introducing yourself according to the system instructions.`
+          }
+        };
+        
+        console.log(`🎬 Sending conversation starter for ${sessionId}`);
+        openaiWs.send(JSON.stringify(startMessage));
+      }, 1000);
+      
       session.isActive = true;
     });
     
     openaiWs.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(`📨 OpenAI message for ${sessionId}:`, message.type);
+        console.log(`📨 OpenAI message for ${sessionId}:`, message.type, message.delta ? `(${message.delta.length} chars)` : '');
         this.handleOpenAIMessage(sessionId, message);
       } catch (error) {
         console.error(`❌ Error parsing OpenAI message for session ${sessionId}:`, error);
@@ -176,11 +176,13 @@ export class OpenAIRealtimeService {
     openaiWs.on('error', (error) => {
       console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error);
       session.isActive = false;
+      // Don't close the session immediately, let Twilio handle the cleanup
     });
     
-    openaiWs.on('close', () => {
-      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId}`);
+    openaiWs.on('close', (code, reason) => {
+      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId} - Code: ${code}, Reason: ${reason}`);
       session.isActive = false;
+      // Keep the session alive for potential reconnection
     });
     
     return openaiWs;
@@ -240,14 +242,14 @@ export class OpenAIRealtimeService {
         if (message.delta) {
           session.transcript.push(message.delta);
           
-          // Consolidate AI responses instead of logging each word fragment
+          // Log AI response transcripts properly
           const lastEntry = session.conversationLog[session.conversationLog.length - 1];
           if (lastEntry && lastEntry.speaker === 'ai' && 
-              (new Date().getTime() - lastEntry.timestamp.getTime()) < 2000) {
-            // Append to existing response if within 2 seconds
+              (new Date().getTime() - lastEntry.timestamp.getTime()) < 3000) {
+            // Append to existing response if within 3 seconds
             lastEntry.text += message.delta;
           } else {
-            // Create new response entry
+            // Create new AI response entry
             session.conversationLog.push({
               timestamp: new Date(),
               speaker: 'ai',
