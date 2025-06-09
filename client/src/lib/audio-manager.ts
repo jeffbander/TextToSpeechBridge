@@ -6,6 +6,7 @@ class AudioManager {
   private isPlaying: boolean = false;
   private audioBuffer: number[] = [];
   private instanceId: string;
+  private isAccumulating: boolean = false;
   
   private constructor() {
     this.instanceId = Math.random().toString(36).substring(7);

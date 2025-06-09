@@ -158,8 +158,22 @@ export class OpenAIRealtimeService {
         session.audioBuffer = []; // Clear the buffer
       }
 
-      // Don't automatically start conversations - wait for user interaction
-      console.log(`⏸️ OpenAI connection ready for session ${sessionId} - waiting for user input`);
+      // Send initial conversation starter to trigger GPT-4o response (critical for audio response)
+      setTimeout(() => {
+        if (openaiWs.readyState === WebSocket.OPEN && !session.conversationStarted) {
+          session.conversationStarted = true;
+          const startMessage = {
+            type: 'response.create',
+            response: {
+              modalities: ['text', 'audio'],
+              instructions: `Start the conversation by greeting ${session.patientName} and introducing yourself according to the system instructions.`
+            }
+          };
+          
+          console.log(`🎬 Sending conversation starter for ${sessionId}`);
+          openaiWs.send(JSON.stringify(startMessage));
+        }
+      }, 1500);
       
       session.isActive = true;
     });
@@ -248,6 +262,14 @@ export class OpenAIRealtimeService {
           console.log(`📤 Sent ${Math.ceil(audioData.length / chunkSize)} audio chunks to Twilio`);
         } else {
           console.log(`❌ Cannot send audio to Twilio - WebSocket not ready. State: ${session.websocket?.readyState}`);
+        }
+        break;
+        
+      case 'response.audio.done':
+        // Signal audio completion to trigger accumulated playback
+        if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
+          session.websocket.send(JSON.stringify({ type: 'audio_done' }));
+          console.log(`✅ Audio response completed for session ${sessionId}`);
         }
         break;
         
