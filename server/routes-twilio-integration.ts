@@ -44,11 +44,14 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         urgencyLevel: urgencyLevel as 'low' | 'medium' | 'high' | 'critical'
       };
 
-      // Use custom prompt if provided, otherwise generate patient-specific system prompt
+      // Check for patient's saved custom prompt first, then use provided custom prompt, otherwise use standard
       let systemPrompt;
-      if (useCustomPrompt && generatedPrompt) {
+      if (patient.customPrompt && patient.customPrompt.trim()) {
+        systemPrompt = patient.customPrompt;
+        console.log(`[TWILIO-INTEGRATION] Using patient's saved custom prompt for ${patient.firstName} ${patient.lastName}`);
+      } else if (useCustomPrompt && generatedPrompt) {
         systemPrompt = generatedPrompt.systemPrompt;
-        console.log(`[TWILIO-INTEGRATION] Using custom prompt for ${patient.firstName} ${patient.lastName}`);
+        console.log(`[TWILIO-INTEGRATION] Using request custom prompt for ${patient.firstName} ${patient.lastName}`);
       } else {
         systemPrompt = patientPromptManager.createTwilioSystemPrompt(patientContext);
         console.log(`[TWILIO-INTEGRATION] Using standard prompt for ${patient.firstName} ${patient.lastName}`);
