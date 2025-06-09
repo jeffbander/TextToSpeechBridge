@@ -71,6 +71,33 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
     }
   });
 
+  app.put("/api/patients/:id", async (req, res) => {
+    try {
+      const patientId = parseInt(req.params.id);
+      if (isNaN(patientId)) {
+        return res.status(400).json({ message: "Invalid patient ID" });
+      }
+
+      const result = insertPatientSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid patient data", 
+          errors: result.error.errors 
+        });
+      }
+      
+      const updatedPatient = await storage.updatePatient(patientId, result.data);
+      if (!updatedPatient) {
+        return res.status(404).json({ message: "Patient not found" });
+      }
+      
+      res.json(updatedPatient);
+    } catch (error) {
+      console.error(`[API] Error updating patient:`, error);
+      res.status(500).json({ message: "Failed to update patient" });
+    }
+  });
+
   // Dashboard stats endpoint
   app.get("/api/dashboard/stats", async (req, res) => {
     try {

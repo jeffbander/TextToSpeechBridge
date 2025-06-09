@@ -20,6 +20,7 @@ export interface IStorage {
   getPatients(): Promise<Patient[]>;
   getPatient(id: number): Promise<Patient | undefined>;
   createPatient(patient: InsertPatient): Promise<Patient>;
+  updatePatient(id: number, updates: Partial<Patient>): Promise<Patient | undefined>;
   
   // Calls
   getCalls(): Promise<Call[]>;
@@ -125,6 +126,22 @@ export class MemStorage implements IStorage {
     };
     this.patients.set(id, patient);
     return patient;
+  }
+
+  async updatePatient(id: number, updates: Partial<Patient>): Promise<Patient | undefined> {
+    const existingPatient = this.patients.get(id);
+    if (!existingPatient) {
+      return undefined;
+    }
+    
+    const updatedPatient: Patient = {
+      ...existingPatient,
+      ...updates,
+      id // Ensure ID cannot be changed
+    };
+    
+    this.patients.set(id, updatedPatient);
+    return updatedPatient;
   }
 
   // Calls
@@ -316,6 +333,15 @@ export class DatabaseStorage implements IStorage {
       .values(insertPatient)
       .returning();
     return patient;
+  }
+
+  async updatePatient(id: number, updates: Partial<Patient>): Promise<Patient | undefined> {
+    const [patient] = await db
+      .update(patients)
+      .set(updates)
+      .where(eq(patients.id, id))
+      .returning();
+    return patient || undefined;
   }
 
   async getCalls(): Promise<Call[]> {
