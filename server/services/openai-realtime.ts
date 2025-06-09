@@ -194,11 +194,16 @@ export class OpenAIRealtimeService {
     
     openaiWs.on('error', (error) => {
       console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error);
+      console.error(`❌ Error details:`, {
+        message: error.message,
+        code: error.code,
+        type: error.type
+      });
       session.isActive = false;
     });
     
-    openaiWs.on('close', () => {
-      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId}`);
+    openaiWs.on('close', (code, reason) => {
+      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId}, code: ${code}, reason: ${reason}`);
       session.isActive = false;
     });
     
@@ -327,6 +332,10 @@ export class OpenAIRealtimeService {
     session.websocket = twilioWs;
     console.log(`🔗 Client WebSocket connected to session ${sessionId}`);
     
+    // Initialize OpenAI connection immediately when WebSocket connects
+    console.log(`🚀 Initializing OpenAI connection immediately for ${sessionId}`);
+    this.initializeOpenAIRealtime(sessionId);
+    
     twilioWs.on('close', () => {
       console.log(`🔗 Client disconnected from session ${sessionId}`);
       this.endSession(sessionId);
@@ -335,9 +344,12 @@ export class OpenAIRealtimeService {
 
   handleClientMessage(sessionId: string, message: any) {
     const session = this.sessions.get(sessionId);
-    if (!session) return;
+    if (!session) {
+      console.error(`❌ Session ${sessionId} not found when handling client message`);
+      return;
+    }
     
-    console.log(`📨 Twilio message for ${sessionId}:`, JSON.stringify(message).substring(0, 200));
+    console.log(`📨 Twilio message for ${sessionId}:`, message.event || 'unknown-event', JSON.stringify(message).substring(0, 100));
     
     if (message.event === 'connected') {
       console.log(`📞 Twilio call connected for session ${sessionId}`);
