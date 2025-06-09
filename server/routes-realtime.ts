@@ -54,10 +54,14 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
         }
         
         if (!sessionId) {
-          console.log('[REALTIME] No session ID found, rejecting WebSocket connection');
+          console.log(`[REALTIME] No session ID found, rejecting WebSocket connection`);
+          console.log(`[REALTIME] Debug - pathname: ${pathname}, URL: ${request.url}`);
+          console.log(`[REALTIME] Debug - query object:`, urlParts.query);
           socket.destroy();
           return;
         }
+        
+        console.log(`[REALTIME] Session ID extracted successfully: ${sessionId}`);
         
         realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
           console.log(`[REALTIME] Connecting Twilio WebSocket to session: ${sessionId}`);
