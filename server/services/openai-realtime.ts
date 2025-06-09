@@ -126,11 +126,27 @@ export class OpenAIRealtimeService {
             model: 'whisper-1'
           },
           turn_detection: {
-            type: 'server_vad',
-            threshold: 0.8,
-            prefix_padding_ms: 500,
-            silence_duration_ms: 3000
-          }
+            type: 'semantic_vad',
+            eagerness: 'medium',
+            create_response: true,
+            interrupt_response: true,
+            fallback: {
+              type: 'server_vad',
+              threshold: 0.85,
+              silence_duration_ms: 2000,
+              prefix_padding_ms: 500
+            }
+          },
+          response_format: 'ssml',
+          tts: {
+            prosody: {
+              rate: '90%',
+              pitch: '0%'
+            },
+            stability: 0.40
+          },
+          temperature: 0.3,
+          max_response_output_tokens: 300
         }
       };
       
