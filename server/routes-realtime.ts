@@ -22,17 +22,44 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
     // Handle upgrade requests with path filtering
     httpServer.on('upgrade', (request, socket, head) => {
       const pathname = url.parse(request.url!).pathname;
+      const headers = request.headers;
       console.log(`[REALTIME] WebSocket upgrade request for: ${pathname}`);
+      console.log(`[REALTIME] Headers:`, JSON.stringify(headers, null, 2));
       
-      if (pathname === '/ws/realtime') {
-        console.log('[REALTIME] Handling realtime WebSocket upgrade');
+      // Check if this is a Twilio Stream request (they use specific headers)
+      const isTwilioStream = headers['user-agent']?.includes('TwilioProxy') || 
+                           headers['x-twilio-signature'] || 
+                           headers['origin']?.includes('twilio') ||
+                           pathname === '/';
+      
+      if (isTwilioStream || pathname === '/' || pathname?.startsWith('/ws/realtime/')) {
+        console.log('[REALTIME] Handling Twilio Stream WebSocket upgrade');
+        
+        // Extract session ID from URL path or query parameters
+        let sessionId = '';
+        if (pathname?.startsWith('/ws/realtime/')) {
+          sessionId = pathname.split('/ws/realtime/')[1];
+        } else {
+          // Try to get session ID from query parameters or headers
+          const urlParts = url.parse(request.url!, true);
+          sessionId = urlParts.query.session as string || '';
+          
+          // If no session in query, check if we can derive it from call context
+          if (!sessionId && headers['x-twilio-call-sid']) {
+            // Use Twilio Call SID as session identifier
+            sessionId = headers['x-twilio-call-sid'] as string;
+            console.log(`[REALTIME] Using Twilio Call SID as session: ${sessionId}`);
+          }
+        }
+        
+        if (!sessionId) {
+          console.log('[REALTIME] No session ID found, rejecting WebSocket connection');
+          socket.destroy();
+          return;
+        }
+        
         realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
-          realtimeWss!.emit('connection', websocket, request);
-        });
-      } else if (pathname?.startsWith('/ws/realtime/')) {
-        console.log('[REALTIME] Handling GPT-4o realtime WebSocket upgrade');
-        const sessionId = pathname.split('/ws/realtime/')[1];
-        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          console.log(`[REALTIME] Connecting Twilio WebSocket to session: ${sessionId}`);
           openaiRealtimeService.connectClientWebSocket(sessionId, websocket);
           
           // Handle Twilio audio messages
@@ -44,6 +71,11 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
               console.error(`[REALTIME-WS] Error parsing Twilio message:`, error);
             }
           });
+        });
+      } else if (pathname === '/ws/realtime') {
+        console.log('[REALTIME] Handling realtime WebSocket upgrade');
+        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          realtimeWss!.emit('connection', websocket, request);
         });
       } else if (pathname?.startsWith('/ws/twilio/')) {
         console.log('[REALTIME] Handling Twilio WebSocket upgrade');

@@ -263,7 +263,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🚀 Created GPT-4o real-time session: ${sessionId}`);
 
       // Generate TwiML to connect to real-time WebSocket
-      const wsUrl = `wss://${req.get('host')}/ws/realtime/${sessionId}`;
+      // Use query parameter for session ID to ensure it's preserved by Twilio
+      const wsUrl = `wss://${req.get('host')}/?session=${sessionId}`;
       console.log(`🔗 WebSocket URL for session ${sessionId}: ${wsUrl}`);
       
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
