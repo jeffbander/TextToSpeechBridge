@@ -27,7 +27,7 @@ interface PromptMetadata {
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   redFlags?: string[];
   culturalConsiderations?: string;
-  languagePreference?: string;
+  languagePreference?: 'English' | 'Spanish' | 'Chinese' | 'Russian' | 'Arabic' | 'French' | 'German' | 'Italian' | 'Portuguese' | 'Hebrew' | 'Yiddish' | 'Other';
 }
 
 interface PatientPromptData {
@@ -400,13 +400,29 @@ Example: "You are conducting a follow-up call with ${selectedPatient?.firstName 
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <Label htmlFor="languagePreference">Language Preference</Label>
-                        <Input
-                          id="languagePreference"
-                          value={promptData.promptMetadata.languagePreference || ''}
-                          onChange={(e) => updateMetadata('languagePreference', e.target.value)}
-                          placeholder="English, Spanish, etc."
-                        />
+                        <Label>Language Preference</Label>
+                        <Select
+                          value={promptData.promptMetadata.languagePreference || 'English'}
+                          onValueChange={(value) => updateMetadata('languagePreference', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="English">English</SelectItem>
+                            <SelectItem value="Spanish">Spanish (Español)</SelectItem>
+                            <SelectItem value="Chinese">Chinese (中文)</SelectItem>
+                            <SelectItem value="Russian">Russian (Русский)</SelectItem>
+                            <SelectItem value="Arabic">Arabic (العربية)</SelectItem>
+                            <SelectItem value="French">French (Français)</SelectItem>
+                            <SelectItem value="German">German (Deutsch)</SelectItem>
+                            <SelectItem value="Italian">Italian (Italiano)</SelectItem>
+                            <SelectItem value="Portuguese">Portuguese (Português)</SelectItem>
+                            <SelectItem value="Hebrew">Hebrew (עברית)</SelectItem>
+                            <SelectItem value="Yiddish">Yiddish (ייִדיש)</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div>

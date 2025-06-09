@@ -85,8 +85,23 @@ export class OpenAIRealtimeService {
       let instructions = session.customSystemPrompt || 
         `You are a healthcare assistant conducting a follow-up call with ${patient}. Be empathetic, professional, and ask relevant health questions about their recovery.`;
 
-      // Extract voice preference from custom prompt metadata if available
+      // Extract voice and language preferences from custom prompt metadata if available
       let selectedVoice = 'alloy'; // default voice
+      let languageInstruction = '';
+      
+      // If there's a custom system prompt, check if it contains metadata for language preference
+      if (session.customSystemPrompt) {
+        // Add language instruction based on metadata (this will be passed from the prompt metadata)
+        // For now, we'll enhance the instructions to include language guidance
+        const languageMatch = session.customSystemPrompt.match(/Language:\s*(\w+)/i);
+        if (languageMatch) {
+          const language = languageMatch[1];
+          if (language !== 'English') {
+            languageInstruction = `\n\nIMPORTANT: Conduct this entire conversation in ${language}. Speak naturally and fluently in ${language} throughout the call.`;
+            instructions += languageInstruction;
+          }
+        }
+      }
       
       const sessionConfig = {
         type: 'session.update',

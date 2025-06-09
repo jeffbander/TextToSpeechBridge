@@ -1,0 +1,36 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749438031674_9ldvc4ger
+Patient: Jeff Bander (ID: 7)
+Call ID: 24
+Duration: 60 seconds
+Date: 2025-06-09T03:00:31.674Z
+Total Exchanges: 7
+
+─────────────────────────────────────────────────────────
+
+[3:00:49 AM] AI: Hello, this is Tziporah calling from Dr. Jeffrey Bander’s office. How are you today? I'm reaching out to
+
+
+[3:00:49 AM] PATIENT: Hello? Hello? Hello? 
+
+
+
+[3:00:49 AM] AI:  check in on you based on your recent health updates. Is this a good time to talk?
+
+
+[3:01:11 AM] AI: Thank you for sharing that. Some
+
+
+[3:01:11 AM] PATIENT: I mean, I'm feeling well, but is it normal to have chest pain after a cardiac cath?
+
+
+
+[3:01:11 AM] AI:  mild discomfort or soreness in the chest can be normal after a cardiac catheterization, but it shouldn't be severe. Can you describe the chest pain you're experiencing? Is it sharp, dull, constant, or does
+
+
+[3:01:13 AM] AI:  it come and go? Also, have you noticed any other symptoms like shortness of breath, dizziness, or sweating? It’s important we determine if what you're feeling requires immediate attention.
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
