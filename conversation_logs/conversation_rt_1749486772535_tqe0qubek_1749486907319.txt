@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749486772535_tqe0qubek
+Patient: Ilana Bander (ID: 5)
+Call ID: 41
+Duration: 134 seconds
+Date: 2025-06-09T16:32:52.535Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation

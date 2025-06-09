@@ -330,11 +330,47 @@ export class OpenAIRealtimeService {
     }
     
     session.websocket = twilioWs;
-    console.log(`🔗 Client WebSocket connected to session ${sessionId}`);
+    console.log(`🔗 Twilio WebSocket connected to session ${sessionId}`);
     
-    // Initialize OpenAI connection immediately when WebSocket connects
-    console.log(`🚀 Initializing OpenAI connection immediately for ${sessionId}`);
-    this.initializeOpenAIRealtime(sessionId);
+    // Handle Twilio WebSocket messages (audio streaming format)
+    twilioWs.on('message', (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        console.log(`📨 Twilio message for ${sessionId}:`, message.event, JSON.stringify(message).substring(0, 100));
+        
+        if (message.event === 'connected') {
+          console.log(`📞 Twilio call connected for session ${sessionId}`);
+          // Initialize OpenAI connection when Twilio connects
+          console.log(`🚀 Initializing OpenAI connection for ${sessionId}`);
+          this.initializeOpenAIRealtime(sessionId);
+        } else if (message.event === 'start') {
+          console.log(`🎙️ Audio streaming started for session ${sessionId}`);
+          
+          // Store stream info for proper audio routing
+          if (message.streamSid) {
+            session.streamSid = message.streamSid;
+            console.log(`📡 Stream SID: ${message.streamSid}`);
+          }
+        } else if (message.event === 'media') {
+          // Forward Twilio audio to OpenAI
+          console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);
+          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+            const audioData = message.media.payload;
+            session.openaiWs.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: audioData
+            }));
+          } else {
+            console.log(`❌ Cannot forward audio - OpenAI WebSocket not ready. State: ${session.openaiWs?.readyState}`);
+          }
+        } else if (message.event === 'stop') {
+          console.log(`🛑 Audio streaming stopped for session ${sessionId}`);
+          this.endSession(sessionId);
+        }
+      } catch (error) {
+        console.error(`❌ Error parsing Twilio message for session ${sessionId}:`, error);
+      }
+    });
     
     twilioWs.on('close', () => {
       console.log(`🔗 Client disconnected from session ${sessionId}`);
