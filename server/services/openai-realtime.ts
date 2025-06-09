@@ -154,6 +154,20 @@ export class OpenAIRealtimeService {
       openaiWs.send(JSON.stringify(sessionConfig));
       console.log(`⚙️ Session configuration sent for ${sessionId}`);
       
+      // Create initial response to start the conversation
+      setTimeout(() => {
+        const createResponse = {
+          type: 'response.create',
+          response: {
+            modalities: ['text', 'audio'],
+            instructions: 'Please greet the patient and introduce yourself as their healthcare assistant calling for a follow-up.'
+          }
+        };
+        
+        console.log(`🎬 Triggering initial AI response for ${sessionId}`);
+        openaiWs.send(JSON.stringify(createResponse));
+      }, 1000);
+      
       if (session.customSystemPrompt) {
         console.log(`🔴 Using custom system prompt for ${session.patientName}`);
       } else {
@@ -166,7 +180,7 @@ export class OpenAIRealtimeService {
     openaiWs.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(`📨 OpenAI message for ${sessionId}:`, message.type);
+        console.log(`📨 OpenAI message for ${sessionId}:`, message.type, JSON.stringify(message).substring(0, 200));
         this.handleOpenAIMessage(sessionId, message);
       } catch (error) {
         console.error(`❌ Error parsing OpenAI message for session ${sessionId}:`, error);
@@ -195,10 +209,38 @@ export class OpenAIRealtimeService {
         console.log(`🎯 OpenAI session created for ${sessionId}`);
         break;
         
+      case 'session.updated':
+        console.log(`⚙️ OpenAI session configuration updated for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.committed':
+        console.log(`🎤 Audio input committed for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_started':
+        console.log(`🗣️ Speech detected for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_stopped':
+        console.log(`🤫 Speech ended for ${sessionId}`);
+        break;
+        
+      case 'response.created':
+        console.log(`🚀 Response creation started for ${sessionId}`);
+        break;
+        
+      case 'response.done':
+        console.log(`✅ Response completed for ${sessionId}`);
+        break;
+        
       case 'response.text.delta':
         if (message.delta) {
-          console.log(`🤖 AI response for ${sessionId}:`, message.delta);
+          console.log(`🤖 AI text response for ${sessionId}:`, message.delta);
         }
+        break;
+        
+      case 'error':
+        console.error(`❌ OpenAI error for ${sessionId}:`, message.error);
         break;
         
       case 'response.audio.delta':
