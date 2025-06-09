@@ -76,8 +76,8 @@ export class OpenAIRealtimeService {
       throw new Error(`Session ${sessionId} not found`);
     }
     
-    // Connect to OpenAI Realtime API
-    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
+    // Connect to OpenAI Realtime API - using latest 2025 model
+    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03', {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'OpenAI-Beta': 'realtime=v1'
