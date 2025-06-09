@@ -108,6 +108,15 @@ Guidelines:
 
 Patient context: This is a routine post-discharge follow-up call to ensure proper recovery.`;
 
+      console.log(`📝 PROMPT ANALYSIS for ${session.patientName}:`);
+      console.log(`Custom prompt available: ${!!session.customSystemPrompt}`);
+      if (session.customSystemPrompt) {
+        console.log(`Custom prompt preview: ${session.customSystemPrompt.substring(0, 100)}...`);
+      } else {
+        console.log(`Using fallback prompt for ${session.patientName}`);
+      }
+      console.log(`Final instructions length: ${instructions.length} characters`);
+
       // Use default voice for now - can be enhanced later with patient preferences
       const selectedVoice = 'shimmer'; // Changed from alloy to shimmer for a softer, more caring voice
 
