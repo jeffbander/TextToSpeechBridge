@@ -1,0 +1,238 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749437361784_dgaiz2e1m
+Patient: Jeff Bander (ID: 7)
+Call ID: 21
+Duration: 46 seconds
+Date: 2025-06-09T02:49:21.784Z
+Total Exchanges: 74
+
+─────────────────────────────────────────────────────────
+
+[2:49:32 AM] AI: Hello
+
+
+[2:49:32 AM] AI: ,
+
+
+[2:49:32 AM] AI:  this
+
+
+[2:49:32 AM] AI:  is
+
+
+[2:49:33 AM] AI:  T
+
+
+[2:49:33 AM] AI: zip
+
+
+[2:49:33 AM] AI: orah
+
+
+[2:49:33 AM] AI:  calling
+
+
+[2:49:33 AM] AI:  from
+
+
+[2:49:33 AM] AI:  Dr
+
+
+[2:49:33 AM] AI: .
+
+
+[2:49:33 AM] AI:  B
+
+
+[2:49:33 AM] AI: ander
+
+
+[2:49:33 AM] AI: 's
+
+
+[2:49:33 AM] AI:  office
+
+
+[2:49:33 AM] AI: .
+
+
+[2:49:33 AM] AI:  How
+
+
+[2:49:33 AM] AI:  can
+
+
+[2:49:33 AM] AI:  I
+
+
+[2:49:33 AM] AI:  assist
+
+
+[2:49:33 AM] AI:  you
+
+
+[2:49:33 AM] AI:  today
+
+
+[2:49:33 AM] AI: ?
+
+
+[2:49:33 AM] PATIENT: What do I need to know about this?
+
+
+
+[2:49:44 AM] AI: Hi
+
+
+[2:49:44 AM] AI: ,
+
+
+[2:49:44 AM] AI:  this
+
+
+[2:49:44 AM] AI:  is
+
+
+[2:49:44 AM] AI:  T
+
+
+[2:49:44 AM] AI: zip
+
+
+[2:49:44 AM] AI: orah
+
+
+[2:49:44 AM] AI:  from
+
+
+[2:49:44 AM] AI:  Dr
+
+
+[2:49:44 AM] AI: .
+
+
+[2:49:44 AM] AI:  Jeffrey
+
+
+[2:49:44 AM] AI:  B
+
+
+[2:49:44 AM] AI: ander
+
+
+[2:49:44 AM] AI: ’
+
+
+[2:49:44 AM] AI: s
+
+
+[2:49:44 AM] AI:  cardi
+
+
+[2:49:44 AM] AI: ology
+
+
+[2:49:44 AM] AI:  office
+
+
+[2:49:45 AM] AI: .
+
+
+[2:49:45 AM] AI:  How
+
+
+[2:49:45 AM] AI:  can
+
+
+[2:49:45 AM] AI:  I
+
+
+[2:49:45 AM] AI:  help
+
+
+[2:49:45 AM] PATIENT: That's how you find the nature of the root of it. It's genius, all of it. There we go. There we go. Who is this?
+
+
+
+[2:49:45 AM] AI:  you
+
+
+[2:49:45 AM] AI:  today
+
+
+[2:49:45 AM] AI: ?
+
+
+[2:49:56 AM] PATIENT: Where is the office located?
+
+
+
+[2:49:56 AM] AI: Our
+
+
+[2:49:56 AM] AI:  office
+
+
+[2:49:56 AM] AI:  is
+
+
+[2:49:56 AM] AI:  located
+
+
+[2:49:56 AM] AI:  at
+
+
+[2:49:56 AM] AI:  
+
+
+[2:49:56 AM] AI: 432
+
+
+[2:49:56 AM] AI:  Bedford
+
+
+[2:49:57 AM] AI:  Ave
+
+
+[2:49:57 AM] AI:  in
+
+
+[2:49:57 AM] AI:  Williamsburg
+
+
+[2:49:57 AM] AI: .
+
+
+[2:49:57 AM] AI:  Is
+
+
+[2:49:57 AM] AI:  there
+
+
+[2:49:57 AM] AI:  anything
+
+
+[2:49:57 AM] AI:  else
+
+
+[2:49:57 AM] AI:  I
+
+
+[2:49:57 AM] AI:  can
+
+
+[2:49:57 AM] AI:  help
+
+
+[2:49:57 AM] AI:  you
+
+
+[2:49:57 AM] AI:  with
+
+
+[2:49:57 AM] AI: ?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

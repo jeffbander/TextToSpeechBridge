@@ -1,0 +1,235 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749437594723_0ytqoyovb
+Patient: Jeff Bander (ID: 7)
+Call ID: 22
+Duration: 30 seconds
+Date: 2025-06-09T02:53:14.723Z
+Total Exchanges: 73
+
+─────────────────────────────────────────────────────────
+
+[2:53:26 AM] AI: Hello
+
+
+[2:53:26 AM] AI: ,
+
+
+[2:53:26 AM] AI:  this
+
+
+[2:53:26 AM] AI:  is
+
+
+[2:53:26 AM] AI:  T
+
+
+[2:53:26 AM] AI: z
+
+
+[2:53:27 AM] AI: ip
+
+
+[2:53:27 AM] AI: orah
+
+
+[2:53:27 AM] AI:  calling
+
+
+[2:53:27 AM] AI:  from
+
+
+[2:53:27 AM] AI:  Dr
+
+
+[2:53:27 AM] AI: .
+
+
+[2:53:27 AM] AI:  B
+
+
+[2:53:27 AM] AI: ander
+
+
+[2:53:27 AM] AI: ’s
+
+
+[2:53:27 AM] AI:  cardi
+
+
+[2:53:27 AM] AI: ology
+
+
+[2:53:27 AM] AI:  office
+
+
+[2:53:27 AM] AI: .
+
+
+[2:53:27 AM] AI:  May
+
+
+[2:53:27 AM] AI:  I
+
+
+[2:53:27 AM] AI:  speak
+
+
+[2:53:27 AM] AI:  with
+
+
+[2:53:27 AM] AI:  you
+
+
+[2:53:27 AM] AI:  for
+
+
+[2:53:27 AM] AI:  a
+
+
+[2:53:27 AM] AI:  few
+
+
+[2:53:27 AM] AI:  moments
+
+
+[2:53:27 AM] AI:  regarding
+
+
+[2:53:27 AM] AI:  your
+
+
+[2:53:27 AM] AI:  recent
+
+
+[2:53:27 AM] AI:  health
+
+
+[2:53:27 AM] AI:  updates
+
+
+[2:53:27 AM] AI: ?
+
+
+[2:53:28 AM] PATIENT: Oh, you just did this. Oh, oh, oh. Hello? What's happening?
+
+
+
+[2:53:36 AM] AI: It
+
+
+[2:53:36 AM] AI:  seems
+
+
+[2:53:36 AM] AI:  like
+
+
+[2:53:36 AM] AI:  this
+
+
+[2:53:36 AM] AI:  might
+
+
+[2:53:36 AM] AI:  not
+
+
+[2:53:36 AM] AI:  be
+
+
+[2:53:36 AM] AI:  a
+
+
+[2:53:36 AM] AI:  good
+
+
+[2:53:36 AM] PATIENT: and be real, okay? You see what I'm saying? Okay, people in the air, let's just go. Yeah, yeah.
+
+
+
+[2:53:36 AM] AI:  time
+
+
+[2:53:36 AM] AI: .
+
+
+[2:53:36 AM] AI:  Would
+
+
+[2:53:36 AM] AI:  you
+
+
+[2:53:36 AM] AI:  prefer
+
+
+[2:53:36 AM] AI:  if
+
+
+[2:53:36 AM] AI:  I
+
+
+[2:53:36 AM] AI:  called
+
+
+[2:53:36 AM] AI:  back
+
+
+[2:53:36 AM] AI:  later
+
+
+[2:53:36 AM] AI: ,
+
+
+[2:53:39 AM] AI: I
+
+
+[2:53:39 AM] AI:  understand
+
+
+[2:53:39 AM] AI: .
+
+
+[2:53:39 AM] AI:  I'll
+
+
+[2:53:39 AM] AI:  give
+
+
+[2:53:39 AM] AI:  you
+
+
+[2:53:39 AM] AI:  a
+
+
+[2:53:39 AM] AI:  call
+
+
+[2:53:39 AM] AI:  back
+
+
+[2:53:39 AM] AI:  at
+
+
+[2:53:39 AM] AI:  another
+
+
+[2:53:39 AM] AI:  time
+
+
+[2:53:39 AM] AI: .
+
+
+[2:53:40 AM] AI:  Take
+
+
+[2:53:40 AM] AI:  care
+
+
+[2:53:40 AM] AI: .
+
+
+[2:53:41 AM] PATIENT: Here you give it a call.
+
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

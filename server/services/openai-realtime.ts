@@ -101,9 +101,9 @@ export class OpenAIRealtimeService {
           },
           turn_detection: {
             type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 2000
+            threshold: 0.8,
+            prefix_padding_ms: 500,
+            silence_duration_ms: 3000
           }
         }
       };
@@ -197,11 +197,21 @@ export class OpenAIRealtimeService {
       case 'response.audio_transcript.delta':
         if (message.delta) {
           session.transcript.push(message.delta);
-          session.conversationLog.push({
-            timestamp: new Date(),
-            speaker: 'ai',
-            text: message.delta
-          });
+          
+          // Consolidate AI responses instead of logging each word fragment
+          const lastEntry = session.conversationLog[session.conversationLog.length - 1];
+          if (lastEntry && lastEntry.speaker === 'ai' && 
+              (new Date().getTime() - lastEntry.timestamp.getTime()) < 2000) {
+            // Append to existing response if within 2 seconds
+            lastEntry.text += message.delta;
+          } else {
+            // Create new response entry
+            session.conversationLog.push({
+              timestamp: new Date(),
+              speaker: 'ai',
+              text: message.delta
+            });
+          }
         }
         break;
 
