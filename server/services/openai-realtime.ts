@@ -21,6 +21,7 @@ export interface RealtimeSession {
   customSystemPrompt?: string;
   streamSid?: string;
   outboundChunkCount?: number;
+  conversationStarted?: boolean;
   conversationLog: Array<{
     timestamp: Date;
     speaker: 'ai' | 'patient';
@@ -68,12 +69,14 @@ export class OpenAIRealtimeService {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
+    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'OpenAI-Beta': 'realtime=v1'
       }
     });
+
+    console.log(`🔗 Attempting OpenAI realtime connection for session ${sessionId}`);
 
     session.openaiWs = openaiWs;
 
