@@ -125,16 +125,16 @@ export class OpenAIRealtimeService {
           },
           turn_detection: {
             type: 'server_vad',
-            threshold: 0.8,
-            prefix_padding_ms: 500,
-            silence_duration_ms: 3000
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 2000
           },
           temperature: 0.6,
           max_response_output_tokens: 300
         }
       };
       
-      console.log(`📋 Session config:`, JSON.stringify(sessionConfig, null, 2));
+      console.log(`📋 Sending session config for ${sessionId}:`, JSON.stringify(sessionConfig, null, 2));
       openaiWs.send(JSON.stringify(sessionConfig));
       console.log(`⚙️ Session configuration sent for ${sessionId}`);
       
@@ -203,16 +203,69 @@ export class OpenAIRealtimeService {
 
   private handleOpenAIMessage(sessionId: string, message: any) {
     const session = this.sessions.get(sessionId);
-    if (!session) return;
+    if (!session) {
+      console.log(`❌ No session found for ${sessionId}`);
+      return;
+    }
+    
+    console.log(`📥 OpenAI message for ${sessionId}:`, message.type);
     
     switch (message.type) {
       case 'session.created':
         console.log(`🎯 OpenAI session created for ${sessionId}`);
         break;
         
+      case 'session.updated':
+        console.log(`⚙️ OpenAI session updated for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_started':
+        console.log(`🎙️ Speech started detected for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_stopped':
+        console.log(`🔇 Speech stopped detected for ${sessionId}`);
+        break;
+        
+      case 'conversation.item.input_audio_transcription.completed':
+        if (message.transcript) {
+          console.log(`📝 Patient transcription for ${sessionId}:`, message.transcript);
+          session.transcript.push(`Patient: ${message.transcript}`);
+          session.conversationLog.push({
+            timestamp: new Date(),
+            speaker: 'patient',
+            text: message.transcript
+          });
+        }
+        break;
+        
+      case 'response.created':
+        console.log(`🎬 Response created for ${sessionId}`);
+        break;
+        
+      case 'response.output_item.added':
+        console.log(`📤 Output item added for ${sessionId}`);
+        break;
+        
+      case 'response.content_part.added':
+        console.log(`📝 Content part added for ${sessionId}`);
+        break;
+        
       case 'response.text.delta':
         if (message.delta) {
-          console.log(`🤖 AI response for ${sessionId}:`, message.delta);
+          console.log(`🤖 AI text delta for ${sessionId}:`, message.delta);
+        }
+        break;
+        
+      case 'response.text.done':
+        if (message.text) {
+          console.log(`✅ AI text complete for ${sessionId}:`, message.text);
+          session.transcript.push(`AI: ${message.text}`);
+          session.conversationLog.push({
+            timestamp: new Date(),
+            speaker: 'ai',
+            text: message.text
+          });
         }
         break;
         
@@ -338,15 +391,21 @@ export class OpenAIRealtimeService {
       
       if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
         const audioData = message.media.payload;
-        console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}`);
+        console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}, WebSocket state: ${session.openaiWs.readyState}`);
         
         const audioMessage = {
           type: 'input_audio_buffer.append',
           audio: audioData
         };
         
-        session.openaiWs.send(JSON.stringify(audioMessage));
+        try {
+          session.openaiWs.send(JSON.stringify(audioMessage));
+          console.log(`✅ Audio packet sent to OpenAI successfully`);
+        } catch (error) {
+          console.error(`❌ Failed to send audio to OpenAI:`, error);
+        }
       } else {
+        console.log(`❌ OpenAI WebSocket not ready - state: ${session.openaiWs?.readyState || 'null'}`);
         // Buffer audio if OpenAI is not ready yet
         session.audioBuffer.push(Buffer.from(message.media.payload, 'base64'));
         console.log(`📦 Buffered audio packet - buffer size: ${session.audioBuffer.length}`);
