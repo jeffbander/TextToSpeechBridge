@@ -16,6 +16,8 @@ export const patients = pgTable("patients", {
   condition: text("condition").notNull(), // CHF, Post-Surgery, etc.
   lastDischarge: timestamp("last_discharge"),
   riskLevel: text("risk_level").notNull().default("low"), // low, medium, high
+  customPrompt: text("custom_prompt"), // Patient-specific conversation prompt
+  promptMetadata: jsonb("prompt_metadata"), // Additional prompt configuration
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -367,6 +367,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Patient prompt management endpoints
+  app.get("/api/patients/:id/prompt", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const patient = await storage.getPatient(id);
+      
+      if (!patient) {
+        return res.status(404).json({ message: "Patient not found" });
+      }
+      
+      res.json({
+        customPrompt: patient.customPrompt,
+        promptMetadata: patient.promptMetadata
+      });
+    } catch (error) {
+      console.error("Error fetching patient prompt:", error);
+      res.status(500).json({ message: "Failed to fetch patient prompt" });
+    }
+  });
+
+  app.put("/api/patients/:id/prompt", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { customPrompt, promptMetadata } = req.body;
+      
+      const updatedPatient = await storage.updatePatient(id, {
+        customPrompt,
+        promptMetadata
+      });
+      
+      if (!updatedPatient) {
+        return res.status(404).json({ message: "Patient not found" });
+      }
+      
+      res.json({
+        success: true,
+        message: "Patient prompt updated successfully",
+        customPrompt: updatedPatient.customPrompt,
+        promptMetadata: updatedPatient.promptMetadata
+      });
+    } catch (error) {
+      console.error("Error updating patient prompt:", error);
+      res.status(500).json({ message: "Failed to update patient prompt" });
+    }
+  });
+
+  app.post("/api/patients/:id/test-prompt", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { customPrompt, promptMetadata } = req.body;
+      
+      const patient = await storage.getPatient(id);
+      if (!patient) {
+        return res.status(404).json({ message: "Patient not found" });
+      }
+      
+      const validation = {
+        isValid: true,
+        length: customPrompt?.length || 0,
+        hasGreeting: customPrompt?.toLowerCase().includes('hello') || customPrompt?.toLowerCase().includes('hi'),
+        hasPatientName: customPrompt?.includes(patient.firstName) || customPrompt?.includes(patient.lastName),
+        hasConditionReference: customPrompt?.toLowerCase().includes(patient.condition.toLowerCase()),
+        estimatedDuration: promptMetadata?.conversationLength || 'standard'
+      };
+      
+      res.json({
+        success: true,
+        result: validation.isValid ? 'Prompt validation passed' : 'Prompt needs improvement',
+        validation,
+        recommendations: [
+          ...(validation.hasGreeting ? [] : ['Consider adding a warm greeting']),
+          ...(validation.hasPatientName ? [] : ['Include patient name for personalization']),
+          ...(validation.hasConditionReference ? [] : ['Reference patient condition for context'])
+        ]
+      });
+    } catch (error) {
+      console.error("Error testing patient prompt:", error);
+      res.status(500).json({ message: "Failed to test patient prompt" });
+    }
+  });
+
   // Register prompt template management routes
   registerPromptTemplateRoutes(app);
   registerPatientPromptRoutes(app);
