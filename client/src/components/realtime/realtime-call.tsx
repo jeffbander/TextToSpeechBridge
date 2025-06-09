@@ -127,7 +127,7 @@ export default function RealtimeCall({ patientId, patientName, callId, onEnd }: 
         
       case 'audio_done':
         // Trigger accumulated audio playback when OpenAI completes response
-        audioManager.playAccumulatedAudio().catch(error => {
+        audioManager.playAccumulatedAudio().catch((error: Error) => {
           console.error('Error playing accumulated audio:', error);
         });
         break;
