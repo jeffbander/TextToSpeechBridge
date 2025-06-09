@@ -257,17 +257,20 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       // Use session's custom prompt if available, otherwise use default
       let basePrompt;
       if (session.customSystemPrompt && session.customSystemPrompt.trim()) {
+        console.log(`🎯 Using CUSTOM prompt for ${session.patientName}: ${session.customSystemPrompt.substring(0, 80)}...`);
         basePrompt = `${session.customSystemPrompt}
-        
+
+Patient Context: This is ${session.patientName}
 Patient just said: "${patientInput}"
 
-Based on your role and instructions above, provide an appropriate response. Keep it conversational and under 50 words.`;
+Respond according to your role as described above. Use your specific medical knowledge and conversation style.`;
       } else {
+        console.log(`⚠️ Using FALLBACK prompt for ${session.patientName}`);
         basePrompt = `You are Dr. Wellman conducting a post-discharge follow-up call with ${session.patientName}. 
         
 Patient just said: "${patientInput}"
 
-Respond as a caring healthcare provider. Ask relevant follow-up questions about their recovery, symptoms, medications, or concerns. Keep responses conversational and under 50 words.`;
+Respond as a caring healthcare provider. Ask relevant follow-up questions about their recovery, symptoms, medications, or concerns.`;
       }
 
       // Use OpenAI to generate contextual response
@@ -276,9 +279,11 @@ Respond as a caring healthcare provider. Ask relevant follow-up questions about 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: basePrompt }],
-        max_tokens: 100,
+        max_tokens: 150,
         temperature: 0.7
       });
+
+      console.log(`🤖 AI Response for ${session.patientName}: ${completion.choices[0].message.content?.substring(0, 60)}...`);
 
       return completion.choices[0].message.content || "Thank you for sharing that with me.";
       
