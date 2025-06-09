@@ -155,35 +155,8 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         console.log(`🔴 Using default system prompt for ${session.patientName}`);
       }
       
-      // Start the conversation immediately after session config
-      setTimeout(() => {
-        const conversationStarter = {
-          type: 'conversation.item.create',
-          item: {
-            type: 'message',
-            role: 'user',
-            content: [
-              {
-                type: 'input_text',
-                text: `Start the healthcare follow-up call for ${session.patientName}. Begin with a warm greeting and ask about their recovery.`
-              }
-            ]
-          }
-        };
-        
-        openaiWs.send(JSON.stringify(conversationStarter));
-        
-        // Trigger response generation
-        const responseCreate = {
-          type: 'response.create',
-          response: {
-            modalities: ['text', 'audio'],
-            instructions: 'After your greeting, wait for the patient to respond. Keep the conversation active and continue listening for patient input. Do not end the session.'
-          }
-        };
-        
-        openaiWs.send(JSON.stringify(responseCreate));
-      }, 1000);
+      // Let GPT-4o initiate conversation naturally when patient starts speaking
+      console.log(`🎬 Session ready - GPT-4o will respond based on system prompt when patient speaks`);
       
       session.isActive = true;
     });
@@ -387,28 +360,8 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
             console.log(`📡 Stream SID: ${message.streamSid}`);
           }
           
-          // Send initial greeting via OpenAI
-          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-            let greeting;
-            if (session.customSystemPrompt && session.customSystemPrompt.includes("Dr. Bander's office")) {
-              greeting = `Hello ${session.patientName}, this is Tziporah calling from Dr. Bander's cardiology office at 432 Bedford Ave. I'm following up on your recent visit. How are you feeling today?`;
-            } else {
-              greeting = `Hello ${session.patientName}, I'm calling to check in with you. How are you doing?`;
-            }
-            
-            session.openaiWs.send(JSON.stringify({
-              type: 'conversation.item.create',
-              item: {
-                type: 'message',
-                role: 'assistant',
-                content: [{ type: 'text', text: greeting }]
-              }
-            }));
-            
-            session.openaiWs.send(JSON.stringify({
-              type: 'response.create'
-            }));
-          }
+          // Let GPT-4o handle the initial greeting naturally based on the system prompt
+          console.log(`🎯 Audio streaming ready - GPT-4o will initiate conversation based on system prompt`);
         } else if (message.event === 'media') {
           // Forward Twilio audio to OpenAI
           console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);

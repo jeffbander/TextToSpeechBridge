@@ -1,0 +1,40 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749436878228_z48wvag1a
+Patient: Jeff Bander (ID: 7)
+Call ID: 19
+Duration: 47 seconds
+Date: 2025-06-09T02:41:18.228Z
+Total Exchanges: 11
+
+─────────────────────────────────────────────────────────
+
+[2:41:24 AM] AI: Hi Jeff, this is a follow-up call to checkHi Jeff, in on you. How this have you is been feeling since your last just a follow-up visit? call to check in on you. How have you been feeling lately? Are you noticing
+
+[2:41:24 AM] AI: any improvements in your recovery?
+
+[2:41:28 AM] PATIENT: Yes. OK. Cool.
+
+
+[2:41:29 AM] AI: I’m glad to hear that. Have you noticed any shortness of breath or any swelling in your legs or feet since we last spoke?
+
+[2:41:38 AM] PATIENT: Yes, yes, yes. Bye-bye.
+
+
+[2:41:39 AM] AI: Thanks for letting me know. Are you feeling more short of breath when you’re lying down, or does it happen mostly when
+
+[2:41:44 AM] PATIENT: want to ask a quick question.
+
+
+[2:41:44 AM] AI: Got it. That’s helpful to know. Have you also been able to keep track of your weight daily, as
+
+[2:41:49 AM] PATIENT: Great. I don't see any swelling in my legs.
+
+
+[2:41:50 AM] AI: That’s good to hear that there’s no swelling. Have you noticed any changes in your weight over the past few days, even
+
+[2:41:56 AM] PATIENT: So what does that mean? It's just tugging forward for me. For all that's sake.
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
