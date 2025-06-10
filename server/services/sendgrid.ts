@@ -1,11 +1,26 @@
 import { MailService } from '@sendgrid/mail';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
-}
+let mailService: MailService | null = null;
 
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+const initializeSendGrid = () => {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('SENDGRID_API_KEY not provided. Email functionality will be disabled.');
+    return false;
+  }
+  
+  try {
+    mailService = new MailService();
+    mailService.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log('SendGrid service initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize SendGrid:', error);
+    return false;
+  }
+};
+
+// Try to initialize on module load
+initializeSendGrid();
 
 interface UrgentAlertEmailParams {
   to: string;
@@ -17,7 +32,18 @@ interface UrgentAlertEmailParams {
 }
 
 export class SendGridService {
+  private ensureServiceInitialized(): void {
+    if (!mailService) {
+      throw new Error('SendGrid service not initialized. Please check your SendGrid credentials.');
+    }
+  }
+
   async sendUrgentAlert(params: UrgentAlertEmailParams): Promise<boolean> {
+    if (!mailService) {
+      console.warn('SendGrid not configured. Email alert skipped.');
+      return false;
+    }
+    
     try {
       const emailContent = {
         to: params.to,
@@ -84,6 +110,11 @@ export class SendGridService {
       pendingFollowups: number;
     }
   ): Promise<boolean> {
+    if (!mailService) {
+      console.warn('SendGrid not configured. Daily summary email skipped.');
+      return false;
+    }
+    
     try {
       const emailContent = {
         to,
@@ -124,7 +155,7 @@ export class SendGridService {
         `
       };
 
-      await mailService.send(emailContent);
+      await mailService!.send(emailContent);
       return true;
     } catch (error) {
       console.error('SendGrid daily summary error:', error);
