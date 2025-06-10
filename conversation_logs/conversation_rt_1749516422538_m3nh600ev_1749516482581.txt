@@ -1,0 +1,50 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749516422538_m3nh600ev
+Patient: Solomon  Beinstock (ID: 14)
+Call ID: 84
+Duration: 60 seconds
+Date: 2025-06-10T00:47:02.538Z
+Total Exchanges: 11
+
+─────────────────────────────────────────────────────────
+
+[12:47:25 AM] AI: שלום, כאן מדבר <ש
+
+
+[12:47:27 AM] PATIENT: You've reached SF, please leave a message. At the tone, please record your message. When you have finished recording, you may hang up or press 1 for more options.
+
+
+
+[12:47:28 AM] AI: השם שלך>, אני מתקשר לגבּי הדיון על החוזה החדש ממאונט סיני. אשמח לשוחח על כמה נושאים פתוחים ולנסות למצוא פתרונות יחד. אנא חזור אליי כשיהיה לך זמן. תודה!
+
+
+[12:47:37 AM] PATIENT: We did not get your message, either because you were not speaking or because of a bad connection. To disconnect, press 1. To record your message, press 2.
+
+
+
+[12:47:37 AM] AI: שלום, כאן מדבר <שם שלך>, אני מתקשר לגבי הדיון על החוזה החדש ממאונט סיני. אשמח לשוחח על כמה נושאים פתוחים ול
+
+
+[12:47:47 AM] AI: שלום, כאן <שם שלך
+
+
+[12:47:47 AM] PATIENT: Are you still there? To disconnect, press 1. To record your message, press 2.
+
+
+
+[12:47:47 AM] AI: >, מתקשר לגבי הדיון על החוזה החדש ממאונט סיני. אשמח לשוחח על כמה נושאים פתוחים ולנסות למצוא פתרונות יחד. אנא חזור אליי כש
+
+
+[12:47:57 AM] AI: שלום, כאן <ש
+
+
+[12:47:57 AM] PATIENT: Are you still there? To disconnect, press 1. To record your message, press 2.
+
+
+
+[12:47:57 AM] AI: ם שלך>. אני מתקשר לגבי הדיון על החוזה החדש ממאונט סיני. אשמח לשוחח על כמה נושאים פתוחים ולנסות למצוא פתרונות יחד. אנא חזור אליי כש
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

@@ -1,0 +1,33 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749516067453_t538sa11l
+Patient: Jeff Bander (ID: 7)
+Call ID: 82
+Duration: 41 seconds
+Date: 2025-06-10T00:41:07.453Z
+Total Exchanges: 6
+
+─────────────────────────────────────────────────────────
+
+[12:41:20 AM] AI: העלא, איך בין ציפורה רופא, און איך רוף פון דאקטער
+
+
+[12:41:21 AM] PATIENT: Hello?
+
+
+
+[12:41:21 AM] AI:  באנדער'ס ביורא. איך ווילן וויסן וויאזוי איר פילט זיך נאכדעם וואס איר זענט ארויסגעלאזט געווארן פון שפיטאל פאר אייער הארץ-פאליע.
+
+
+[12:41:41 AM] AI: Yes, of course. Hello, this
+
+
+[12:41:41 AM] PATIENT: Uh, do you speak English?
+
+
+
+[12:41:41 AM] AI:  is Tziporah, the nurse from Dr. Bander's office. I wanted to check in with you after your recent discharge from the hospital for your heart failure. How have you been feeling? Have you been able
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

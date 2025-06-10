@@ -1,0 +1,53 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749516731422_kharm2iil
+Patient: Ilana Bander (ID: 5)
+Call ID: 85
+Duration: 262 seconds
+Date: 2025-06-10T00:52:11.422Z
+Total Exchanges: 12
+
+─────────────────────────────────────────────────────────
+
+[12:52:48 AM] AI: Hello Ilana Bander, this is your healthcare team calling to check on your well
+
+
+[12:52:49 AM] PATIENT: Your call has been forwarded to an automated voice messaging system. 9-1-7-9-0-3-5-4-8-9 is not available. At the tone, please record your message. When you've finished recording, you may hang up or press 1 for more options.
+
+
+
+[12:52:49 AM] AI: -being. I hope you're doing well. Please give us a call back at your earliest convenience so we can discuss how you're feeling and address any concerns you
+
+
+[12:56:01 AM] AI: 1
+
+
+[12:56:01 AM] PATIENT: You have reached the maximum time permitted for recording your message. If you're satisfied with the message, press 1. To listen to your message, press 2. To erase and re-record, press 3.
+
+
+
+[12:56:02 AM] AI: Your message has been sent. Goodbye.
+
+
+[12:56:13 AM] AI: 1
+
+
+[12:56:14 AM] PATIENT: If you're satisfied with the message, press 1. To listen to your message, press 2. To erase and re-record, press 3.
+
+
+
+[12:56:15 AM] AI: Your message has been sent. Goodbye.
+
+
+[12:56:26 AM] AI: 1
+
+
+[12:56:26 AM] PATIENT: If you're satisfied with the message, press 1. To listen to your message, press 2. To erase and re-record, press 3.
+
+
+
+[12:56:27 AM] AI: Your message has been sent. Goodbye.
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

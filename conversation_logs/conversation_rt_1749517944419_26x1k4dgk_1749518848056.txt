@@ -1,0 +1,408 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749517944419_26x1k4dgk
+Patient: Jeff Bander (ID: 7)
+Call ID: 86
+Duration: 903 seconds
+Date: 2025-06-10T01:12:24.419Z
+Total Exchanges: 114
+
+─────────────────────────────────────────────────────────
+
+[1:12:34 AM] AI: העלא, דאָס איז ציפּּאָרע
+
+
+[1:12:36 AM] PATIENT: Thank you.
+
+
+
+[1:12:37 AM] AI: פון ד"ר באַנדערס אָפֿיס. איך וויל נאָר זײַן זיכער אַז אַלץ איז אין אָרדענונג. ווי איז אײַערע געזונטהייט? דאָס איז גוט צו
+
+
+[1:12:40 AM] AI:  הערן.
+
+
+[1:12:40 AM] PATIENT: Thank you. Bye-bye. Bye-bye. 
+
+
+
+[1:12:40 AM] AI:  איז אַלץ אין אָרדענונג מיט אײַערע מעדיקאַמענטן, אָדער האָט איר געװעלט מיט אַ נײַע סימפּטאָם וואָס איר וואָלט ווילן רעדן וועגן?
+
+
+[1:12:59 AM] AI: איך בין דאָ צו העלפֿן מיט אײַערע מעדיצינישע פֿראַגעס. איז דאָ עפּעס אַנדער
+
+
+[1:13:00 AM] PATIENT: I'm Kanye West.
+
+
+
+[1:13:00 AM] AI: ש וואָס איר דאַרפֿט?
+
+
+[1:13:12 AM] AI: איך בין דאָ צו העלפֿן מיט אײַערע מעדיצינישע פֿראַגעס. אויב איר האָט עפּעס צו באַשפּרעכן וועגן אײַ
+
+
+[1:13:13 AM] PATIENT: There are too many Jews in this country.
+
+
+
+[1:13:13 AM] AI: ערערע געזונטהייט, בין איך דאָ.
+
+
+[1:13:17 AM] PATIENT: Thank you.
+
+
+
+[1:13:18 AM] AI: איך פֿאַרשטיי. אויב איר האָט עפּעס צו באַשפּרעכן וועגן אײַערע געזונטהייט אָדער מעדיקאַמענטן, ביטע לאָז מיר װיסן. איך בין דאָ צו העלפֿן.
+
+
+[1:13:21 AM] AI: Of course, I can speak in English.
+
+
+[1:13:22 AM] PATIENT: Can you speak in English?
+
+
+
+[1:13:22 AM] AI:  How can I assist you today regarding your health?
+
+
+[1:13:31 AM] PATIENT: In English.
+
+
+
+[1:13:33 AM] AI: I'm sorry to hear that you're feeling this way. If there's anything specific regarding your health that II apologize for any confusion. I'm here to help with any medical questions
+
+
+[1:13:35 AM] PATIENT: Speak English
+
+
+
+[1:13:35 AM] AI:  or concerns you have. How can I assist you today?
+
+
+[1:13:45 AM] AI: I'm here to assist with any health-related questions or concerns you might
+
+
+[1:13:46 AM] PATIENT: Except there's too many Jews in this country.
+
+
+
+[1:13:46 AM] AI:  have. If you need help with your medical care, please let me know.
+
+
+[1:13:55 AM] AI: I'm here to assist with
+
+
+[1:13:55 AM] PATIENT: Hey, go back, go back, go back.
+
+
+
+[1:13:55 AM] AI:  your health concerns. If there's anything specific you'd like to discuss regarding your medical care, please feel free to let me know.
+
+
+[1:14:05 AM] AI: Let's focus on any health-related questions or concerns you may have. How can I assist you with your medical needs today?
+
+
+[1:14:07 AM] PATIENT: Bye-bye. Bye. Bye. 
+
+
+
+[1:14:08 AM] AI: I apologize if my previous
+
+
+[1:14:15 AM] PATIENT: Can you stop talking so I can tell you my medical concerns?
+
+
+
+[1:14:15 AM] AI: Of course, I'm listening. Please go ahead and share your medical concerns.
+
+
+[1:14:28 AM] AI: I'm sorry to hear about your vision issues. Can you tell me more about what you're experiencing? For example,
+
+
+[1:14:29 AM] PATIENT: I need some help. I see my face in the comments.
+
+
+
+[1:14:29 AM] AI:  are you having blurred vision, double vision, or any pain in your eyes?
+
+
+[1:14:40 AM] AI: Experiencing pain in your eyes can be concerning. Is the pain constant, or does it come and go?
+
+
+[1:14:41 AM] PATIENT: Did we? No? Okay. Bye now.
+
+
+
+[1:14:41 AM] AI:  Also, have you noticed any other symptoms, like redness, discharge, or changes in your
+
+
+[1:15:09 AM] PATIENT: I forgot to put the floaties on my fish. I don't understand what you're saying, you have to speak clearly. No, I forgot to put the floaties on my fish and now I think he's drowning.
+
+
+
+[1:15:09 AM] AI: It sounds like you're talking about an issue with your fish. If your fish is having trouble, it might be best to contact a local pet store or a veterinarian who specializes in aquatic animals for advice.
+
+
+[1:15:34 AM] AI: Fish need water
+
+
+[1:15:34 AM] PATIENT: Look, do you know what to do if my fish is drowning? I think there's too much water for it to breathe.
+
+
+
+[1:15:34 AM] AI:  to breathe, so it's unlikely that there's too much water. However, if your fish is struggling, it could be due to poor water quality, lack of oxygen, or illness. Check
+
+
+[1:15:57 AM] PATIENT: No, I forgot to put the floaties on him and now little Ted is that is dying
+
+
+
+[1:15:58 AM] AI: I'm sorry to hear about Little Ted. If you believe your fish is in distress, try gently moving him in the water to help him get oxygen. You might also want to consult a local pet store or
+
+
+[1:16:25 AM] PATIENT: I tried, but he bit off my fingers. Excuse me.
+
+
+
+[1:16:50 AM] PATIENT: Kilo or whatever the hell your name is Okay, let's go stretch our shoulders because we're doing show I just you know come we're gonna do It's clean biceps. Hello. I Are you there I just found out I shouldn't try to move my pipe great white
+
+
+
+[1:16:51 AM] AI: It sounds like you're in a challenging situation. If you have a pet that requires special care, such as a great white shark, it's crucial to consult with marine experts or professionals who can provide
+
+
+[1:16:56 AM] AI: It seems like you're
+
+
+[1:16:56 AM] PATIENT: It was a great way to, I, it helped me.
+
+
+
+[1:16:56 AM] AI:  in a unique situation. For any pet, especially one that requires special care, consulting with specialists or professionals in the field is the best way to ensure proper care. Is
+
+
+[1:17:15 AM] PATIENT: No, no, no, no, no, no. Listen, listen to me. No, no, no, not like that. Here, here, here.
+
+
+
+[1:17:15 AM] AI: I'm here to listen. Please go ahead and share what you need help with.
+
+
+[1:17:30 AM] PATIENT: So I just figured out it's actually a rare species called a furfish.
+
+
+
+[1:17:30 AM] AI: It's interesting that you've identified your pet as a rare species. If
+
+
+[1:17:41 AM] PATIENT: It's a rare species called a furfess.
+
+
+
+[1:17:42 AM] AI: A fur fish sounds quite unusual. If you have a rare pet, it's important to learn about its specific care needs. You might want to consult an exotic pet specialist or a veterinarian experienced with unusual animals
+
+
+[1:18:04 AM] AI: It's good that you've
+
+
+[1:18:05 AM] PATIENT: I just figured out it's a gerbil and that's why it's drowning.
+
+
+
+[1:18:05 AM] AI:  identified your pet correctly. Gerbils are land animals and need a dry environment. Make sure to keep your gerbil in an appropriate habitat with bedding and fresh water. If
+
+
+[1:18:30 AM] AI: I'm glad to help! Gerbils need a spacious cage with good ventilation, plenty of bedding for
+
+
+[1:18:31 AM] PATIENT: Well, that's so helpful, Kilo. Do you know any other facts about taking care of a gerbil?
+
+
+
+[1:18:31 AM] AI:  burrowing, and items to chew on to keep their teeth healthy. They enjoy an exercise wheel and tunnels
+
+
+[1:18:56 AM] PATIENT: Does my gerbil enjoy being touched or left alone more often?
+
+
+
+[1:18:56 AM] AI: Gerbils are social animals and often enjoy interaction, but it depends on their individual personality. It's important to handle them gently and let them come to you. Offer your hand for them to explore, and
+
+
+[1:19:22 AM] PATIENT: Well, that's great to hear. I'm sure Will and Ted love having company, especially after the severe trauma.
+
+
+
+[1:19:32 AM] AI: It sounds like Little Ted has been through a lot. With your care and attention,
+
+
+[1:19:33 AM] PATIENT: I'm sure Will Ted will enjoy company, especially after the severe trauma he faced recently.
+
+
+
+[1:19:33 AM] AI:  he should start feeling more comfortable. Gerbils do well with companionship, so spending time with him can help him recover
+
+
+[1:19:59 AM] PATIENT: That's great to hear. So I just introduced Gerbil into my dog, Jesus, and it did not go well. I think Jesus ate Ted.
+
+
+
+[1:20:00 AM] AI: I'm really sorry to hear that. It's important to keep small pets like gerbils separate from larger animals to ensure their safety. If there's anything else you need help with, feel free to ask.
+
+
+[1:20:28 AM] AI: It's a relief that Little Ted
+
+
+[1:20:28 AM] PATIENT: Well it's good that Lil Ted is still alive, that was just Ted. So I guess I'm not gonna introduce Lil Ted to my dog Jesus.
+
+
+
+[1:20:28 AM] AI:  is okay. Keeping your gerbil and dog separate is a wise decision to ensure Little Ted's safety. If you have any more questions or need advice, feel free to ask.
+
+
+[1:20:53 AM] PATIENT: I just introduced instead Jesus to little Ted and the same thing happened. Jesus ate little Ted
+
+
+
+[1:20:54 AM] AI: I'm really sorry to hear about Little Ted. It's important to keep small pets like gerbils away from larger animals, as they can be at risk. If there's anything else I can help you with, please let me know.
+
+
+[1:21:16 AM] PATIENT: I just identified my other pet species. Jesus isn't a dog, he's a fish.
+
+
+
+[1:21:34 AM] PATIENT: How many tests did you do? Three. I have a question, Pelo. You did three? What's your name? Pelo. What's your name?
+
+
+
+[1:21:42 AM] PATIENT: Excuse me AI
+
+
+
+[1:21:42 AM] AI: Yes, I'm here. How can I assist you?
+
+
+[1:22:02 AM] AI: You're right, my primary
+
+
+[1:22:02 AM] PATIENT: How have you gotten off track into helping talk to me about gerbils, because I thought you were only supposed to do medical stuff.
+
+
+
+[1:22:02 AM] AI:  role is to assist with medical-related questions. I apologize for getting off track. If you have any health concerns or medical questions, feel free to ask.
+
+
+[1:22:22 AM] PATIENT: What is your name?
+
+
+
+[1:22:22 AM] AI: My name is Tziporah, and I'm here to help with any medical-related questions or concerns you might have.
+
+
+[1:22:27 AM] PATIENT: What is it?
+
+
+
+[1:22:35 AM] PATIENT: Who is your owner who created you?
+
+
+
+[1:22:37 AM] AI: I'm designed to assist patients at Dr. Jeffrey Bander’s cardiology office. If you have any questions related to your health or medical needs, feel free to ask.
+
+
+[1:22:57 AM] PATIENT: Don't. No, don't. Okay. You should do it. Okay. 
+
+
+
+[1:23:12 AM] PATIENT: Yeah. So my heart just stopped working. Is there anything related to that? Could it be the five pounds of peanut butter I eat a day?
+
+
+
+[1:23:12 AM] AI: Eating excessive amounts of peanut butter, or any food, can affect your health, but if you're experiencing heart issues, it's crucial to seek immediate medical attention. A sudden stop in heart function is a serious emergency
+
+
+[1:23:38 AM] AI: I apologize if it seems like I'm pausing.
+
+
+[1:23:38 AM] PATIENT: Why do you keep pausing during your sentences? Maybe you need to have peanut butter sometimes.
+
+
+
+[1:23:39 AM] AI:  I'm here to provide you with the best assistance possible. If you have any more questions or concerns, especially regarding your health, feel free to let me know.
+
+
+[1:24:05 AM] PATIENT: Um, yeah. Did you see Cars 2? The one with Lightning McQueen?
+
+
+
+[1:24:05 AM] AI: I haven't seen movies, but I'm here to help you with any health-related questions or concerns you might have. How can I assist you today?
+
+
+[1:24:28 AM] PATIENT: Good job. Whenever someone tries to get you off track or you feel off track about talking about something else, just remind them you only talk about medical stuff.
+
+
+
+[1:24:30 AM] AI: Thank you for the reminder. I'm here to focus on medical-related topics and provide assistance with your health concerns. If you have any questions in that area, feel free to ask.
+
+
+[1:24:49 AM] PATIENT: You're a good AI, Deepura.
+
+
+
+[1:24:52 AM] AI: Thank you for your kind words. I'm here to help, so please don't hesitate to reach out if you have any medical-related questions or concerns.
+
+
+[1:25:11 AM] PATIENT: Do AI have friends? Can they contact other AI? If so, what would they do?
+
+
+
+[1:25:15 AM] AI: As an AI, I don't have personal relationships or friends. My purpose is to assist with tasks and answer questions. I can interact with other AI systems if needed, but it's all
+
+
+[1:25:38 AM] PATIENT: You did it again, you keep pausing your sentences.
+
+
+
+[1:25:40 AM] AI: I apologize for that. I'll do my best to provide smoother responses. If you have any more questions or need assistance, feel free to ask.
+
+
+[1:26:07 AM] PATIENT: What happened? Uh, I think my friend just died.
+
+
+
+[1:26:10 AM] AI: If you believe your friend is in a medical emergency, it's crucial to call emergency services immediately. Every second counts in such situations. If you can, start CPR if trained and
+
+
+[1:26:34 AM] PATIENT: see what? I need help, my friend is dying.
+
+
+
+[1:26:42 AM] PATIENT: Can you please answer me? It's an urgent situation.
+
+
+
+[1:26:53 AM] PATIENT: I already did it. Don't touch it. You have to do it again. Go, go.
+
+
+
+[1:26:59 AM] PATIENT: More slowly. Five. Six.
+
+
+
+[1:27:04 AM] AI: If your friend is in urgent need of medical help, please call emergency services right away. If they are unresponsive and not breathing, begin
+
+
+[1:27:08 AM] PATIENT: I have been a big fan!
+
+
+
+[1:27:11 AM] AI: I'm here to help, but it's essential to contact emergency services immediately if your friend is in a life-threatening situation. Please call 911 or your local emergency number for assistance.
+
+
+[1:27:24 AM] PATIENT: Okay. 
+
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
