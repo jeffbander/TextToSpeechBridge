@@ -54,7 +54,7 @@ export default function AutomatedCallsPage() {
 
   const startCallMutation = useMutation({
     mutationFn: async (callData: any) => {
-      const response = await apiRequest('POST', '/api/twilio/call-patient', callData);
+      const response = await apiRequest('POST', '/api/twilio/automated-calls', callData);
       return response.json();
     },
     onSuccess: (data) => {
