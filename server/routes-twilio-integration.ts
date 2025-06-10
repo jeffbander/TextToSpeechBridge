@@ -9,7 +9,7 @@ export function registerTwilioIntegrationRoutes(app: Express) {
   console.log("[TWILIO-INTEGRATION] Initializing Twilio-to-GPT-4o integration routes");
 
   // Start automated patient call with GPT-4o integration
-  app.post("/api/twilio/call-patient", async (req, res) => {
+  app.post("/api/twilio/automated-calls", async (req, res) => {
     try {
       console.log(`[TWILIO-INTEGRATION] Received request body:`, req.body);
       
