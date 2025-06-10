@@ -141,9 +141,9 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           },
           turn_detection: {
             type: 'server_vad',
-            threshold: 0.5,
+            threshold: 0.3,
             prefix_padding_ms: 300,
-            silence_duration_ms: 2000
+            silence_duration_ms: 800
           }
         }
       };
@@ -158,8 +158,41 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         console.log(`🔴 Using default system prompt for ${session.patientName}`);
       }
       
-      // Let GPT-4o initiate conversation naturally when patient starts speaking
-      console.log(`🎬 Session ready - GPT-4o will respond based on system prompt when patient speaks`);
+      // Proactively start the conversation with a greeting
+      console.log(`🎬 Session ready - initiating greeting`);
+      
+      // Add a small delay to ensure session is fully ready
+      setTimeout(() => {
+        // Send initial conversation starter
+        const greetingMessage = {
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [{
+              type: 'input_text',
+              text: 'Please start the healthcare follow-up call by greeting the patient warmly.'
+            }]
+          }
+        };
+        
+        openaiWs.send(JSON.stringify(greetingMessage));
+        console.log(`📨 Greeting message sent for ${session.patientName}`);
+        
+        // Create response to trigger audio generation
+        setTimeout(() => {
+          const responseCreate = {
+            type: 'response.create',
+            response: {
+              modalities: ['audio'],
+              instructions: 'Greet the patient warmly and introduce yourself as Tziporah from Dr. Bander\'s office calling for a follow-up.'
+            }
+          };
+          
+          openaiWs.send(JSON.stringify(responseCreate));
+          console.log(`🎤 Response creation triggered for ${session.patientName}`);
+        }, 100);
+      }, 200);
       
       session.isActive = true;
     });
@@ -203,7 +236,30 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     switch (message.type) {
       case 'session.created':
         console.log(`✅ OpenAI session created for ${sessionId}`);
-        // Session ready - wait for explicit start command
+        break;
+        
+      case 'session.updated':
+        console.log(`🔄 OpenAI session updated for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.committed':
+        console.log(`🎤 Audio buffer committed for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_started':
+        console.log(`🗣️ Speech started detected for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_stopped':
+        console.log(`🛑 Speech stopped detected for ${sessionId}`);
+        break;
+        
+      case 'response.created':
+        console.log(`📝 Response created for ${sessionId}`);
+        break;
+        
+      case 'response.done':
+        console.log(`✅ Response completed for ${sessionId}`);
         break;
         
       case 'conversation.item.created':
