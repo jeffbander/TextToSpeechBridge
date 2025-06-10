@@ -17,11 +17,18 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         patientId, 
         urgencyLevel = 'medium', 
         visitReason, 
-        medications = [], 
+        medications, 
         customInstructions,
         useCustomPrompt,
         generatedPrompt 
       } = req.body;
+      
+      // Handle medications as both string and array
+      const medicationsArray = Array.isArray(medications) 
+        ? medications 
+        : medications 
+          ? medications.split(',').map((med: string) => med.trim()).filter(Boolean)
+          : [];
       
       if (!patientId) {
         return res.status(400).json({ message: "Patient ID is required" });
@@ -39,7 +46,7 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       const patientContext = {
         patient,
         recentVisitReason: visitReason,
-        currentMedications: medications,
+        currentMedications: medicationsArray,
         knownConditions: [patient.condition],
         urgencyLevel: urgencyLevel as 'low' | 'medium' | 'high' | 'critical'
       };

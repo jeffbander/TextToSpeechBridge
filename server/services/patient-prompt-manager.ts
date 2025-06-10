@@ -52,7 +52,7 @@ PATIENT INFORMATION:
 - Phone: ${patient.phoneNumber}
 - Primary Condition: ${patient.condition}
 - Recent Visit Reason: ${recentVisitReason || 'General follow-up'}
-- Current Medications: ${currentMedications?.join(', ') || 'None listed'}
+- Current Medications: ${Array.isArray(currentMedications) ? currentMedications.join(', ') : currentMedications || 'None listed'}
 - Known Conditions: ${knownConditions?.join(', ') || patient.condition}
 - Urgency Level: ${urgencyLevel || 'medium'}
 
