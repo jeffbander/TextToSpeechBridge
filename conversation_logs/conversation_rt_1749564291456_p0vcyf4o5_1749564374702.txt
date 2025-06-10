@@ -1,0 +1,32 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749564291456_p0vcyf4o5
+Patient: mills  reed (ID: 10)
+Call ID: 112
+Duration: 83 seconds
+Date: 2025-06-10T14:04:51.457Z
+Total Exchanges: 6
+
+─────────────────────────────────────────────────────────
+
+[2:05:09 PM] AI: אוי, איך
+
+
+[2:05:18 PM] AI: אוי, איך בין דא. ווי קען איך אייך העלפֿן?
+
+
+[2:05:50 PM] AI: איך הער אייך. קען איך אייך העלפֿן מיט עפּעס?
+
+
+[2:05:51 PM] PATIENT: Testing, testing, testing.
+
+
+
+[2:05:52 PM] AI: איך הער אייך. איז דאָ עפּעס וואָס איך קען העלפֿן?
+
+
+[2:06:10 PM] AI: Of course, I can speak English. How can I assist you today?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
