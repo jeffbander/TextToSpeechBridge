@@ -1,10 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { audioManager } from '@/lib/audio-manager';
 
 interface AudioRealtimeProps {
   patientId: number;
@@ -13,518 +12,397 @@ interface AudioRealtimeProps {
   onEnd?: () => void;
 }
 
+interface RealtimeSession {
+  sessionId: string;
+  websocketUrl: string;
+  status: string;
+}
+
 export default function AudioRealtime({ patientId, patientName, callId, onEnd }: AudioRealtimeProps) {
-  const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'error'>('idle');
+  const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const isRecordingRef = useRef(false);
-  const [conversationStarted, setConversationStarted] = useState(false);
+  const [session, setSession] = useState<RealtimeSession | null>(null);
   const [transcript, setTranscript] = useState<string[]>([]);
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
   
-  const wsRef = useRef<WebSocket | null>(null);
+  const websocketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const sessionInitializedRef = useRef(false);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  
+  // CRITICAL: Audio buffer accumulation for single voice playback
   const audioBufferRef = useRef<number[]>([]);
-  const isPlayingRef = useRef(false);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const playbackQueueRef = useRef<string[]>([]);
-  const silenceCountRef = useRef(0);
-  const lastAudioTimeRef = useRef<number>(0);
+  const isPlayingRef = useRef<boolean>(false);
+  
   const { toast } = useToast();
 
-  const updateRecordingState = useCallback((recording: boolean) => {
-    setIsRecording(recording);
-    isRecordingRef.current = recording;
-    console.log(`[AUDIO] Recording state updated: ${recording}`);
+  // Initialize audio context
+  useEffect(() => {
+    const initAudioContext = async () => {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        console.log('Audio context initialized');
+      } catch (error) {
+        console.error('Failed to initialize audio context:', error);
+      }
+    };
+
+    initAudioContext();
+
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
   }, []);
 
-  // Auto-start session when component mounts
-  useEffect(() => {
-    if (status === 'idle' && !sessionInitializedRef.current) {
-      console.log(`[AUDIO] Auto-starting session on mount for ${patientName}`);
-      // Start immediately when component loads
-      setTimeout(() => startSession(), 100);
+  // Audio buffer accumulation (prevents overlapping voices)
+  const accumulateAudioBuffer = useCallback((audioData: ArrayBuffer) => {
+    if (!audioContextRef.current) return;
+    
+    try {
+      const pcmData = new Int16Array(audioData);
+      console.log(`Accumulating ${pcmData.length} audio samples`);
+      
+      // Add samples to buffer (convert Int16 to Float32)
+      for (let i = 0; i < pcmData.length; i++) {
+        audioBufferRef.current.push(pcmData[i] / 32768.0);
+      }
+    } catch (error) {
+      console.error('Error accumulating audio buffer:', error);
     }
-  }, [patientName]);
+  }, []);
 
-  const initializeAudio = useCallback(async () => {
+  // Play complete accumulated audio as single stream
+  const playAccumulatedAudio = useCallback(async () => {
+    if (!audioContextRef.current || audioBufferRef.current.length === 0) {
+      console.log('No audio to play or context unavailable');
+      return;
+    }
+
+    // Prevent overlapping audio playback
+    if (isPlayingRef.current) {
+      console.log('Audio already playing, skipping');
+      return;
+    }
+
+    try {
+      isPlayingRef.current = true;
+
+      // Stop any currently playing audio
+      if (currentSourceRef.current) {
+        try {
+          currentSourceRef.current.stop();
+          currentSourceRef.current.disconnect();
+        } catch (e) {
+          // Source may already be stopped
+        }
+        currentSourceRef.current = null;
+      }
+
+      // Ensure AudioContext is running
+      if (audioContextRef.current.state !== 'running') {
+        await audioContextRef.current.resume();
+      }
+
+      const sampleCount = audioBufferRef.current.length;
+      console.log(`Playing accumulated audio: ${sampleCount} samples`);
+
+      // Create audio buffer from accumulated samples
+      const audioBuffer = audioContextRef.current.createBuffer(1, sampleCount, 24000);
+      const channelData = audioBuffer.getChannelData(0);
+
+      // Copy accumulated samples to audio buffer
+      for (let i = 0; i < sampleCount; i++) {
+        channelData[i] = audioBufferRef.current[i];
+      }
+
+      // Create and configure source node
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+
+      // Track current source
+      currentSourceRef.current = source;
+
+      // Handle playback completion
+      source.onended = () => {
+        console.log('Audio playback completed');
+        isPlayingRef.current = false;
+        currentSourceRef.current = null;
+        // Clear buffer after successful playback
+        audioBufferRef.current = [];
+      };
+
+      // Start playback
+      source.start(0);
+
+    } catch (error) {
+      console.error('Error playing accumulated audio:', error);
+      isPlayingRef.current = false;
+      currentSourceRef.current = null;
+      audioBufferRef.current = [];
+    }
+  }, []);
+
+  // Start realtime session
+  const startRealtimeSession = async () => {
+    try {
+      setConnectionStatus('connecting');
+      
+      const response = await fetch('/api/realtime/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patientId,
+          patientName,
+          callId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create session');
+      }
+
+      const sessionData: RealtimeSession = await response.json();
+      setSession(sessionData);
+      
+      // Connect to WebSocket
+      connectWebSocket(sessionData);
+      
+    } catch (error) {
+      console.error('Error starting session:', error);
+      setConnectionStatus('error');
+      toast({
+        title: "Connection Failed",
+        description: "Failed to start real-time session",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Connect to WebSocket
+  const connectWebSocket = (sessionData: RealtimeSession) => {
+    try {
+      const wsUrl = `ws://localhost:5000/ws/realtime${sessionData.websocketUrl}`;
+      const ws = new WebSocket(wsUrl);
+      
+      websocketRef.current = ws;
+      
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setIsConnected(true);
+        setConnectionStatus('connected');
+        toast({
+          title: "Connected",
+          description: "Real-time audio session established"
+        });
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          handleWebSocketMessage(message);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setConnectionStatus('error');
+      };
+      
+      ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        setIsConnected(false);
+        setConnectionStatus('disconnected');
+      };
+      
+    } catch (error) {
+      console.error('Error connecting WebSocket:', error);
+      setConnectionStatus('error');
+    }
+  };
+
+  // Handle incoming WebSocket messages
+  const handleWebSocketMessage = (message: any) => {
+    switch (message.type) {
+      case 'audio_delta':
+        // Accumulate audio instead of playing immediately
+        try {
+          const audioData = new Uint8Array(atob(message.audio).split('').map(c => c.charCodeAt(0)));
+          accumulateAudioBuffer(audioData.buffer);
+        } catch (error) {
+          console.error('Error processing audio delta:', error);
+        }
+        break;
+        
+      case 'audio_done':
+        // Trigger accumulated audio playback when OpenAI completes response
+        console.log('Audio completion signal received, playing accumulated audio');
+        playAccumulatedAudio();
+        break;
+        
+      case 'text_delta':
+        // Update transcript with AI response
+        setTranscript(prev => [...prev, `AI: ${message.text}`]);
+        break;
+        
+      case 'transcript_update':
+        // Update transcript with patient speech
+        setTranscript(prev => [...prev, `Patient: ${message.text}`]);
+        break;
+        
+      default:
+        console.log('Unknown message type:', message.type);
+    }
+  };
+
+  // Start recording patient's voice
+  const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          sampleRate: 24000,
+          sampleRate: 16000,
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true
         }
       });
       
-      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      audioStreamRef.current = stream;
       
-      // Create audio processor for real-time PCM16 conversion
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       
-      processor.onaudioprocess = (event) => {
-        const inputBuffer = event.inputBuffer.getChannelData(0);
-        let audioLevel = 0;
-        let hasAudio = false;
-        
-        // Process buffer samples
-        for (let i = 0; i < inputBuffer.length; i++) {
-          const sample = Math.abs(inputBuffer[i]);
-          if (sample > audioLevel) audioLevel = sample;
-          if (sample > 0.1) hasAudio = true;
-        }
-        
-        // Debug logging every few seconds
-        if (Date.now() % 3000 < 100) {
-          console.log(`[AUDIO] Processor: WS=${wsRef.current?.readyState}, Recording=${isRecording}, Level=${audioLevel.toFixed(4)}`);
-        }
-        
-        if (wsRef.current?.readyState === WebSocket.OPEN && isRecordingRef.current) {
-          if (audioLevel > 0.1) {
-            console.log(`[AUDIO] Voice detected - level: ${audioLevel.toFixed(4)}`);
-          }
-          
-          if (hasAudio) {
-            // Convert float32 to PCM16 (24kHz mono)
-            const pcm16 = new Int16Array(inputBuffer.length);
-            for (let i = 0; i < inputBuffer.length; i++) {
-              const sample = Math.max(-1, Math.min(1, inputBuffer[i]));
-              pcm16[i] = Math.floor(sample * 32767);
-            }
-            
-            console.log(`[AUDIO] Sending patient audio: ${pcm16.length} samples`);
-            wsRef.current.send(JSON.stringify({
-              type: 'audio_input',
-              audio: Array.from(pcm16)
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && websocketRef.current?.readyState === WebSocket.OPEN) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = (reader.result as string).split(',')[1];
+            websocketRef.current?.send(JSON.stringify({
+              type: 'audio_chunk',
+              audio: base64
             }));
-            
-            // Reset silence counter when audio detected
-            silenceCountRef.current = 0;
-            lastAudioTimeRef.current = Date.now();
-          } else {
-            // Count silence frames
-            silenceCountRef.current++;
-            
-            // Debug silence detection every few frames
-            if (silenceCountRef.current % 10 === 0 && lastAudioTimeRef.current > 0) {
-              console.log(`[AUDIO] Silence count: ${silenceCountRef.current}, last audio: ${Date.now() - lastAudioTimeRef.current}ms ago`);
-            }
-            
-            // If silence detected after speech, trigger audio completion (reduced threshold for better responsiveness)
-            if (silenceCountRef.current > 12 && lastAudioTimeRef.current > 0) {
-              console.log(`[AUDIO] Detected end of patient speech - triggering audio completion after ${silenceCountRef.current} silent frames`);
-              wsRef.current.send(JSON.stringify({
-                type: 'audio_input_complete'
-              }));
-              
-              // Reset counters
-              silenceCountRef.current = 0;
-              lastAudioTimeRef.current = 0;
-            }
-          }
+          };
+          reader.readAsDataURL(event.data);
         }
       };
       
-      source.connect(processor);
-      processor.connect(audioContextRef.current.destination);
-      
-      mediaRecorderRef.current = { processor, source } as any;
-      
-      console.log('[AUDIO] Microphone initialized for 24kHz PCM16');
-    } catch (error) {
-      console.error('[AUDIO] Microphone access denied:', error);
-      toast({
-        title: "Microphone Required",
-        description: "Please allow microphone access for voice sessions",
-        variant: "destructive"
-      });
-    }
-  }, [toast, isRecording]);
-
-  const playAudioBuffer = useCallback(async (audioData: ArrayBuffer) => {
-    try {
-      // Use singleton audio manager to prevent duplication
-      const pcmData = new Int16Array(audioData);
-      audioManager.addAudioData(pcmData);
-      
-      console.log(`[AUDIO] Added ${pcmData.length} samples to singleton manager`);
-    } catch (error) {
-      console.error('[AUDIO] Error adding audio data:', error);
-    }
-  }, []);
-
-  const playAccumulatedAudio = useCallback(async () => {
-    try {
-      // Use singleton audio manager to ensure only one audio stream plays
-      await audioManager.playAccumulatedAudio();
-    } catch (error) {
-      console.error('[AUDIO] Error playing accumulated audio:', error);
-    }
-  }, []);
-
-  const startSession = async () => {
-    // Prevent duplicate session creation from React re-renders and rapid clicks
-    if (sessionInitializedRef.current || isCreatingSession) {
-      console.log('[AUDIO] Session already initialized or being created, skipping duplicate');
-      return;
-    }
-    
-    sessionInitializedRef.current = true;
-    setIsCreatingSession(true);
-    
-    try {
-      setStatus('connecting');
-      setTranscript([]);
-      
-      const timestamp = new Date().toISOString();
-      console.log(`[AUDIO] ${timestamp} Creating SINGLE session for ${patientName} (ID: ${patientId})`);
-      
-      const response = await fetch('/api/realtime/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientId, patientName, callId })
-      });
-      
-      if (!response.ok) {
-        sessionInitializedRef.current = false;
-        setIsCreatingSession(false);
-        throw new Error('Failed to create session');
-      }
-      
-      const data = await response.json();
-      
-      // Construct WebSocket URL for main server with path routing
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const wsUrl = `${protocol}//${host}/ws/realtime${data.websocketUrl}`;
-      
-      console.log(`[AUDIO] Session data received:`, data);
-      console.log(`[AUDIO] Constructed URL: ${wsUrl}`);
-      console.log(`[AUDIO] Protocol: ${protocol}, Host: ${host}`);
-      
-      const websocket = new WebSocket(wsUrl);
-      wsRef.current = websocket;
-      
-      // Add connection timeout
-      const connectionTimeout = setTimeout(() => {
-        if (websocket.readyState === WebSocket.CONNECTING) {
-          console.error('[AUDIO] Connection timeout');
-          websocket.close();
-          setStatus('error');
-          toast({
-            title: "Connection Timeout",
-            description: "Voice session failed to connect. Please try again.",
-            variant: "destructive"
-          });
-        }
-      }, 10000);
-      
-      websocket.onopen = () => {
-        const timestamp = new Date().toISOString();
-        console.log(`[AUDIO] ${timestamp} WebSocket connected - readyState: ${websocket.readyState}`);
-        clearTimeout(connectionTimeout);
-        setStatus('connected');
-        setIsCreatingSession(false);
-        // Initialize audio manager first with user interaction context
-        audioManager.initialize().then(() => {
-          console.log(`[AUDIO] Audio manager initialized successfully`);
-          
-          // Test audio playback capability
-          return audioManager.testAudioPlayback();
-        }).then((testResult) => {
-          console.log(`[AUDIO] Audio test result:`, testResult);
-          
-          initializeAudio();
-          
-          // Auto-start conversation and recording immediately after connection
-          setTimeout(() => {
-            console.log(`[AUDIO] ${new Date().toISOString()} Auto-starting conversation after 1s delay`);
-            startConversation();
-            updateRecordingState(true);
-          }, 1000);
-        }).catch((error) => {
-          console.error(`[AUDIO] Failed to initialize audio manager:`, error);
-        });
-        
-        toast({
-          title: "Connected",
-          description: "AI conversation starting..."
-        });
-      };
-
-      websocket.onmessage = (event) => {
-        try {
-          const timestamp = new Date().toISOString();
-          
-          if (event.data instanceof ArrayBuffer) {
-            console.log(`[AUDIO] ${timestamp} Received ArrayBuffer audio data - size: ${event.data.byteLength}`);
-            playAudioBuffer(event.data);
-          } else {
-            const message = JSON.parse(event.data);
-            console.log(`[AUDIO] ${timestamp} Received message: ${message.type}`);
-            
-            if (message.type === 'connection_established') {
-              console.log(`[AUDIO] ${timestamp} Session confirmed: ${message.sessionId}`);
-              
-            } else if (message.type === 'audio_delta') {
-              console.log(`[AUDIO] ${timestamp} Audio delta received - base64 length: ${message.audio?.length || 0}`);
-              if (message.audio) {
-                // Decode base64 to binary data
-                const binaryString = atob(message.audio);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                  bytes[i] = binaryString.charCodeAt(i);
-                }
-                
-                // Convert bytes to 16-bit PCM samples
-                const pcmSamples = new Int16Array(bytes.buffer);
-                audioManager.addAudioData(pcmSamples);
-                console.log(`[AUDIO] ${timestamp} Added ${pcmSamples.length} PCM samples to audio manager`);
-              }
-              
-            } else if (message.type === 'audio_done') {
-              console.log(`[AUDIO] ${timestamp} Audio complete - playing accumulated audio`);
-              
-              // Initialize audio context first, then play
-              audioManager.initialize().then(() => {
-                return playAccumulatedAudio();
-              }).then(() => {
-                console.log(`[AUDIO] Playback initiated successfully`);
-              }).catch((error) => {
-                console.error(`[AUDIO] Playback initiation failed:`, error);
-              });
-              
-              // Enable recording for patient response after AI finishes speaking
-              setTimeout(() => {
-                updateRecordingState(true);
-                console.log(`[AUDIO] Recording enabled for patient response`);
-              }, 500);
-              
-            } else if (message.type === 'transcript') {
-              console.log(`[AUDIO] ${timestamp} Transcript: ${message.speaker}: ${message.text}`);
-              setTranscript(prev => [...prev, `${message.speaker}: ${message.text}`]);
-              
-            } else if (message.type === 'audio_transcript_delta') {
-              console.log(`[AUDIO] ${timestamp} Transcript delta: "${message.text}"`);
-              setConversationStarted(true);
-              
-            } else if (message.type === 'session_ready') {
-              console.log(`[AUDIO] ${timestamp} Session ready signal received`);
-              
-            } else {
-              console.log(`[AUDIO] ${timestamp} Unknown message type: ${message.type}`, message);
-            }
-          }
-        } catch (error) {
-          console.error(`[AUDIO] ${new Date().toISOString()} Message processing error:`, error);
-        }
-      };
-
-      websocket.onerror = (error) => {
-        const timestamp = new Date().toISOString();
-        console.error(`[AUDIO] ${timestamp} WebSocket error:`, error);
-        console.log(`[AUDIO] ${timestamp} WebSocket state: ${websocket.readyState}`);
-        clearTimeout(connectionTimeout);
-        sessionInitializedRef.current = false;
-        setIsCreatingSession(false);
-        setStatus('error');
-        cleanup();
-        toast({
-          title: "Connection Error",
-          description: "Voice session connection failed. Please try again.",
-          variant: "destructive"
-        });
-      };
-
-      websocket.onclose = (event) => {
-        const timestamp = new Date().toISOString();
-        console.log(`[AUDIO] ${timestamp} Connection closed - Code: ${event.code}, Reason: ${event.reason || 'No reason'}, Clean: ${event.wasClean}`);
-        console.log(`[AUDIO] ${timestamp} Final WebSocket state: ${websocket.readyState}`);
-        clearTimeout(connectionTimeout);
-        setStatus('idle');
-        cleanup();
-      };
-      
-    } catch (error) {
-      console.error('[AUDIO] Session error:', error);
-      setStatus('error');
-      toast({
-        title: "Session Error",
-        description: "Could not start voice session",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const startConversation = async () => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      toast({
-        title: "Not Connected",
-        description: "Start session first",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const timestamp = new Date().toISOString();
-    console.log(`[AUDIO] ${timestamp} Starting conversation - SINGLE TRIGGER`);
-    console.log(`[AUDIO] ${timestamp} WebSocket readyState: ${wsRef.current.readyState}`);
-    wsRef.current.send(JSON.stringify({
-      type: 'start_conversation'
-    }));
-    setConversationStarted(true);
-  };
-
-  const toggleRecording = async () => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !conversationStarted) {
-      toast({
-        title: "Start Conversation First",
-        description: "Click Start Conversation before recording",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (isRecording) {
-      setIsRecording(false);
-      
-      wsRef.current.send(JSON.stringify({
-        type: 'audio_input_complete'
-      }));
-      
-      console.log('[AUDIO] Recording stopped');
-    } else {
+      mediaRecorder.start(100); // Send chunks every 100ms
       setIsRecording(true);
-      console.log('[AUDIO] Recording started');
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Recording Failed",
+        description: "Could not access microphone",
+        variant: "destructive"
+      });
     }
   };
 
+  // Stop recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+    
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(track => track.stop());
+      audioStreamRef.current = null;
+    }
+  };
+
+  // End session
   const endSession = () => {
-    cleanup();
-    setStatus('idle');
+    stopRecording();
+    
+    if (websocketRef.current) {
+      websocketRef.current.close();
+      websocketRef.current = null;
+    }
+    
+    if (currentSourceRef.current) {
+      currentSourceRef.current.stop();
+      currentSourceRef.current = null;
+    }
+    
+    // Clear audio buffer
+    audioBufferRef.current = [];
+    isPlayingRef.current = false;
+    
+    setIsConnected(false);
+    setConnectionStatus('disconnected');
+    setSession(null);
+    setTranscript([]);
+    
     onEnd?.();
-  };
-
-  const cleanup = () => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    
-    if (mediaRecorderRef.current) {
-      const recorder = mediaRecorderRef.current as any;
-      if (recorder.processor) {
-        recorder.processor.disconnect();
-      }
-      if (recorder.source) {
-        recorder.source.disconnect();
-      }
-    }
-    
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    
-    setIsRecording(false);
-    setConversationStarted(false);
-    sessionInitializedRef.current = false;
-    setIsCreatingSession(false);
-  };
-
-  const getStatusBadge = () => {
-    switch (status) {
-      case 'connected':
-        return <Badge className="bg-green-500">Connected</Badge>;
-      case 'connecting':
-        return <Badge className="bg-yellow-500">Connecting...</Badge>;
-      case 'error':
-        return <Badge variant="destructive">Error</Badge>;
-      default:
-        return <Badge variant="secondary">Ready</Badge>;
-    }
   };
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Single GPT-4o Session - {patientName}</span>
-          <div className="flex items-center gap-2">
-            {getStatusBadge()}
-            {status === 'connected' && (
-              <Badge variant="outline" className="text-xs">
-                Session Active - Single AI Instance
-              </Badge>
-            )}
-          </div>
+        <CardTitle className="flex items-center gap-2">
+          <Phone className="h-5 w-5" />
+          Real-time Audio Call - {patientName}
         </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Automated Status Display - No Manual Buttons */}
-        <div className="flex flex-col items-center gap-4">
-          {status === 'connecting' && (
-            <div className="text-center">
-              <div className="text-lg text-blue-600 font-medium mb-2">Connecting to AI...</div>
-              <div className="text-sm text-gray-600">Establishing voice session</div>
-            </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={connectionStatus === 'connected' ? 'default' : 'secondary'}>
+            {connectionStatus}
+          </Badge>
+          {isRecording && (
+            <Badge variant="destructive" className="animate-pulse">
+              Recording
+            </Badge>
           )}
-          
-          {(status === 'connected' || conversationStarted) && (
-            <div className="text-center">
-              <div className="text-lg text-green-600 font-medium mb-1">AI Call Active</div>
-              <div className="text-sm text-gray-600 mb-4">AI is speaking - microphone is listening</div>
-              
-              <Button onClick={endSession} variant="destructive" className="flex items-center gap-2" size="lg">
-                <PhoneOff className="w-5 h-5" />
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <div className="flex gap-2">
+          {!isConnected ? (
+            <Button onClick={startRealtimeSession} disabled={connectionStatus === 'connecting'}>
+              {connectionStatus === 'connecting' ? 'Connecting...' : 'Start Session'}
+            </Button>
+          ) : (
+            <>
+              <Button
+                onClick={isRecording ? stopRecording : startRecording}
+                variant={isRecording ? 'destructive' : 'default'}
+                className="flex items-center gap-2"
+              >
+                {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                {isRecording ? 'Stop Recording' : 'Start Recording'}
+              </Button>
+              <Button onClick={endSession} variant="outline">
+                <PhoneOff className="h-4 w-4 mr-2" />
                 End Call
               </Button>
-            </div>
-          )}
-          
-          {status === 'error' && (
-            <div className="text-center">
-              <div className="text-lg text-red-600 font-medium mb-2">Connection Failed</div>
-              <div className="text-sm text-gray-600 mb-4">Please try starting the call again</div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Transcript Display */}
         {transcript.length > 0 && (
-          <div className="mt-4">
-            <h4 className="font-semibold mb-2">Conversation:</h4>
-            <div className="bg-gray-50 rounded-lg p-3 max-h-40 overflow-y-auto">
-              {transcript.map((line, index) => (
-                <div key={index} className="text-sm mb-1">
-                  {line}
+          <div className="border rounded-lg p-4 bg-gray-50 max-h-60 overflow-y-auto">
+            <h3 className="font-semibold mb-2">Conversation Transcript</h3>
+            <div className="space-y-1">
+              {transcript.map((entry, index) => (
+                <div key={index} className="text-sm">
+                  {entry}
                 </div>
               ))}
             </div>
           </div>
         )}
-
-        {/* Session Status */}
-        {status === 'connected' && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="text-sm font-medium text-green-800">Single AI Session Active</div>
-            <div className="text-xs text-green-600 mt-1">
-              One GPT-4o instance for {patientName} | Use 'End Session' to stop completely
-            </div>
-          </div>
-        )}
-
-        {/* Instructions */}
-        <div className="text-sm text-gray-600 text-center">
-          {status === 'idle' && "Start a new conversation with one AI agent"}
-          {status === 'connecting' && "Connecting to single AI instance..."}
-          {status === 'connected' && !isRecording && "AI ready - click 'Start Recording' to speak"}
-          {status === 'connected' && isRecording && "Recording voice input for AI"}
-          {status === 'error' && "Connection failed - retry to establish single session"}
-        </div>
       </CardContent>
     </Card>
   );

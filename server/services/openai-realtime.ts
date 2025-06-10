@@ -88,7 +88,7 @@ export class OpenAIRealtimeService {
 
     console.log(`🔗 Attempting OpenAI realtime connection for session ${sessionId}`);
 
-    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
+    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         'OpenAI-Beta': 'realtime=v1'
@@ -102,8 +102,27 @@ export class OpenAIRealtimeService {
       
       const patient = session.patientName;
       
-      let instructions = session.customSystemPrompt || 
-        `You are a healthcare assistant conducting a follow-up call with ${patient}. Be empathetic, professional, and ask relevant health questions about their recovery.`;
+      // Use proper medical prompt, filtering out inappropriate content
+      let instructions = session.customSystemPrompt;
+      
+      // Filter out inappropriate or test prompts
+      if (!instructions || 
+          instructions.includes('We know everything') || 
+          instructions.includes('breathing will slow') ||
+          instructions.includes('keystroke') ||
+          instructions.toLowerCase().includes('threat') ||
+          instructions.toLowerCase().includes('harm')) {
+        
+        instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office, located at 432 Bedford Ave, Williamsburg. You are following up with ${patient} using their most recent notes and clinical data.
+
+Your role is to:
+1. Check in empathetically based on context (recent hospitalization, abnormal labs, medication changes)
+2. Ask relevant follow-up questions or guide patient based on results
+3. Escalate or flag concerning responses that may require provider attention
+4. Keep tone professional, kind, and clear—like a nurse calling a long-time patient
+
+Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.`;
+      }
 
       // Extract voice and language preferences from custom prompt metadata if available
       let selectedVoice = 'alloy'; // default voice
@@ -125,9 +144,9 @@ export class OpenAIRealtimeService {
           },
           turn_detection: {
             type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 2000
+            threshold: 0.8,
+            prefix_padding_ms: 500,
+            silence_duration_ms: 3000
           },
           temperature: 0.6,
           max_response_output_tokens: 300
@@ -282,19 +301,17 @@ export class OpenAIRealtimeService {
         break;
         
       case 'response.audio.delta':
-        // Stream audio back to Twilio in chunks using proper media stream format
+        // Stream audio back to Twilio in proper G.711 chunks (320 bytes = 20ms)
         console.log(`🔊 Sending audio delta to Twilio - payload length: ${message.delta?.length || 0}`);
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN && message.delta) {
-          // Split the large audio payload into smaller chunks for better streaming
-          const chunkSize = 320; // Standard G.711 chunk size for 20ms audio
-          const audioData = message.delta;
+          // CRITICAL: Proper chunking for Twilio G.711 μ-law compatibility
+          const CHUNK_SIZE = 320; // Standard G.711 chunk size for 20ms audio
+          const audioPayload = message.delta;
           
-          for (let i = 0; i < audioData.length; i += chunkSize) {
-            const chunk = audioData.slice(i, i + chunkSize);
-            
-            if (!session.outboundChunkCount) {
-              session.outboundChunkCount = 0;
-            }
+          if (!session.outboundChunkCount) session.outboundChunkCount = 0;
+          
+          for (let i = 0; i < audioPayload.length; i += CHUNK_SIZE) {
+            const chunk = audioPayload.slice(i, i + CHUNK_SIZE);
             
             const mediaMessage = {
               event: 'media',
@@ -310,7 +327,7 @@ export class OpenAIRealtimeService {
             session.outboundChunkCount++;
             session.websocket.send(JSON.stringify(mediaMessage));
           }
-          console.log(`📤 Sent ${Math.ceil(audioData.length / chunkSize)} audio chunks to Twilio`);
+          console.log(`📤 Sent ${Math.ceil(audioPayload.length / CHUNK_SIZE)} audio chunks to Twilio`);
         } else {
           console.log(`❌ Cannot send audio to Twilio - WebSocket not ready. State: ${session.websocket?.readyState}`);
         }
