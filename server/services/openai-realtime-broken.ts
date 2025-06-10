@@ -141,9 +141,9 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           },
           turn_detection: {
             type: 'server_vad',
-            threshold: 0.3,
+            threshold: 0.5,
             prefix_padding_ms: 300,
-            silence_duration_ms: 800
+            silence_duration_ms: 2000
           }
         }
       };
@@ -158,41 +158,8 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         console.log(`🔴 Using default system prompt for ${session.patientName}`);
       }
       
-      // Proactively start the conversation with a greeting
-      console.log(`🎬 Session ready - initiating greeting`);
-      
-      // Add a small delay to ensure session is fully ready
-      setTimeout(() => {
-        // Send initial conversation starter
-        const greetingMessage = {
-          type: 'conversation.item.create',
-          item: {
-            type: 'message',
-            role: 'user',
-            content: [{
-              type: 'input_text',
-              text: 'Please start the healthcare follow-up call by greeting the patient warmly.'
-            }]
-          }
-        };
-        
-        openaiWs.send(JSON.stringify(greetingMessage));
-        console.log(`📨 Greeting message sent for ${session.patientName}`);
-        
-        // Create response to trigger audio generation
-        setTimeout(() => {
-          const responseCreate = {
-            type: 'response.create',
-            response: {
-              modalities: ['audio', 'text'],
-              instructions: 'Greet the patient warmly and introduce yourself as Tziporah from Dr. Bander\'s office calling for a follow-up.'
-            }
-          };
-          
-          openaiWs.send(JSON.stringify(responseCreate));
-          console.log(`🎤 Response creation triggered for ${session.patientName}`);
-        }, 100);
-      }, 200);
+      // Session ready - wait for patient to speak first
+      console.log(`🎬 Session ready - waiting for patient speech to trigger response`);
       
       session.isActive = true;
     });
@@ -252,17 +219,6 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         
       case 'input_audio_buffer.speech_stopped':
         console.log(`🛑 Speech stopped detected for ${sessionId}`);
-        // Automatically create response when patient stops speaking
-        if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-          const responseCreate = {
-            type: 'response.create',
-            response: {
-              modalities: ['audio', 'text']
-            }
-          };
-          session.openaiWs.send(JSON.stringify(responseCreate));
-          console.log(`🎤 Auto-response triggered for patient speech in ${sessionId}`);
-        }
         break;
         
       case 'response.created':
