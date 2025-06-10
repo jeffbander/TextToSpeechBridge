@@ -1,5 +1,6 @@
 import { WebSocket } from 'ws';
 import { openaiRealtimeService } from './openai-realtime';
+import { AudioLogger } from '../utils/logger';
 
 export class TwilioWebSocketHandler {
   

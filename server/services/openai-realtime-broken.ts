@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import WebSocket from 'ws';
+import { AudioLogger } from '../utils/logger';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY environment variable must be set");
@@ -34,18 +35,19 @@ export class OpenAIRealtimeService {
   private activePatients: Set<number> = new Set();
   
   async createRealtimeSession(patientId: number, patientName: string, callId: number, customSystemPrompt?: string): Promise<string> {
+    const startTime = Date.now();
+    
     // Clean up any existing sessions for this patient FIRST
     const existingSessions = Array.from(this.sessions.entries());
     for (const [id, session] of existingSessions) {
       if (session.patientId === patientId) {
-        console.log(`🧹 Cleaning up existing session ${id} for patient ${patientName}`);
+        AudioLogger.sessionEnded(id, Date.now() - session.startedAt.getTime(), { patientId });
         await this.endSession(id);
       }
     }
     
     // Clear patient from active set
     this.activePatients.delete(patientId);
-    
     this.activePatients.add(patientId);
     
     const sessionId = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -67,7 +69,8 @@ export class OpenAIRealtimeService {
     };
     
     this.sessions.set(sessionId, session);
-    console.log(`🔴 Created realtime session ${sessionId} for patient ${patientName}`);
+    AudioLogger.sessionCreated(sessionId, patientName, { patientId, callId });
+    AudioLogger.performance('createRealtimeSession', Date.now() - startTime, { sessionId, patientId });
     
     return sessionId;
   }
@@ -89,7 +92,7 @@ export class OpenAIRealtimeService {
     session.openaiWs = openaiWs;
     
     openaiWs.on('open', () => {
-      console.log(`🔴 OpenAI Realtime connected for session ${sessionId}`);
+      AudioLogger.gpt4oConnection('connected', { sessionId });
       
       // Configure the session with custom or default healthcare-specific instructions
       const instructions = session.customSystemPrompt || `You are a compassionate healthcare AI assistant conducting a post-discharge follow-up call for ${session.patientName}. 
@@ -164,7 +167,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
     openaiWs.on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(`📨 OpenAI message for ${sessionId}:`, message.type);
+        AudioLogger.gpt4oMessage(message.type, 'in', message, { sessionId });
         this.handleOpenAIMessage(sessionId, message);
       } catch (error) {
         console.error(`❌ Error parsing OpenAI message for session ${sessionId}:`, error);
