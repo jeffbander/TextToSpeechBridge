@@ -1,0 +1,30 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749521299722_dzae7pfk0
+Patient: Jeff Bander (ID: 7)
+Call ID: 87
+Duration: 45 seconds
+Date: 2025-06-10T02:08:19.722Z
+Total Exchanges: 5
+
+─────────────────────────────────────────────────────────
+
+[2:08:29 AM] AI: העלא, דאָס איז ציפּּאָראַ פֿון ד"ר בענ
+
+
+[2:08:29 AM] PATIENT: Hello?
+
+
+
+[2:08:30 AM] AI: דערס אָפיס. איך האָב געוואָלט אָפּפרעגן ווי עס גייט אייך. האָט איר געמעקט עפּעס נײַע סימפּטאָמען, אָדער האָט איר פֿראַגעס וועגן אײַער באַהאַנדלונג?
+
+
+[2:08:47 AM] PATIENT: I'm sorry, do you speak Spanish?
+
+
+
+[2:08:47 AM] AI: Yes, I can speak Spanish. How can I help you today?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
