@@ -5,12 +5,12 @@ import { AudioLogger } from '../utils/logger';
 export class TwilioWebSocketHandler {
   
   handleTwilioWebSocket(ws: WebSocket, sessionId: string) {
-    console.log(`[TWILIO-WS] New Twilio WebSocket connection for session: ${sessionId}`);
+    AudioLogger.wsConnection('open', 'twilio', { sessionId });
     
     // Get the active GPT-4o session
     const session = openaiRealtimeService.getActiveSession(sessionId);
     if (!session) {
-      console.error(`[TWILIO-WS] No active session found for: ${sessionId}`);
+      AudioLogger.sessionError('No active session found', 'handleTwilioWebSocket', { sessionId });
       ws.close(1000, 'Session not found');
       return;
     }
@@ -34,7 +34,12 @@ export class TwilioWebSocketHandler {
             break;
             
           case 'media':
-            // Forward Twilio audio to GPT-4o
+            // Forward Twilio audio to GPT-4o with enhanced logging
+            const audioSize = message.media?.payload ? Buffer.from(message.media.payload, 'base64').length : 0;
+            AudioLogger.audioReceived(audioSize, 'g711_ulaw', { 
+              sessionId, 
+              audioChunk: message.media?.chunk 
+            });
             this.forwardAudioToGPT4o(sessionId, message.media);
             break;
             

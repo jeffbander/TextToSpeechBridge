@@ -170,7 +170,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         AudioLogger.gpt4oMessage(message.type, 'in', message, { sessionId });
         this.handleOpenAIMessage(sessionId, message);
       } catch (error) {
-        console.error(`❌ Error parsing OpenAI message for session ${sessionId}:`, error);
+        AudioLogger.gpt4oError(error, 'message_parsing', { sessionId });
       }
     });
     
