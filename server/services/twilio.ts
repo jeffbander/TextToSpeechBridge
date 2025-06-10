@@ -100,10 +100,12 @@ export class TwilioService {
   }
 
   generateTwiML(message: string, shouldRecord: boolean = true, voiceConfig?: VoiceConfig, callId?: number): string {
-    // Use the correct Replit domain for speech processing webhook
+    // Use dynamic domain detection for webhooks
     const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
       `https://${process.env.REPLIT_DEV_DOMAIN}` : 
-      'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
+      process.env.REPL_SLUG ? 
+        `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` :
+        'https://localhost:5000';
     
     const recordingUrl = `${baseUrl}/api/calls/recording`;
     
@@ -133,7 +135,9 @@ export class TwilioService {
   generateConversationalTwiML(message: string, callId: number, shouldContinue: boolean = true): string {
     const baseUrl = process.env.REPLIT_DEV_DOMAIN ? 
       `https://${process.env.REPLIT_DEV_DOMAIN}` : 
-      'https://fe1cf261-06d9-4ef6-9ad5-17777e1affd0-00-2u5ajlr2fy6bm.riker.replit.dev';
+      process.env.REPL_SLUG ? 
+        `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` :
+        'https://localhost:5000';
     
     const voice = 'Polly.Joanna-Neural';
     
