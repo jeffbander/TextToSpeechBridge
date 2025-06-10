@@ -184,7 +184,7 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
           const responseCreate = {
             type: 'response.create',
             response: {
-              modalities: ['audio'],
+              modalities: ['audio', 'text'],
               instructions: 'Greet the patient warmly and introduce yourself as Tziporah from Dr. Bander\'s office calling for a follow-up.'
             }
           };
@@ -252,6 +252,17 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         
       case 'input_audio_buffer.speech_stopped':
         console.log(`🛑 Speech stopped detected for ${sessionId}`);
+        // Automatically create response when patient stops speaking
+        if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+          const responseCreate = {
+            type: 'response.create',
+            response: {
+              modalities: ['audio', 'text']
+            }
+          };
+          session.openaiWs.send(JSON.stringify(responseCreate));
+          console.log(`🎤 Auto-response triggered for patient speech in ${sessionId}`);
+        }
         break;
         
       case 'response.created':
