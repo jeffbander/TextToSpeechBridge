@@ -1,0 +1,20 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749564414278_474vj2iox
+Patient: Joel landau (ID: 15)
+Call ID: 113
+Duration: 276 seconds
+Date: 2025-06-10T14:06:54.278Z
+Total Exchanges: 2
+
+─────────────────────────────────────────────────────────
+
+[2:07:13 PM] AI: איך בין דאָ צו העלפֿן! וואָס קען איך אייך העלפֿן מיט?
+
+
+[2:07:14 PM] PATIENT: Yes sir. Yes sir. Yes sir. Yes sir. Yes sir.
+
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
