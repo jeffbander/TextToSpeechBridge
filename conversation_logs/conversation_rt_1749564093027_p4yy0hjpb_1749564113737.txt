@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749564093027_p4yy0hjpb
+Patient: Joel landau (ID: 15)
+Call ID: 110
+Duration: 20 seconds
+Date: 2025-06-10T14:01:33.027Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation
