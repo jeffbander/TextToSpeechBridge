@@ -7,8 +7,8 @@ Complete working implementation of GPT-4o real-time audio with Twilio integratio
 
 ### OpenAI Model Configuration
 ```javascript
-// CRITICAL: Use this exact model version (Updated to GPT-4o Mini)
-model: 'gpt-4o-mini-realtime-preview-2025-06-03'
+// CRITICAL: Use this exact model version (WORKING - DO NOT CHANGE)
+model: 'gpt-4o-realtime-preview-2024-10-01'
 
 // Voice Activity Detection (VAD) Settings
 turn_detection: {
