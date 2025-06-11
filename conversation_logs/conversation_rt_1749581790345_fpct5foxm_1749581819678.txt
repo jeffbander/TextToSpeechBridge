@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749581790345_fpct5foxm
+Patient: tziporah karr (ID: 11)
+Call ID: 120
+Duration: 29 seconds
+Date: 2025-06-10T18:56:30.345Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation

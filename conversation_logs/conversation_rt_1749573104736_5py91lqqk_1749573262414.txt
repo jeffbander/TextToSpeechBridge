@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749573104736_5py91lqqk
+Patient: Joel landau (ID: 15)
+Call ID: 115
+Duration: 157 seconds
+Date: 2025-06-10T16:31:44.736Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[4:32:27 PM] AI: איך קען נישט מפהסטען קולן פון אַודיאָ ביישפּיל. קען איך אייך העלפֿן מיט עפּעס אַנדערש?
+
+
+[4:32:30 PM] PATIENT: Your call has been forwarded to voicemail. The person you're trying to reach is not available. At the tone, please record your message. When you have finished recording, you may hang up.
+
+
+
+[4:32:31 PM] AI: איך קען נישט מפהסטען קולן פון אַודיאָ ביישפּיל. קען איך אייך העלפֿן מיט עפּעס אַנדערש?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

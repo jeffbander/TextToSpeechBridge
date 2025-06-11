@@ -1,0 +1,22 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749581983804_50f09w544
+Patient: Joel landau (ID: 15)
+Call ID: 122
+Duration: 155 seconds
+Date: 2025-06-10T18:59:43.804Z
+Total Exchanges: 2
+
+─────────────────────────────────────────────────────────
+
+[7:00:25 PM] PATIENT: Your call has been forwarded to voicemail. The person you're trying to reach is not available. At the tone, please record your message. When you have finished recording, you may hang up.
+
+
+
+[7:00:26 PM] AI: איך בין אַכּל אַרטיפֿיסיעלע אינטעליגענץ און איך קען נישט אָננעמען אָדער אָפּגעבן רופֿות. אויב איר דאַרפֿט העלפֿן, ביטע פּרוּוּוּט ווידער שפּעטער.
+
+(I'm an artificial intelligence and cannot take or make calls. If you need
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
