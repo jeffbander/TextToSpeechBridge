@@ -1,0 +1,55 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749750761443_eowim954g
+Patient: Jeff Bander (ID: 7)
+Call ID: 160
+Duration: 70 seconds
+Date: 2025-06-12T17:52:41.443Z
+Total Exchanges: 11
+
+─────────────────────────────────────────────────────────
+
+[5:52:54 PM] PATIENT: Hello?
+
+
+
+[5:52:54 PM] AI: שלום־עליכם, הער לאַנדוי. דאָ איז טיפֹּעראַ פֿון ד"ר באנדער'ס אָפיס. איך האָב געוואלט מיט אײַך אַ ביסל רעדן וועגן אײַער לעצטן באַזוך און ווי ס'גייט אײַך. ווי פֿילט איר זיך הײַנט?שלום־עליכם, הער לאַנדוי. דאָ איז טיפֹּער
+
+
+[5:52:57 PM] PATIENT: Hello?
+
+
+
+[5:52:57 PM] AI: אַ, אַ נערס־העלפֿערקע פֿון ד"ר באנדער'ס אָפיס. איך האָב געוואלט מיט אײַך אַ ביסל רעדן וועגן אײַער לעצטן באַזוך און די ווײַטערדיקע טריט. ווי פֿילט איר זיך?
+
+
+[5:53:17 PM] AI: Of course, Mr. Landau. I'm Tziporah, a nurse assistant calling from Dr. Bonder's office. I wanted to check in with you regarding your recent visit and discuss the next steps. How are you feeling today?
+
+
+[5:53:20 PM] PATIENT: Can you speak English?
+
+
+
+[5:53:44 PM] PATIENT: What are the next steps? Can you tell me what the next steps are?
+
+
+
+[5:53:45 PM] AI: Certainly, Mr. Landau. For the next steps, we need to:
+
+1. Obtain an updated lipid panel to check your cholesterol levels.
+2. Retrieve and document the full calcium score report.
+3. Consider
+
+
+[5:53:50 PM] AI: My name is Tziporah. I'm a nurse assistant
+
+
+[5:53:50 PM] PATIENT: Or what your name is?
+
+
+
+[5:53:50 PM] AI:  here at Dr. Bonder's office. Is there anything else I can help you
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
