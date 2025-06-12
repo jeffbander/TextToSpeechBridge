@@ -24,8 +24,8 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   if (!realtimeWss) {
     realtimeWss = new WebSocketServer({ 
       noServer: true,
-      maxPayload: 1024 * 1024, // 1MB limit
-      perMessageDeflate: false // Disable compression to reduce CPU usage
+      // NO limits on GPT-4o voice connections - they need full bandwidth
+      perMessageDeflate: false // Disable compression to reduce CPU usage for voice
     });
     
     // Store original upgrade handler if it exists

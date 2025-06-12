@@ -59,8 +59,8 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "returnNull" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 60000, // Increased from 30s to reduce requests
-      gcTime: 300000, // 5 minutes - aggressive garbage collection
+      staleTime: 120000, // 2 minutes to reduce database hits
+      gcTime: 600000, // 10 minutes - longer cache retention
       retry: (failureCount, error: any) => {
         if (error?.message?.includes('4') && !error?.message?.includes('408') && !error?.message?.includes('429')) {
           return false;

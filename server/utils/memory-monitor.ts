@@ -62,7 +62,7 @@ export class MemoryMonitor {
     const maxIdle = 10 * 60 * 1000; // 10 minutes
 
     let cleaned = 0;
-    for (const [id, data] of this.connections.entries()) {
+    this.connections.forEach((data, id) => {
       const age = now - data.createdAt;
       const idle = now - data.lastActivity;
 

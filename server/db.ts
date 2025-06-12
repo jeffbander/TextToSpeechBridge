@@ -13,9 +13,10 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 5, // Reduced from default 10 to prevent connection exhaustion
-  idleTimeoutMillis: 30000, // Close idle connections after 30s
-  connectionTimeoutMillis: 10000, // Timeout new connections after 10s
+  max: 3, // Conservative limit for Neon serverless
+  idleTimeoutMillis: 20000, // Aggressive cleanup of idle connections
+  connectionTimeoutMillis: 5000, // Fast timeout to prevent hanging
+  allowExitOnIdle: true, // Allow pool to close when no connections needed
 });
 
 export const db = drizzle({ client: pool, schema });
