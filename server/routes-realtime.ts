@@ -7,13 +7,26 @@ import { storage } from "./storage";
 import url from 'url';
 
 let realtimeWss: WebSocketServer | null = null;
+const activeConnections = new Set<WebSocket>();
+
+// Cleanup function to prevent memory leaks
+function cleanupConnection(ws: WebSocket) {
+  activeConnections.delete(ws);
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.close();
+  }
+}
 
 export function registerRealtimeRoutes(app: Express, httpServer: Server) {
   console.log("[REALTIME] Initializing GPT-4o real-time routes");
   
   // Use WebSocket server with noServer mode and manual upgrade handling
   if (!realtimeWss) {
-    realtimeWss = new WebSocketServer({ noServer: true });
+    realtimeWss = new WebSocketServer({ 
+      noServer: true,
+      maxPayload: 1024 * 1024, // 1MB limit
+      perMessageDeflate: false // Disable compression to reduce CPU usage
+    });
     
     // Store original upgrade handler if it exists
     const originalUpgrade = httpServer.listeners('upgrade');

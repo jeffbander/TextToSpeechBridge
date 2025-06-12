@@ -22,16 +22,18 @@ interface ActiveCall {
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
-    refetchInterval: 30000,
-    retry: 3,
-    staleTime: 30000,
+    refetchInterval: 60000, // Reduced from 30s to 60s
+    retry: 2,
+    staleTime: 60000,
+    gcTime: 300000, // Cache for 5 minutes
   });
 
   const { data: activeCalls = [], isLoading: activeCallsLoading, error: callsError } = useQuery<ActiveCall[]>({
     queryKey: ['/api/calls/active'],
-    refetchInterval: 10000,
-    retry: 3,
-    staleTime: 10000,
+    refetchInterval: 30000, // Reduced from 10s to 30s
+    retry: 2,
+    staleTime: 30000,
+    gcTime: 300000,
   });
 
   if (statsLoading) {

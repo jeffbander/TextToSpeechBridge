@@ -59,28 +59,27 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "returnNull" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 30000,
+      staleTime: 60000, // Increased from 30s to reduce requests
+      gcTime: 300000, // 5 minutes - aggressive garbage collection
       retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors except 408, 429
         if (error?.message?.includes('4') && !error?.message?.includes('408') && !error?.message?.includes('429')) {
           return false;
         }
-        // Retry up to 3 times with exponential backoff
-        return failureCount < 3;
+        return failureCount < 2; // Reduced from 3 to 2
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 10000), // Faster initial retry
       throwOnError: false,
     },
     mutations: {
       retry: (failureCount, error: any) => {
-        // Don't retry mutations on 4xx errors
         if (error?.message?.includes('4')) {
           return false;
         }
-        return failureCount < 2;
+        return failureCount < 1; // Only retry once
       },
-      retryDelay: 1000,
+      retryDelay: 2000,
       throwOnError: false,
+      gcTime: 60000, // Clear mutation cache quickly
     },
   },
 });
