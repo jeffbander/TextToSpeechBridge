@@ -39,8 +39,10 @@ export default function Patients() {
   const [callType, setCallType] = useState<"initial" | "followUp" | "urgent">("initial");
   const { toast } = useToast();
 
-  const { data: patients = [], isLoading } = useQuery<any[]>({
+  const { data: patients = [], isLoading, error: patientsError } = useQuery<any[]>({
     queryKey: ['/api/patients'],
+    retry: 3,
+    staleTime: 30000,
   });
 
   const form = useForm<FormData>({
@@ -175,6 +177,29 @@ export default function Patients() {
       });
     }
   };
+
+  // Error handling for failed data fetches
+  if (patientsError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-semibold mb-2">Failed to Load Patients</h2>
+              <p className="text-muted-foreground mb-4">
+                Unable to connect to the patient database. Please check your connection and try again.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -60,11 +60,26 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: 30000,
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // Don't retry on 4xx errors except 408, 429
+        if (error?.message?.includes('4') && !error?.message?.includes('408') && !error?.message?.includes('429')) {
+          return false;
+        }
+        // Retry up to 3 times with exponential backoff
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       throwOnError: false,
     },
     mutations: {
-      retry: false,
+      retry: (failureCount, error: any) => {
+        // Don't retry mutations on 4xx errors
+        if (error?.message?.includes('4')) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+      retryDelay: 1000,
       throwOnError: false,
     },
   },

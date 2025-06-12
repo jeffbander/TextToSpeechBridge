@@ -401,8 +401,8 @@ export default function AutomatedCallsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {automatedCalls.map((call) => {
-                  const patient = patients.find(p => p.id === call.patientId);
+                {automatedCalls?.map((call) => {
+                  const patient = patients?.find(p => p.id === call.patientId);
                   return (
                     <div key={call.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">

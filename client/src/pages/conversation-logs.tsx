@@ -26,13 +26,16 @@ interface ConversationContent {
 export default function ConversationLogs() {
   const [selectedLog, setSelectedLog] = useState<string | null>(null);
 
-  const { data: logs = [], isLoading } = useQuery<ConversationLog[]>({
+  const { data: logs = [], isLoading, error: logsError } = useQuery<ConversationLog[]>({
     queryKey: ['/api/conversation-logs'],
+    retry: 3,
+    staleTime: 30000,
   });
 
   const { data: logContent, isLoading: isLoadingContent, error: contentError } = useQuery<ConversationContent>({
     queryKey: [`/api/conversation-logs/${selectedLog}`],
     enabled: !!selectedLog,
+    retry: 2,
   });
 
   const downloadLog = (filename: string) => {
@@ -55,12 +58,39 @@ export default function ConversationLogs() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
-          <p className="text-muted-foreground">Healthcare conversation transcripts and recordings</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Navigation />
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
+              <p className="text-muted-foreground">Healthcare conversation transcripts and recordings</p>
+            </div>
+            <div className="text-center py-8">Loading conversation logs...</div>
+          </div>
         </div>
-        <div className="text-center py-8">Loading conversation logs...</div>
+      </div>
+    );
+  }
+
+  if (logsError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Navigation />
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-semibold mb-2">Failed to Load Logs</h2>
+              <p className="text-muted-foreground mb-4">
+                Unable to load conversation logs. Please check your connection and try again.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
