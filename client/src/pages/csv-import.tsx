@@ -44,6 +44,24 @@ interface CampaignStats {
   scheduled_retry: number;
 }
 
+function CampaignStatusBadge({ status }: { status: string }) {
+  const statusConfig = {
+    active: { variant: "default" as const, icon: Play, label: "Active" },
+    paused: { variant: "secondary" as const, icon: Pause, label: "Paused" },
+    completed: { variant: "outline" as const, icon: CheckCircle, label: "Completed" },
+  };
+
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.paused;
+  const Icon = config.icon;
+
+  return (
+    <Badge variant={config.variant} className="flex items-center gap-1">
+      <Icon className="w-3 h-3" />
+      {config.label}
+    </Badge>
+  );
+}
+
 export default function CsvImportPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [campaignName, setCampaignName] = useState("");
@@ -178,23 +196,7 @@ export default function CsvImportPage() {
     });
   };
 
-  function StatusBadge({ status }: { status: string }) {
-    const statusConfig = {
-      active: { variant: "default" as const, icon: Play, label: "Active" },
-      paused: { variant: "secondary" as const, icon: Pause, label: "Paused" },
-      completed: { variant: "outline" as const, icon: CheckCircle, label: "Completed" },
-    };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.paused;
-    const Icon = config.icon;
-
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        <Icon className="w-3 h-3" />
-        {config.label}
-      </Badge>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -391,7 +393,7 @@ function CampaignCard({
           <div>
             <CardTitle className="flex items-center gap-2">
               {campaign.name}
-              <StatusBadge status={campaign.status} />
+              <CampaignStatusBadge status={campaign.status} />
             </CardTitle>
             <CardDescription className="mt-1">
               {campaign.description || `Created on ${new Date(campaign.createdAt).toLocaleDateString()}`}
