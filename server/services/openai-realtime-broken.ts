@@ -161,36 +161,37 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       // Session ready - for custom prompts, let them handle greeting naturally
       console.log(`🎬 Session ready`);
       
-      // Only send initial greeting if no custom prompt exists
-      if (!session.customSystemPrompt) {
-        console.log(`🎤 No custom prompt - sending initial greeting trigger`);
+      // Send initial greeting for all patients to start conversation
+      console.log(`🎤 Sending initial greeting to trigger AI response`);
+      
+      const greetingMessage = {
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{
+            type: 'input_text',
+            text: 'Hello, please begin the call.'
+          }]
+        }
+      };
+      
+      openaiWs.send(JSON.stringify(greetingMessage));
+      
+      // Create response with appropriate instructions
+      const instructions = session.customSystemPrompt 
+        ? 'Begin the call following your system instructions.'
+        : 'Please greet the patient warmly and begin the follow-up conversation.';
         
-        const greetingMessage = {
-          type: 'conversation.item.create',
-          item: {
-            type: 'message',
-            role: 'user',
-            content: [{
-              type: 'input_text',
-              text: 'Hello, this is your follow-up call. Please start the conversation.'
-            }]
-          }
-        };
-        
-        openaiWs.send(JSON.stringify(greetingMessage));
-        
-        const responseCreate = {
-          type: 'response.create',
-          response: {
-            modalities: ['audio', 'text'],
-            instructions: 'Please greet the patient warmly and begin the follow-up conversation.'
-          }
-        };
-        
-        openaiWs.send(JSON.stringify(responseCreate));
-      } else {
-        console.log(`🎤 Custom prompt detected - waiting for patient to speak first`);
-      }
+      const responseCreate = {
+        type: 'response.create',
+        response: {
+          modalities: ['audio', 'text'],
+          instructions
+        }
+      };
+      
+      openaiWs.send(JSON.stringify(responseCreate));
       
       session.isActive = true;
     });
