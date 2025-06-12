@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749689484715_eal5mbusl
+Patient: Rabbi Skydell (ID: 8)
+Call ID: 154
+Duration: 140 seconds
+Date: 2025-06-12T00:51:24.715Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[12:51:45 AM] AI: Hello Rabbi Skydell, this is your healthcare team calling to check on your well-being.
+
+
+[12:51:46 AM] PATIENT: Dan Scheidel.
+
+
+
+[12:51:46 AM] AI:  How are you feeling today?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

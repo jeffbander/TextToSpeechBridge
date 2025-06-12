@@ -1,0 +1,33 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749645731994_v5ggmmi15
+Patient: Jeff Bander (ID: 7)
+Call ID: 132
+Duration: 22 seconds
+Date: 2025-06-11T12:42:11.994Z
+Total Exchanges: 6
+
+─────────────────────────────────────────────────────────
+
+[12:42:23 PM] AI: שלום־עליכם, הער לאַנדוי, דאָס איז
+
+
+[12:42:26 PM] PATIENT: Thank you. Thank you. 
+
+
+
+[12:42:27 PM] AI: שלום־עליכם, הער לאַנדוי. דאָס איז טיפֿעראַ, אַ נערס־העלפֿערקע פֿון ד"ר דזשעפֿרי באנדער'ס אָפיס. איך האָף איר פֿילט זיך גוט הײַנט. איך רופ צו צו מאַכן אַ נאָכפֿאָלגן שמוע
+
+
+[12:42:30 PM] AI: ס וועגן דער פּראָגראַם פֿאַר וואָג־פֿאַרשלום־עליכם, הער לאַנדוי.
+
+
+[12:42:33 PM] PATIENT: I'm sure they gave you a choice for trials, it's not really ours, and that sort of thing, but... Aleichem shalom.
+
+
+
+[12:42:33 PM] AI:  איך האָף איר זענט אין אָרדענונג. איך זע
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749688158179_d7f7tjl4g
+Patient: Judith  Goldfinger  (ID: 20)
+Call ID: 145
+Duration: 18 seconds
+Date: 2025-06-12T00:29:18.179Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation

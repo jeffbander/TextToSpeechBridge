@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import ErrorBoundary from "@/components/error-boundary";
 import Dashboard from "@/pages/dashboard";
 import VoiceSettings from "@/pages/voice-settings";
 import CustomPrompts from "@/pages/patient-prompts-manager";

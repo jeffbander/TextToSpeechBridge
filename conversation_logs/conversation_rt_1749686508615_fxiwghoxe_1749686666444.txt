@@ -1,0 +1,20 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749686508615_fxiwghoxe
+Patient: Judith  Goldfinger  (ID: 20)
+Call ID: 136
+Duration: 157 seconds
+Date: 2025-06-12T00:01:48.615Z
+Total Exchanges: 2
+
+─────────────────────────────────────────────────────────
+
+[12:02:26 AM] AI: Hello Judith Goldfinger, this is your healthcare team calling to check on your well-being. We hope you're doing well. Please give us a call back at your earliest convenience. Take care!
+
+
+[12:02:28 AM] PATIENT: Hi, it's Judy Goldfinger. Leave me a message.
+
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

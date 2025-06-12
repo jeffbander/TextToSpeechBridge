@@ -44,12 +44,16 @@ export default function AutomatedCallsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: patients = [], isLoading: patientsLoading } = useQuery<Patient[]>({
+  const { data: patients = [], isLoading: patientsLoading, error: patientsError } = useQuery<Patient[]>({
     queryKey: ['/api/patients'],
+    retry: 3,
+    staleTime: 30000,
   });
 
-  const { data: automatedCalls = [], isLoading: callsLoading } = useQuery<AutomatedCall[]>({
+  const { data: automatedCalls = [], isLoading: callsLoading, error: callsError } = useQuery<AutomatedCall[]>({
     queryKey: ['/api/twilio/automated-calls'],
+    retry: 3,
+    staleTime: 30000,
   });
 
   const startCallMutation = useMutation({
@@ -183,7 +187,30 @@ export default function AutomatedCallsPage() {
     }
   };
 
-  const selectedPatient = patients.find(p => p.id === selectedPatientId);
+  const selectedPatient = patients?.find(p => p.id === selectedPatientId);
+
+  // Error handling for failed data fetches
+  if (patientsError || callsError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-semibold mb-2">Connection Error</h2>
+              <p className="text-muted-foreground mb-4">
+                Unable to load patient data. Please check your connection and try again.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

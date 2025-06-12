@@ -1,0 +1,44 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749688378201_5v5kq4nml
+Patient: jacob bander (ID: 18)
+Call ID: 148
+Duration: 136 seconds
+Date: 2025-06-12T00:32:58.201Z
+Total Exchanges: 9
+
+─────────────────────────────────────────────────────────
+
+[12:34:03 AM] AI: Hello Jacob Bander, this is your healthcare team calling to check on your well-being. We wanted to follow up after your recent visit and see how you're feeling today. Please give us a call back at your earliest convenience.
+
+
+[12:34:05 AM] PATIENT: At the tone, please record your message. When you've finished recording, you may hang up or press 1 for more options.
+
+
+
+[12:34:05 AM] AI:  Take care!
+
+
+[12:34:36 AM] AI: 1
+
+
+[12:34:37 AM] PATIENT: If you're satisfied with the message, press 1. To listen to your message, press 2. To erase and re-record, press 3. To continue recording where you left off, press 4.
+
+
+
+[12:34:52 AM] PATIENT: If you're satisfied with the message, press 1. To listen to your message, press 2. To erase and re-record, press 3. To continue recording where you left off, press 4.
+
+
+
+[12:34:52 AM] AI: 1
+
+
+[12:35:09 AM] AI: 1
+
+
+[12:35:09 AM] PATIENT: If you're satisfied with the message, press 1. To listen to your message, press 2. To erase and re-record, press 3. To continue recording where you left off, press 4.
+
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749615495516_djsnhkmuo
+Patient: jacob bander (ID: 18)
+Call ID: 129
+Duration: 45 seconds
+Date: 2025-06-11T04:18:15.517Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation

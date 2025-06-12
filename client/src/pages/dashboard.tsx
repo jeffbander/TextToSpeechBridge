@@ -20,20 +20,49 @@ interface ActiveCall {
 }
 
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
     refetchInterval: 30000,
+    retry: 3,
+    staleTime: 30000,
   });
 
-  const { data: activeCalls = [], isLoading: activeCallsLoading } = useQuery<ActiveCall[]>({
+  const { data: activeCalls = [], isLoading: activeCallsLoading, error: callsError } = useQuery<ActiveCall[]>({
     queryKey: ['/api/calls/active'],
     refetchInterval: 10000,
+    retry: 3,
+    staleTime: 10000,
   });
 
   if (statsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
         <div className="text-center">Loading CardioCare AI Dashboard...</div>
+      </div>
+    );
+  }
+
+  if (statsError || callsError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Navigation />
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <Bell className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-semibold mb-2">Dashboard Connection Error</h2>
+              <p className="text-muted-foreground mb-4">
+                Unable to load dashboard data. Please check your connection and try again.
+              </p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Retry
+              </button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

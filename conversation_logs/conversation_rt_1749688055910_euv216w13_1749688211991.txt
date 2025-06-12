@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749688055910_euv216w13
+Patient: Joel landau (ID: 15)
+Call ID: 144
+Duration: 156 seconds
+Date: 2025-06-12T00:27:35.910Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[12:28:18 AM] AI: שלום־עליכ
+
+
+[12:28:18 AM] PATIENT: Your call has been forwarded to voicemail. The person you're trying to reach is not available. At the tone, please record your message. When you have finished recording, you may hang up.
+
+
+
+[12:28:18 AM] AI: ם, הער לאַנדוי, דאָ רעדט טיפֹּעראַ פֿון ד"ר באנדער'ס אָפיס. איך האָב געוואָלט מיט אייך דורכגיין אַ פּאָר זאַכן וועגן אייער וואָגל־פֿאַרוואַלטונג פּראָגראַם. ביטע רופט צוריק ווען איר האָט אַ געלעגנהייט.
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
