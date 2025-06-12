@@ -323,12 +323,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPatients(): Promise<Patient[]> {
-    return await db.select().from(patients);
+    try {
+      return await db.select().from(patients);
+    } catch (error) {
+      console.error('Database error fetching patients:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
   }
 
   async getPatient(id: number): Promise<Patient | undefined> {
-    const [patient] = await db.select().from(patients).where(eq(patients.id, id));
-    return patient || undefined;
+    try {
+      const [patient] = await db.select().from(patients).where(eq(patients.id, id));
+      return patient || undefined;
+    } catch (error) {
+      console.error('Database error fetching patient:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
   }
 
   async createPatient(insertPatient: InsertPatient): Promise<Patient> {
@@ -349,12 +359,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCalls(): Promise<Call[]> {
-    return await db.select().from(calls);
+    try {
+      return await db.select().from(calls);
+    } catch (error) {
+      console.error('Database error fetching calls:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
   }
 
   async getCall(id: number): Promise<Call | undefined> {
-    const [call] = await db.select().from(calls).where(eq(calls.id, id));
-    return call || undefined;
+    try {
+      const [call] = await db.select().from(calls).where(eq(calls.id, id));
+      return call || undefined;
+    } catch (error) {
+      console.error('Database error fetching call:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
   }
 
   async getActiveCallsByPatientId(patientId: number): Promise<Call[]> {

@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import Navigation from '@/components/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { safeFind, isEmpty } from '@/lib/safe-arrays';
 import type { Patient } from '@/../../shared/schema';
 
 interface AutomatedCall {
@@ -187,7 +188,7 @@ export default function AutomatedCallsPage() {
     }
   };
 
-  const selectedPatient = patients?.find(p => p.id === selectedPatientId);
+  const selectedPatient = safeFind(patients, p => p.id === selectedPatientId);
 
   // Error handling for failed data fetches
   if (patientsError || callsError) {
@@ -393,7 +394,7 @@ export default function AutomatedCallsPage() {
           <CardContent>
             {callsLoading ? (
               <div className="text-center py-8">Loading call history...</div>
-            ) : automatedCalls.length === 0 ? (
+            ) : isEmpty(automatedCalls) ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Phone className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No automated calls found</p>
@@ -402,7 +403,7 @@ export default function AutomatedCallsPage() {
             ) : (
               <div className="space-y-4">
                 {automatedCalls?.map((call) => {
-                  const patient = patients?.find(p => p.id === call.patientId);
+                  const patient = safeFind(patients, p => p.id === call.patientId);
                   return (
                     <div key={call.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">
