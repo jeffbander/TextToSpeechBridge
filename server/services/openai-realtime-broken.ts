@@ -158,8 +158,35 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         console.log(`🔴 Using default system prompt for ${session.patientName}`);
       }
       
-      // Session ready - wait for patient to speak first
-      console.log(`🎬 Session ready - waiting for patient speech to trigger response`);
+      // Session ready - send initial greeting to start conversation
+      console.log(`🎬 Session ready - sending initial greeting`);
+      
+      // Send conversation item to trigger AI greeting
+      const greetingMessage = {
+        type: 'conversation.item.create',
+        item: {
+          type: 'message',
+          role: 'user',
+          content: [{
+            type: 'input_text',
+            text: 'Hello, this is your follow-up call. Please start the conversation.'
+          }]
+        }
+      };
+      
+      openaiWs.send(JSON.stringify(greetingMessage));
+      
+      // Trigger response generation
+      const responseCreate = {
+        type: 'response.create',
+        response: {
+          modalities: ['audio', 'text'],
+          instructions: 'Please greet the patient warmly and begin the follow-up conversation.'
+        }
+      };
+      
+      openaiWs.send(JSON.stringify(responseCreate));
+      console.log(`🎤 Initial greeting sent to trigger AI response`);
       
       session.isActive = true;
     });
