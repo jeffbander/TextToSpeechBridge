@@ -1,6 +1,6 @@
 import { Express, Request, Response } from "express";
 import multer from "multer";
-import { CsvImportService } from "./services/csv-import";
+import { SimpleCsvImportService } from "./services/simple-csv-import";
 import { storage } from "./storage";
 import { callScheduler } from "./services/call-scheduler";
 import { z } from "zod";
@@ -11,7 +11,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-const csvImportService = new CsvImportService(storage as any);
+const csvImportService = new SimpleCsvImportService(storage as any);
 
 export function registerCsvImportRoutes(app: Express) {
   
