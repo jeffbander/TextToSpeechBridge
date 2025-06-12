@@ -141,4 +141,20 @@ export function registerCsvImportRoutes(app: Express) {
       res.status(500).json({ error: "Failed to fetch campaign statistics" });
     }
   });
+
+  // Twilio status callback for call scheduler
+  app.post("/twilio-status-callback", async (req: Request, res: Response) => {
+    try {
+      const { CallSid, CallStatus, CallDuration } = req.body;
+      
+      console.log(`[TWILIO-CALLBACK] CallSid: ${CallSid}, Status: ${CallStatus}, Duration: ${CallDuration}`);
+      
+      await callScheduler.handleTwilioCallback(CallSid, CallStatus, CallDuration);
+      
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('Error handling Twilio callback:', error);
+      res.status(500).send('Error');
+    }
+  });
 }

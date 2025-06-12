@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { callScheduler } from "./services/call-scheduler";
 import { setupVite, serveStatic, log } from "./vite";
 import { memoryMonitor } from "./utils/memory-monitor";
 
