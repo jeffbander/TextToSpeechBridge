@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1749742705889_gxdiwa4x7
+Patient: Jeff Bander (ID: 7)
+Call ID: 159
+Duration: 48 seconds
+Date: 2025-06-12T15:38:25.889Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[3:38:38 PM] AI: שלום־עליכם, הער לאַנדאַו. דאָ איז טיפֹּּעראַ, איך רוף פֿון ד"ר באנדער'ס אָפיס. איך האָף איר פֿילט זיך געזונט הײַנט.
+
+
+[3:38:39 PM] PATIENT: The name's on there. What if it's hard to get back? Hello?
+
+
+
+[3:38:39 PM] AI:  איך וואָלט געוואָלט מיט אײַך אַבֿיסן שמועסן וועגן אײַער לעצטן וויזיט
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

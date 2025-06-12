@@ -210,9 +210,24 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
       session.isActive = false;
     });
     
-    openaiWs.on('close', () => {
-      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId}`);
+    openaiWs.on('close', (code, reason) => {
+      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId} - Code: ${code}, Reason: ${reason}`);
+      
+      // Don't automatically end session on certain close codes
+      if (code !== 1000 && code !== 1005) {
+        console.error(`❌ Unexpected WebSocket closure - Code: ${code}`);
+      }
+      
+      // Only mark as inactive, don't force end the session
       session.isActive = false;
+      
+      // Try to keep the Twilio session alive even if OpenAI disconnects
+      if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
+        console.log(`🔄 Keeping Twilio session alive despite OpenAI disconnection`);
+      } else {
+        console.log(`🛑 Ending session ${sessionId} due to unexpected WebSocket closure`);
+        this.endSession(sessionId);
+      }
     });
     
     return openaiWs;
@@ -378,6 +393,24 @@ Patient context: This is a routine post-discharge follow-up call to ensure prope
         
       case 'error':
         console.error(`❌ OpenAI error for session ${sessionId}:`, message.error);
+        
+        // Handle specific error types
+        if (message.error?.type === 'invalid_request_error') {
+          console.error(`❌ Invalid request - check session configuration`);
+        } else if (message.error?.type === 'server_error') {
+          console.error(`❌ OpenAI server error - temporary issue`);
+        }
+        
+        // Keep session alive for error recovery
+        session.isActive = true;
+        break;
+        
+      case 'session.created':
+        console.log(`✅ OpenAI session created successfully for ${sessionId}`);
+        break;
+        
+      case 'session.updated':
+        console.log(`✅ OpenAI session updated successfully for ${sessionId}`);
         break;
     }
   }
