@@ -3,6 +3,8 @@ import {
   calls, 
   scheduledCalls, 
   alerts,
+  callCampaigns,
+  callAttempts,
   type Patient, 
   type InsertPatient,
   type Call,
@@ -10,7 +12,11 @@ import {
   type ScheduledCall,
   type InsertScheduledCall,
   type Alert,
-  type InsertAlert
+  type InsertAlert,
+  type CallCampaign,
+  type InsertCallCampaign,
+  type CallAttempt,
+  type InsertCallAttempt
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -41,6 +47,19 @@ export interface IStorage {
   getUnresolvedAlerts(): Promise<Alert[]>;
   createAlert(alert: InsertAlert): Promise<Alert>;
   updateAlert(id: number, updates: Partial<Alert>): Promise<Alert | undefined>;
+  
+  // Call Campaigns
+  getCallCampaigns(): Promise<CallCampaign[]>;
+  getCallCampaign(id: number): Promise<CallCampaign | undefined>;
+  createCallCampaign(campaign: InsertCallCampaign): Promise<CallCampaign>;
+  updateCallCampaign(id: number, updates: Partial<CallCampaign>): Promise<CallCampaign | undefined>;
+  
+  // Call Attempts
+  getCallAttempts(): Promise<CallAttempt[]>;
+  getCallAttemptsByCampaign(campaignId: number): Promise<CallAttempt[]>;
+  getPendingCallAttempts(): Promise<CallAttempt[]>;
+  createCallAttempt(attempt: InsertCallAttempt): Promise<CallAttempt>;
+  updateCallAttempt(id: number, updates: Partial<CallAttempt>): Promise<CallAttempt | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -48,6 +67,8 @@ export class MemStorage implements IStorage {
   private calls: Map<number, Call>;
   private scheduledCalls: Map<number, ScheduledCall>;
   private alerts: Map<number, Alert>;
+  private callCampaigns: Map<number, CallCampaign>;
+  private callAttempts: Map<number, CallAttempt>;
   private currentPatientId: number;
   private currentCallId: number;
   private currentScheduledCallId: number;
@@ -452,6 +473,88 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.id, id))
       .returning();
     return alert || undefined;
+  }
+
+  // Call Campaigns
+  async getCallCampaigns(): Promise<CallCampaign[]> {
+    try {
+      return await db.select().from(callCampaigns);
+    } catch (error) {
+      console.error('Database error fetching call campaigns:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async getCallCampaign(id: number): Promise<CallCampaign | undefined> {
+    try {
+      const [campaign] = await db.select().from(callCampaigns).where(eq(callCampaigns.id, id));
+      return campaign || undefined;
+    } catch (error) {
+      console.error('Database error fetching call campaign:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async createCallCampaign(insertCampaign: InsertCallCampaign): Promise<CallCampaign> {
+    const [campaign] = await db
+      .insert(callCampaigns)
+      .values(insertCampaign)
+      .returning();
+    return campaign;
+  }
+
+  async updateCallCampaign(id: number, updates: Partial<CallCampaign>): Promise<CallCampaign | undefined> {
+    const [campaign] = await db
+      .update(callCampaigns)
+      .set(updates)
+      .where(eq(callCampaigns.id, id))
+      .returning();
+    return campaign || undefined;
+  }
+
+  // Call Attempts
+  async getCallAttempts(): Promise<CallAttempt[]> {
+    try {
+      return await db.select().from(callAttempts);
+    } catch (error) {
+      console.error('Database error fetching call attempts:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async getCallAttemptsByCampaign(campaignId: number): Promise<CallAttempt[]> {
+    try {
+      return await db.select().from(callAttempts).where(eq(callAttempts.campaignId, campaignId));
+    } catch (error) {
+      console.error('Database error fetching call attempts by campaign:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async getPendingCallAttempts(): Promise<CallAttempt[]> {
+    try {
+      return await db.select().from(callAttempts).where(eq(callAttempts.status, 'pending'));
+    } catch (error) {
+      console.error('Database error fetching pending call attempts:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async createCallAttempt(insertAttempt: InsertCallAttempt): Promise<CallAttempt> {
+    const [attempt] = await db
+      .insert(callAttempts)
+      .values(insertAttempt)
+      .returning();
+    return attempt;
+  }
+
+  async updateCallAttempt(id: number, updates: Partial<CallAttempt>): Promise<CallAttempt | undefined> {
+    const [attempt] = await db
+      .update(callAttempts)
+      .set(updates)
+      .where(eq(callAttempts.id, id))
+      .returning();
+    return attempt || undefined;
   }
 }
 
