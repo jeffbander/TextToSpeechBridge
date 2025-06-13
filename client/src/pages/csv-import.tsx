@@ -78,6 +78,8 @@ export default function CsvImportPage() {
   // Upload CSV mutation
   const uploadMutation = useMutation({
     mutationFn: async ({ file, name }: { file: File; name: string }) => {
+      console.log('Starting upload mutation', { fileName: file.name, fileSize: file.size, campaignName: name });
+      
       const formData = new FormData();
       formData.append('csvFile', file);
       formData.append('campaignName', name);
@@ -87,11 +89,17 @@ export default function CsvImportPage() {
         body: formData,
       });
 
+      console.log('Upload response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Upload failed:', errorText);
+        throw new Error(`Upload failed: ${response.statusText} - ${errorText}`);
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log('Upload result:', result);
+      return result;
     },
     onSuccess: (result: ImportResult) => {
       setImportResult(result);
@@ -173,6 +181,8 @@ export default function CsvImportPage() {
   };
 
   const handleUpload = () => {
+    console.log('Upload button clicked', { selectedFile: !!selectedFile, campaignName, isUploading });
+    
     if (!selectedFile || !campaignName.trim()) {
       toast({
         title: "Missing Information",
