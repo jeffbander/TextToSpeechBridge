@@ -411,7 +411,7 @@ export default function AutomatedCallsPage() {
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-blue-600" />
                             <span className="font-medium">{patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient'}</span>
-                            {call.metadata.urgencyLevel && getUrgencyBadge(call.metadata.urgencyLevel)}
+                            {call.metadata?.urgencyLevel && getUrgencyBadge(call.metadata.urgencyLevel)}
                           </div>
                           
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -425,7 +425,7 @@ export default function AutomatedCallsPage() {
                                 {call.duration}s
                               </div>
                             )}
-                            {call.metadata.visitReason && (
+                            {call.metadata?.visitReason && (
                               <div className="text-xs bg-muted px-2 py-1 rounded">
                                 {call.metadata.visitReason}
                               </div>
