@@ -1,0 +1,63 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750031665561_lzlboev8c
+Patient: Jeff Bander (ID: 7)
+Call ID: 168
+Duration: 70 seconds
+Date: 2025-06-15T23:54:25.561Z
+Total Exchanges: 15
+
+─────────────────────────────────────────────────────────
+
+[11:54:34 PM] AI: שלום־עליכם, הער לאַנדוי. דאָס איז טיפּע
+
+
+[11:54:34 PM] PATIENT: I will.
+
+
+
+[11:54:34 PM] AI: ורה, אַ נערס־העלפֿערקע אין דער קאַרדיאָלאָגיע־פּראַקסיס פֿון ד"ר דזשעפֿרי באנדער. איך האָף אַז דו פֿילסט זיך גוט הײַנט. איך רוף צו זען ווי ס'גייט מיט דיר נאָך דײַן לעצטן וויזיט, און צו פֿאַרזיכערן אַז אַלץ איז אינ
+
+
+[11:54:42 PM] AI: ניין, דו ביסט גאָרנישט מטריד. איך בין דאָ צו העלפֿן און ענטפֿערן אויף דײַנע פֿראַגעס. איז דאָרט עפּעס באַזונדער
+
+
+[11:54:43 PM] PATIENT: Can I interrupt you or no?
+
+
+
+[11:54:43 PM] AI: ס וואָס דו ווילסט פֿאַררעדן? 
+
+
+[11:54:58 PM] AI: Yes, I can speak English. How
+
+
+[11:54:58 PM] PATIENT: Do you speak English? Okay. Great. 
+
+
+
+[11:54:58 PM] AI:  can I assist you today, Mr. Landau?
+
+
+[11:55:07 PM] AI: Based on your medical record, Mr. Landau, you have a history of intermittent left
+
+
+[11:55:08 PM] PATIENT: What are my major issues that I have?
+
+
+
+[11:55:08 PM] AI:  bundle branch block (LBBB), elevated lipids, obesity, gout, primary open-angle glaucoma, severe bilateral
+
+
+[11:55:22 PM] AI: The records indicate that
+
+
+[11:55:22 PM] PATIENT: Do I have glaucoma?
+
+
+
+[11:55:23 PM] AI:  you have primary open-angle glaucoma, which was identified after you experienced symptoms and consulted with a glaucoma specialist. This type of
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
