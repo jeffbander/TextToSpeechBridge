@@ -149,9 +149,13 @@ export class MemStorage implements IStorage {
     const patient: Patient = { 
       ...insertPatient,
       id,
+      alternatePhoneNumber: insertPatient.alternatePhoneNumber ?? null,
       email: insertPatient.email ?? null,
       lastDischarge: insertPatient.lastDischarge ?? null,
       riskLevel: insertPatient.riskLevel ?? "low",
+      customPrompt: insertPatient.customPrompt ?? null,
+      promptMetadata: insertPatient.promptMetadata ?? null,
+      importedFrom: insertPatient.importedFrom ?? null,
       createdAt: new Date()
     };
     this.patients.set(id, patient);
@@ -284,6 +288,76 @@ export class MemStorage implements IStorage {
     this.alerts.set(id, updatedAlert);
     return updatedAlert;
   }
+
+  // Call Campaigns
+  async getCallCampaigns(): Promise<CallCampaign[]> {
+    return Array.from(this.callCampaigns.values());
+  }
+
+  async getCallCampaign(id: number): Promise<CallCampaign | undefined> {
+    return this.callCampaigns.get(id);
+  }
+
+  async createCallCampaign(insertCampaign: InsertCallCampaign): Promise<CallCampaign> {
+    const id = Date.now(); // Simple ID generation for memory storage
+    const campaign: CallCampaign = {
+      ...insertCampaign,
+      id,
+      createdAt: new Date(),
+      completedAt: null
+    };
+    this.callCampaigns.set(id, campaign);
+    return campaign;
+  }
+
+  async updateCallCampaign(id: number, updates: Partial<CallCampaign>): Promise<CallCampaign | undefined> {
+    const campaign = this.callCampaigns.get(id);
+    if (!campaign) return undefined;
+    
+    const updatedCampaign = { ...campaign, ...updates };
+    this.callCampaigns.set(id, updatedCampaign);
+    return updatedCampaign;
+  }
+
+  // Call Attempts
+  async getCallAttempts(): Promise<CallAttempt[]> {
+    return Array.from(this.callAttempts.values());
+  }
+
+  async getCallAttemptsByCampaign(campaignId: number): Promise<CallAttempt[]> {
+    return Array.from(this.callAttempts.values()).filter(attempt => attempt.campaignId === campaignId);
+  }
+
+  async getPendingCallAttempts(): Promise<CallAttempt[]> {
+    return Array.from(this.callAttempts.values()).filter(attempt => attempt.status === 'pending');
+  }
+
+  async createCallAttempt(insertAttempt: InsertCallAttempt): Promise<CallAttempt> {
+    const id = Date.now() + Math.random(); // Simple ID generation
+    const attempt: CallAttempt = {
+      ...insertAttempt,
+      id,
+      callId: insertAttempt.callId ?? null,
+      scheduledAt: insertAttempt.scheduledAt ?? null,
+      startedAt: insertAttempt.startedAt ?? null,
+      completedAt: insertAttempt.completedAt ?? null,
+      failureReason: insertAttempt.failureReason ?? null,
+      nextRetryAt: insertAttempt.nextRetryAt ?? null,
+      metadata: insertAttempt.metadata ?? null,
+      createdAt: new Date()
+    };
+    this.callAttempts.set(id, attempt);
+    return attempt;
+  }
+
+  async updateCallAttempt(id: number, updates: Partial<CallAttempt>): Promise<CallAttempt | undefined> {
+    const attempt = this.callAttempts.get(id);
+    if (!attempt) return undefined;
+    
+    const updatedAttempt = { ...attempt, ...updates };
+    this.callAttempts.set(id, updatedAttempt);
+    return updatedAttempt;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -375,6 +449,16 @@ export class DatabaseStorage implements IStorage {
       .values(insertPatient)
       .returning();
     return patient;
+  }
+
+  async getPatientBySystemId(systemId: string): Promise<Patient | undefined> {
+    try {
+      const [patient] = await db.select().from(patients).where(eq(patients.systemId, systemId));
+      return patient || undefined;
+    } catch (error) {
+      console.error('Database error fetching patient by system ID:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
   }
 
   async updatePatient(id: number, updates: Partial<Patient>): Promise<Patient | undefined> {
