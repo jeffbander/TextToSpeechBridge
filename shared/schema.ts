@@ -30,6 +30,9 @@ export const calls = pgTable("calls", {
   callType: text("call_type").default("manual"), // manual, automated_gpt4o, scheduled
   duration: integer("duration"), // in seconds
   outcome: text("outcome"), // routine, urgent, escalated, etc.
+  successRating: text("success_rating"), // successful, partially_successful, unsuccessful
+  qualityScore: integer("quality_score"), // 1-10 AI assessment of conversation quality
+  informationGathered: boolean("information_gathered").default(false), // Did patient provide meaningful info
   transcript: text("transcript"),
   aiAnalysis: jsonb("ai_analysis"), // GPT analysis of call
   alertLevel: text("alert_level"), // none, warning, urgent

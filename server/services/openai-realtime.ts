@@ -463,6 +463,7 @@ Remember to be professional, empathetic, and identify yourself as calling from D
 
   private async saveSessionData(session: RealtimeSession) {
     const duration = Date.now() - session.startedAt.getTime();
+    const durationSeconds = Math.floor(duration / 1000);
     
     console.log(`💾 Saving session data for ${session.id}: {
   patientId: ${session.patientId},
@@ -472,13 +473,158 @@ Remember to be professional, empathetic, and identify yourself as calling from D
   conversationLogLength: ${session.conversationLog.length}
 }`);
     
+    // Evaluate call success using AI
+    const callAssessment = await this.evaluateCallSuccess(session, durationSeconds);
+    
     await storage.updateCall(session.callId, {
       status: 'completed',
-      duration: Math.floor(duration / 1000),
-      transcript: session.transcript.join(' ')
+      duration: durationSeconds,
+      transcript: session.transcript.join(' '),
+      successRating: callAssessment.successRating,
+      qualityScore: callAssessment.qualityScore,
+      informationGathered: callAssessment.informationGathered,
+      outcome: callAssessment.outcome,
+      aiAnalysis: callAssessment.analysis
     });
 
     await this.saveTranscriptToFile(session);
+  }
+
+  private async evaluateCallSuccess(session: RealtimeSession, durationSeconds: number): Promise<{
+    successRating: string;
+    qualityScore: number;
+    informationGathered: boolean;
+    outcome: string;
+    analysis: any;
+  }> {
+    try {
+      // Extract patient responses from conversation log
+      const patientResponses = session.conversationLog
+        .filter(entry => entry.speaker === 'patient')
+        .map(entry => entry.text)
+        .join(' ');
+
+      const conversationText = session.conversationLog
+        .map(entry => `${entry.speaker.toUpperCase()}: ${entry.text}`)
+        .join('\n');
+
+      const evaluationPrompt = `
+Analyze this healthcare follow-up call and determine if it was successful. Consider:
+
+1. DURATION: Call lasted ${durationSeconds} seconds (success threshold: 30+ seconds)
+2. INFORMATION QUALITY: Did the patient provide meaningful health information?
+3. ENGAGEMENT: Did the patient actively participate in the conversation?
+
+CONVERSATION TRANSCRIPT:
+${conversationText}
+
+PATIENT RESPONSES ONLY:
+${patientResponses}
+
+Rate this call on:
+- SUCCESS RATING: "successful" (patient engaged + info gathered OR 30+ seconds), "partially_successful" (some engagement), "unsuccessful" (no engagement, <30 seconds)
+- QUALITY SCORE: 1-10 (conversation quality and information value)
+- INFORMATION GATHERED: true/false (did patient share health status, symptoms, medication compliance, etc.)
+- OUTCOME: "routine" (normal follow-up), "needs_attention" (concerning symptoms), "escalated" (urgent issues)
+
+Respond in JSON format only:
+{
+  "successRating": "successful|partially_successful|unsuccessful",
+  "qualityScore": 1-10,
+  "informationGathered": true/false,
+  "outcome": "routine|needs_attention|escalated",
+  "reasoningNotes": "brief explanation of assessment",
+  "keyFindings": ["list", "of", "important", "health", "information"]
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: evaluationPrompt }],
+        temperature: 0.1,
+        max_tokens: 500
+      });
+
+      const analysisText = response.choices[0]?.message?.content || '{}';
+      let analysis;
+      
+      try {
+        analysis = JSON.parse(analysisText);
+      } catch (parseError) {
+        console.error('Failed to parse AI analysis, using fallback assessment');
+        analysis = this.getFallbackAssessment(durationSeconds, patientResponses);
+      }
+
+      // Apply business logic for success determination
+      let successRating = analysis.successRating || 'unsuccessful';
+      
+      // Override AI assessment if duration + basic criteria are met
+      if (durationSeconds >= 30 && patientResponses.trim().length > 20) {
+        if (successRating === 'unsuccessful') {
+          successRating = 'partially_successful';
+        }
+      }
+
+      console.log(`📊 Call assessment for ${session.id}: Rating=${successRating}, Quality=${analysis.qualityScore}, Duration=${durationSeconds}s, InfoGathered=${analysis.informationGathered}`);
+
+      return {
+        successRating,
+        qualityScore: analysis.qualityScore || this.getQualityScoreFromDuration(durationSeconds),
+        informationGathered: analysis.informationGathered || false,
+        outcome: analysis.outcome || 'routine',
+        analysis: {
+          reasoningNotes: analysis.reasoningNotes,
+          keyFindings: analysis.keyFindings || [],
+          durationSeconds,
+          patientResponseLength: patientResponses.length,
+          conversationExchanges: session.conversationLog.length
+        }
+      };
+
+    } catch (error) {
+      console.error('Error evaluating call success:', error);
+      return this.getFallbackAssessment(durationSeconds, session.conversationLog
+        .filter(entry => entry.speaker === 'patient')
+        .map(entry => entry.text)
+        .join(' '));
+    }
+  }
+
+  private getFallbackAssessment(durationSeconds: number, patientResponses: string): {
+    successRating: string;
+    qualityScore: number;
+    informationGathered: boolean;
+    outcome: string;
+    analysis: any;
+  } {
+    const hasSubstantialResponse = patientResponses.trim().length > 50;
+    const meetsDurationThreshold = durationSeconds >= 30;
+    
+    let successRating = 'unsuccessful';
+    if (meetsDurationThreshold && hasSubstantialResponse) {
+      successRating = 'successful';
+    } else if (meetsDurationThreshold || hasSubstantialResponse) {
+      successRating = 'partially_successful';
+    }
+
+    return {
+      successRating,
+      qualityScore: this.getQualityScoreFromDuration(durationSeconds),
+      informationGathered: hasSubstantialResponse,
+      outcome: 'routine',
+      analysis: {
+        reasoningNotes: 'Fallback assessment due to AI evaluation error',
+        keyFindings: [],
+        durationSeconds,
+        patientResponseLength: patientResponses.length
+      }
+    };
+  }
+
+  private getQualityScoreFromDuration(durationSeconds: number): number {
+    if (durationSeconds >= 120) return 8; // 2+ minutes = high quality
+    if (durationSeconds >= 60) return 6;  // 1+ minute = good quality
+    if (durationSeconds >= 30) return 4;  // 30+ seconds = acceptable
+    return 2; // Less than 30 seconds = poor quality
   }
 
   private async saveTranscriptToFile(session: RealtimeSession) {
