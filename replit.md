@@ -117,3 +117,4 @@ Patient Phone ↔ Twilio ↔ WebSocket Server ↔ OpenAI GPT-4o Real-time API
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+UI preferences: Clean hamburger menu navigation with Auto Calls and Patients buttons prominently displayed in header, secondary navigation in hamburger menu for mobile-first design.
