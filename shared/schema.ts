@@ -184,3 +184,11 @@ export type CallAttempt = typeof callAttempts.$inferSelect;
 export type InsertCallAttempt = z.infer<typeof insertCallAttemptSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
+
+// SMS Types
+export type SMSMessage = typeof smsMessages.$inferSelect;
+export type InsertSMSMessage = typeof smsMessages.$inferInsert;
+export type SMSTemplate = typeof smsTemplates.$inferSelect;
+export type InsertSMSTemplate = typeof smsTemplates.$inferInsert;
+export type SMSCampaign = typeof smsCampaigns.$inferSelect;
+export type InsertSMSCampaign = typeof smsCampaigns.$inferInsert;

@@ -636,6 +636,13 @@ export default function Patients() {
         </Dialog>
       </div>
 
+      {/* Bulk SMS Interface */}
+      {patients.length > 0 && (
+        <div className="mb-6">
+          <SMSInterface patients={patients} mode="bulk" />
+        </div>
+      )}
+
       {/* Patient List */}
       <div className="space-y-4">
         {isLoading ? (
@@ -729,6 +736,7 @@ export default function Patients() {
                       System ID: {patient.systemId}
                     </div>
                     <div className="flex space-x-2">
+                      <SMSInterface patient={patient} mode="single" />
                       <Button 
                         variant="outline" 
                         size="sm"
