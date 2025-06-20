@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, Play, Pause, BarChart3, CheckCircle, XCircle, Clock, Users } from "lucide-react";
+import { Upload, FileText, Play, Pause, BarChart3, CheckCircle, XCircle, Clock, Users, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -69,6 +69,77 @@ export default function CsvImportPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Download CSV template function
+  const downloadCSVTemplate = () => {
+    const sampleData = [
+      {
+        "System ID": "Smith_John__01/15/1980",
+        "MRN": "MRN001234",
+        "DOB": "01/15/1980",
+        "Patient Name": "Smith, John",
+        "Gender": "Male",
+        "Phone_Number": "555-123-4567",
+        "Alternate_Phone_Number": "555-987-6543",
+        "Patient_Address": "123 Main St, Anytown, NY 12345",
+        "Primary Email": "john.smith@email.com",
+        "Master Note": "Post-cardiac surgery follow-up. Patient prefers English communication. Check medication compliance and any chest pain symptoms."
+      },
+      {
+        "System ID": "Johnson_Mary__03/22/1975",
+        "MRN": "MRN005678",
+        "DOB": "03/22/1975",
+        "Patient Name": "Johnson, Mary",
+        "Gender": "Female",
+        "Phone_Number": "555-234-5678",
+        "Alternate_Phone_Number": "",
+        "Patient_Address": "456 Oak Ave, Springfield, NY 54321",
+        "Primary Email": "mary.johnson@email.com",
+        "Master Note": "CHF follow-up. Patient speaks Spanish as primary language. Monitor weight gain and breathing difficulties."
+      },
+      {
+        "System ID": "Cohen_David__12/08/1965",
+        "MRN": "MRN009876",
+        "DOB": "12/08/1965",
+        "Patient Name": "Cohen, David",
+        "Gender": "Male",
+        "Phone_Number": "555-345-6789",
+        "Alternate_Phone_Number": "555-876-5432",
+        "Patient_Address": "789 Pine Rd, Brooklyn, NY 67890",
+        "Primary Email": "",
+        "Master Note": "Diabetes and cardiac care. Patient prefers Yiddish communication. Check blood sugar levels and medication adherence."
+      }
+    ];
+
+    // Convert to CSV format
+    const headers = Object.keys(sampleData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...sampleData.map(row => 
+        headers.map(header => {
+          const value = row[header as keyof typeof row] || '';
+          // Wrap in quotes if contains comma or is empty
+          return value.includes(',') || value === '' ? `"${value}"` : value;
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'patient-import-template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Template Downloaded",
+      description: "CSV template saved as patient-import-template.csv",
+    });
+  };
 
   // Fetch call campaigns
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<CallCampaign[]>({
@@ -269,12 +340,24 @@ export default function CsvImportPage() {
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">CSV Format Requirements:</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">CSV Format Requirements:</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadCSVTemplate}
+                    className="flex items-center gap-2 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-600"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Template
+                  </Button>
+                </div>
                 <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                  <li>• System ID, MRN, DOB, Patient Name, Gender, Phone_Number</li>
-                  <li>• Alternate_Phone_Number, Patient_Address, Primary Email</li>
-                  <li>• Master Note field will be used for custom GPT-4o prompts</li>
-                  <li>• Phone numbers will be automatically formatted for calling</li>
+                  <li>• <strong>System ID</strong> (unique identifier): LastName_FirstName__MM/DD/YYYY format</li>
+                  <li>• <strong>Required:</strong> MRN, DOB, Patient Name, Gender, Phone_Number</li>
+                  <li>• <strong>Optional:</strong> Alternate_Phone_Number, Patient_Address, Primary Email</li>
+                  <li>• <strong>Master Note:</strong> Custom instructions for GPT-4o conversation prompts</li>
+                  <li>• <strong>Business Hours:</strong> Calls scheduled 9 AM - 8 PM Eastern, weekdays only</li>
                 </ul>
               </div>
 
