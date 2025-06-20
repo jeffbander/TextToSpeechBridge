@@ -773,10 +773,10 @@ export default function Patients() {
             </Card>
           ))
         )}
-        </div>
+      </div>
 
-        {/* Custom Prompt Dialog */}
-        <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
+      {/* Custom Prompt Dialog */}
+      <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create Custom Prompt for {selectedPatientForPrompt?.name}</DialogTitle>

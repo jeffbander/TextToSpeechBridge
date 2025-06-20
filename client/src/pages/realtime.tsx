@@ -201,8 +201,8 @@ export default function RealtimePage() {
           </div>
         </CardContent>
       </Card>
-        </div>
-      </main>
+      </div>
+    </main>
     </div>
   );
 }
