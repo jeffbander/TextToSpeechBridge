@@ -69,15 +69,11 @@ export class CallSchedulerService {
         await this.initiateCall(attempt);
       }
 
-      // Process CSV-imported calls only during business hours
+      // Process CSV-imported calls (business hours restriction temporarily disabled)
       if (csvAttempts.length > 0) {
-        if (this.isWithinBusinessHours()) {
-          console.log(`[CALL-SCHEDULER] Processing ${csvAttempts.length} CSV-imported calls during business hours`);
-          for (const attempt of csvAttempts) {
-            await this.initiateCall(attempt);
-          }
-        } else {
-          console.log(`[CALL-SCHEDULER] Skipping ${csvAttempts.length} CSV-imported calls - outside business hours (9 AM - 8 PM Eastern)`);
+        console.log(`[CALL-SCHEDULER] Processing ${csvAttempts.length} CSV-imported calls (business hours restriction disabled)`);
+        for (const attempt of csvAttempts) {
+          await this.initiateCall(attempt);
         }
       }
     } catch (error) {
@@ -131,10 +127,11 @@ export class CallSchedulerService {
         callId: call.id,
       });
 
-      // Get the proper webhook URL
+      // Get the proper webhook URL - clean the domain name
       const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0]?.trim();
-      const webhookUrl = baseUrl ? `https://${baseUrl}/twilio-gpt4o-webhook` : 'http://localhost:5000/twilio-gpt4o-webhook';
-      const statusCallbackUrl = baseUrl ? `https://${baseUrl}/twilio-status-callback` : 'http://localhost:5000/twilio-status-callback';
+      const cleanDomain = baseUrl?.replace(/^https?:\/\//, ''); // Remove protocol if present
+      const webhookUrl = cleanDomain ? `https://${cleanDomain}/twilio-gpt4o-webhook` : 'http://localhost:5000/twilio-gpt4o-webhook';
+      const statusCallbackUrl = cleanDomain ? `https://${cleanDomain}/twilio-status-callback` : 'http://localhost:5000/twilio-status-callback';
       
       console.log(`[CALL-SCHEDULER] Using webhook URL: ${webhookUrl}`);
       console.log(`[CALL-SCHEDULER] Using status callback URL: ${statusCallbackUrl}`);
