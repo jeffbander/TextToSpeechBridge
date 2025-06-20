@@ -169,8 +169,25 @@ export function registerCsvImportRoutes(app: Express) {
       const attemptsWithPatients = await Promise.all(
         attempts.map(async (attempt) => {
           const patient = await storage.getPatient(attempt.patientId);
+          let callDetails = null;
+          
+          // Fetch call details if callId exists
+          if (attempt.callId) {
+            const call = await storage.getCall(attempt.callId);
+            if (call) {
+              callDetails = {
+                duration: call.duration,
+                successRating: call.successRating,
+                qualityScore: call.qualityScore,
+                informationGathered: call.informationGathered,
+                outcome: call.outcome
+              };
+            }
+          }
+          
           return {
             ...attempt,
+            call: callDetails,
             patient: patient || {
               id: attempt.patientId,
               firstName: 'Unknown',

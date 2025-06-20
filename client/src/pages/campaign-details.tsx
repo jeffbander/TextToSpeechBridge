@@ -37,6 +37,13 @@ interface CallAttempt {
   nextRetryAt?: string;
   metadata?: any;
   createdAt: string;
+  call?: {
+    duration?: number;
+    successRating?: string;
+    qualityScore?: number;
+    informationGathered?: boolean;
+    outcome?: string;
+  };
 }
 
 interface CallAttemptWithPatient extends CallAttempt {
@@ -320,6 +327,33 @@ export default function CampaignDetailsPage() {
                         <div>
                           <span className="font-medium text-blue-600">Custom Notes:</span>
                           <p className="text-blue-600 text-xs mt-1 line-clamp-2">{attempt.patient.customPrompt}</p>
+                        </div>
+                      )}
+                      {attempt.call && (
+                        <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                          <span className="font-medium text-green-600">Call Quality:</span>
+                          <div className="text-xs mt-1 space-y-1">
+                            {attempt.call.duration && (
+                              <div>Duration: {attempt.call.duration}s</div>
+                            )}
+                            {attempt.call.successRating && (
+                              <div className="flex items-center gap-2">
+                                <span>Success:</span>
+                                <Badge variant={
+                                  attempt.call.successRating === 'successful' ? 'default' :
+                                  attempt.call.successRating === 'partially_successful' ? 'secondary' : 'destructive'
+                                }>
+                                  {attempt.call.successRating.replace('_', ' ')}
+                                </Badge>
+                              </div>
+                            )}
+                            {attempt.call.qualityScore && (
+                              <div>Quality Score: {attempt.call.qualityScore}/10</div>
+                            )}
+                            {attempt.call.informationGathered !== undefined && (
+                              <div>Info Gathered: {attempt.call.informationGathered ? 'Yes' : 'No'}</div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
