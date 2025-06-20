@@ -17,7 +17,6 @@ import { useState } from "react";
 import { Plus, Phone, Mail, MapPin, Calendar, User, Heart, AlertTriangle, Bell, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import Navigation from "@/components/navigation";
 
 const formSchema = insertPatientSchema.extend({
   dateOfBirth: z.string().min(1, "Date of birth is required"),
