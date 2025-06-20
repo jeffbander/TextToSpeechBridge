@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750363598214_q97q5hjuc
+Patient: Khalese  Great (ID: 4)
+Call ID: 248
+Duration: 40 seconds
+Date: 2025-06-19T20:06:38.214Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[8:07:04 PM] AI: Aggie, my Kh
+
+
+[8:07:04 PM] PATIENT: Hello?
+
+
+
+[8:07:04 PM] AI: aleselike, how has your day been? Have you conquered any new realms of knowledge or indulged in some well-deserved ice cream adventures? I'd love to hear all about it. And how's our noble Tafik doing today?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

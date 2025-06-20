@@ -1,0 +1,26 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750372095278_o9unkm6rp
+Patient: Kenny Bander (ID: 6)
+Call ID: 255
+Duration: 24 seconds
+Date: 2025-06-19T22:28:15.278Z
+Total Exchanges: 4
+
+─────────────────────────────────────────────────────────
+
+[10:28:28 PM] AI: Здравствуйте! Чем могу помочь?
+
+
+[10:28:37 PM] AI: Извините, я не совсем вас пон
+
+
+[10:28:37 PM] PATIENT: What was that? He's trying to call you.
+
+
+
+[10:28:37 PM] AI: яла. Могли бы вы повторить?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

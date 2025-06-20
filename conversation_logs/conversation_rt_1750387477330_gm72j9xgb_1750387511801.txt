@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750387477330_gm72j9xgb
+Patient: Khalese  Great (ID: 4)
+Call ID: 258
+Duration: 34 seconds
+Date: 2025-06-20T02:44:37.330Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[2:44:56 AM] AI: Hello, Aggie! How's my favorite Khaleselike doing today? How's the world of medical marvels and Japanese Metallica
+
+
+[2:44:58 AM] PATIENT: 12
+
+
+
+[2:44:58 AM] AI:  treating you? And more importantly, how's Tafik?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

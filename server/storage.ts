@@ -25,6 +25,7 @@ export interface IStorage {
   // Patients
   getPatients(): Promise<Patient[]>;
   getPatient(id: number): Promise<Patient | undefined>;
+  getPatientBySystemId(systemId: string): Promise<Patient | undefined>;
   createPatient(patient: InsertPatient): Promise<Patient>;
   updatePatient(id: number, updates: Partial<Patient>): Promise<Patient | undefined>;
   
@@ -79,6 +80,8 @@ export class MemStorage implements IStorage {
     this.calls = new Map();
     this.scheduledCalls = new Map();
     this.alerts = new Map();
+    this.callCampaigns = new Map();
+    this.callAttempts = new Map();
     this.currentPatientId = 1;
     this.currentCallId = 1;
     this.currentScheduledCallId = 1;
@@ -135,6 +138,10 @@ export class MemStorage implements IStorage {
 
   async getPatient(id: number): Promise<Patient | undefined> {
     return this.patients.get(id);
+  }
+
+  async getPatientBySystemId(systemId: string): Promise<Patient | undefined> {
+    return Array.from(this.patients.values()).find(patient => patient.systemId === systemId);
   }
 
   async createPatient(insertPatient: InsertPatient): Promise<Patient> {

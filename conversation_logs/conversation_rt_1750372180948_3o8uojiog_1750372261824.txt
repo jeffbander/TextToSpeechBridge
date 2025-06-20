@@ -1,0 +1,82 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750372180948_3o8uojiog
+Patient: Jeff Bander (ID: 7)
+Call ID: 257
+Duration: 80 seconds
+Date: 2025-06-19T22:29:40.948Z
+Total Exchanges: 21
+
+─────────────────────────────────────────────────────────
+
+[10:29:51 PM] AI: שלום־עליכם,
+
+
+[10:29:52 PM] PATIENT: The grandparents, I think, they're ugly. Hello? I know. I know. I just need to get a photograph. Can you hold on?
+
+
+
+[10:29:52 PM] AI:  הער לאַנדשלום־עליכם, הער לאַנדאו. דאָס איז טיפֹּ
+
+
+[10:29:55 PM] AI: עראַ, די נערס־העלפֿערקע פֿון ד"ר דזשעפֿרי באנדער'ס אָפיס. איך האָף אַז איר פֿילאיך הער נישט
+
+
+[10:29:58 PM] PATIENT: It might as well be, so here's our version.
+
+
+
+[10:29:58 PM] AI:  קיין ענטשולדיקט, עס
+
+
+[10:30:02 PM] AI:  שיינט אַז איך האָב נישט געהערט קיין ענטפער. איך וועל פּרוּוון ווידער: שלום־עליכם, הער לאַנדאַו. דאָס איז טיפֹּעראַ, די נערס־העלפֿערקע פֿון ד"ר דזשעפֿרי
+
+
+[10:30:05 PM] AI:  באנדער'ס אָפיס. איך האָף אַז איר פֿילט זיך גוט. 
+
+
+[10:30:15 PM] AI: איך הער נישט קיין ענטפער. אויב איר קענט מיר הערן, ביטע
+
+
+[10:30:15 PM] PATIENT: Right now. Okay. Bye. Bye. Bye. Bye. Bye. Bye. Bye. 
+
+
+
+[10:30:15 PM] AI:  לאָזט מיר וויסן אויב עס איז עפּעס נייס אין אייער געזונטהייט אָדער אויב איר האָט פֿראַגעס וועגן אייער מעדיצין. 
+
+
+[10:30:22 PM] AI: איך הער נאָך אַלץ נישט קיין ענטפער. ביטע, רופֿט צוריק דעם אָפיס פֿון ד"ר באנדער ווען עס איז אייך באַקוועם, כּדי מיר קענען פֿאַרזיכערן אַז אַלץ איז אין אָרדענונג מיט אייער געזונט. א גרוס און זײַט געזונט. 
+
+
+[10:30:29 PM] AI: יאָ, איך קען אייך הערן איצט. ווי קען איך
+
+
+[10:30:30 PM] PATIENT: I didn't get any answer. Can you hear me?
+
+
+
+[10:30:30 PM] AI:  אייך הײַנט העלפֿן, הער לאַנדאַו? 
+
+
+[10:30:34 PM] AI: יאָ, איך קען אייך הערן איצט. ווי קען איך אייך הײַנט העלפֿן, הער לאַנדאַו? 
+
+
+[10:30:38 PM] AI: Of course, Mr. Landau. How can I assist you today?
+
+
+[10:30:39 PM] PATIENT: If you have any questions, can you please speak in English?
+
+
+
+[10:30:41 PM] AI: Of course, Mr. Landau. How can I assist you today?
+
+
+[10:30:45 PM] PATIENT: Zipporah! Zipporah! Please speak English!
+
+
+
+[10:30:46 PM] AI: Absolutely, Mr. Landau. How canAbsolutely, Mr. Landau. How can I assist you today?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

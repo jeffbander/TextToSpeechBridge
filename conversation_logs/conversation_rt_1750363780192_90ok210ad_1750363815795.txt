@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750363780192_90ok210ad
+Patient: Khalese  Great (ID: 4)
+Call ID: 249
+Duration: 35 seconds
+Date: 2025-06-19T20:09:40.192Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[8:10:08 PM] AI: Hello, Aggie! How's my Khaleselike doing today? Did you conquer any new realms of medical knowledge, or maybe discover a
+
+
+[8:10:09 PM] PATIENT: Thank you. 
+
+
+
+[8:10:09 PM] AI:  new flavor of artisanal ice cream?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

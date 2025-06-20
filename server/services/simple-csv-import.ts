@@ -18,6 +18,7 @@ export class SimpleCsvImportService {
   async importPatientsFromCsv(csvContent: string, campaignName: string): Promise<ImportResult> {
     const errors: string[] = [];
     let imported = 0;
+    let existingPatients = 0;
 
     try {
       // Clean and split CSV into lines
@@ -32,38 +33,56 @@ export class SimpleCsvImportService {
         };
       }
 
-      // Parse header
+      // Parse header - make field mapping more flexible
       const header = this.parseCSVLine(lines[0]);
       console.log('CSV Headers:', header);
 
-      // Find column indices
-      const systemIdIndex = header.indexOf('System ID');
-      const mrnIndex = header.indexOf('MRN');
-      const dobIndex = header.indexOf('DOB');
-      const nameIndex = header.indexOf('Patient Name');
-      const genderIndex = header.indexOf('Gender');
-      const phoneIndex = header.indexOf('Phone_Number');
-      const altPhoneIndex = header.indexOf('Alternate_Phone_Number');
-      const addressIndex = header.indexOf('Patient_Address');
-      const emailIndex = header.indexOf('Primary Email (MISSING EMAIL)');
-      const masterNoteIndex = header.indexOf('Master Note (n/a)');
+      // Find column indices with flexible matching
+      const findColumnIndex = (possibleNames: string[]) => {
+        for (const name of possibleNames) {
+          const index = header.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+          if (index !== -1) return index;
+        }
+        return -1;
+      };
 
-      if (systemIdIndex === -1 || mrnIndex === -1 || nameIndex === -1 || phoneIndex === -1) {
+      const systemIdIndex = findColumnIndex(['System ID', 'SystemID', 'System_ID']);
+      const mrnIndex = findColumnIndex(['MRN', 'Medical Record Number']);
+      const dobIndex = findColumnIndex(['DOB', 'Date of Birth', 'DateOfBirth']);
+      const nameIndex = findColumnIndex(['Patient Name', 'Name', 'Patient_Name']);
+      const genderIndex = findColumnIndex(['Gender', 'Sex']);
+      const phoneIndex = findColumnIndex(['Phone_Number', 'Phone Number', 'Primary Phone']);
+      const altPhoneIndex = findColumnIndex(['Alternate_Phone_Number', 'Alternate Phone', 'Secondary Phone']);
+      const addressIndex = findColumnIndex(['Patient_Address', 'Address', 'Patient Address']);
+      const emailIndex = findColumnIndex(['Primary Email', 'Email']);
+      const masterNoteIndex = findColumnIndex(['Master Note', 'Notes', 'Custom Prompt', 'Patient Notes']);
+
+      if (systemIdIndex === -1) {
         return {
           success: false,
           imported: 0,
-          errors: ['Required columns missing: System ID, MRN, Patient Name, or Phone_Number']
+          errors: ['Required column missing: System ID - this is the unique patient identifier']
+        };
+      }
+
+      if (nameIndex === -1 || phoneIndex === -1) {
+        return {
+          success: false,
+          imported: 0,
+          errors: ['Required columns missing: Patient Name and Phone_Number are required']
         };
       }
 
       // Create call campaign first
       const campaign = await this.storage.createCallCampaign({
         name: campaignName,
-        description: `Imported from CSV with patient data`,
+        description: `Imported from CSV - Batch ID: ${Date.now()}`,
         totalPatients: 0,
         maxRetries: 3,
         retryIntervalHours: 1,
       });
+
+      const batchId = `CSV_${campaign.id}_${Date.now()}`;
 
       // Process data rows (skip header)
       for (let i = 1; i < lines.length; i++) {
@@ -71,69 +90,99 @@ export class SimpleCsvImportService {
           const line = lines[i].trim();
           if (!line) continue;
 
-          // Simple CSV parsing - just get the basic fields we need
           const fields = this.parseCSVLine(line);
           
-          // Extract required fields
+          // Extract System ID (unique identifier)
           const systemId = fields[systemIdIndex]?.trim();
-          const mrn = fields[mrnIndex]?.trim();
           const patientName = fields[nameIndex]?.trim();
           const phoneNumber = fields[phoneIndex]?.trim();
 
-          if (!systemId || !mrn || !patientName || !phoneNumber) {
-            errors.push(`Row ${i + 1}: Missing required data`);
+          if (!systemId) {
+            errors.push(`Row ${i + 1}: System ID is required (unique patient identifier)`);
             continue;
           }
 
-          // Parse name
-          let firstName = 'Unknown';
-          let lastName = 'Unknown';
-          
-          if (patientName.includes(', ')) {
-            const [last, first] = patientName.split(', ');
-            lastName = last?.trim() || 'Unknown';
-            firstName = first?.trim() || 'Unknown';
-          } else {
-            const nameParts = patientName.trim().split(' ');
-            if (nameParts.length >= 2) {
-              firstName = nameParts[0];
-              lastName = nameParts.slice(1).join(' ');
-            } else {
-              firstName = nameParts[0] || 'Unknown';
-            }
+          if (!patientName || !phoneNumber) {
+            errors.push(`Row ${i + 1}: Patient Name and Phone Number are required`);
+            continue;
           }
 
-          // Create patient record
-          const patient: InsertPatient = {
-            systemId,
-            mrn,
-            firstName,
-            lastName,
-            dateOfBirth: fields[dobIndex]?.trim() || '1900-01-01',
-            gender: fields[genderIndex]?.trim() || 'Unknown',
-            phoneNumber: this.cleanPhoneNumber(phoneNumber),
-            alternatePhoneNumber: fields[altPhoneIndex]?.trim() ? this.cleanPhoneNumber(fields[altPhoneIndex]) : null,
-            address: fields[addressIndex]?.trim() || 'Address not provided',
-            email: fields[emailIndex]?.trim() || null,
-            condition: 'General Follow-up',
-            riskLevel: 'low',
-            customPrompt: fields[masterNoteIndex]?.trim() ? `Patient notes: ${fields[masterNoteIndex].trim()}` : null,
-            importedFrom: 'CSV Import',
-          };
+          // Check if patient already exists by System ID
+          let existingPatient = await this.storage.getPatientBySystemId(systemId);
+          let patientId: number;
 
-          const createdPatient = await this.storage.createPatient(patient);
+          if (existingPatient) {
+            // Patient exists - update if needed and create call attempt
+            patientId = existingPatient.id;
+            existingPatients++;
+            
+            // Update Master Note if provided
+            const masterNote = fields[masterNoteIndex]?.trim();
+            if (masterNote && masterNote !== existingPatient.customPrompt) {
+              await this.storage.updatePatient(existingPatient.id, {
+                customPrompt: masterNote,
+                importedFrom: `${existingPatient.importedFrom || 'Previous'} + ${batchId}`,
+              });
+            }
 
-          // Create call attempt
+          } else {
+            // New patient - create record
+            const mrn = fields[mrnIndex]?.trim() || systemId; // Use systemId as fallback for MRN
+            
+            // Parse name
+            let firstName = 'Unknown';
+            let lastName = 'Unknown';
+            
+            if (patientName.includes(', ')) {
+              const [last, first] = patientName.split(', ');
+              lastName = last?.trim() || 'Unknown';
+              firstName = first?.trim() || 'Unknown';
+            } else {
+              const nameParts = patientName.trim().split(' ');
+              if (nameParts.length >= 2) {
+                firstName = nameParts[0];
+                lastName = nameParts.slice(1).join(' ');
+              } else {
+                firstName = nameParts[0] || 'Unknown';
+              }
+            }
+
+            const patient: InsertPatient = {
+              systemId,
+              mrn,
+              firstName,
+              lastName,
+              dateOfBirth: fields[dobIndex]?.trim() || '1900-01-01',
+              gender: fields[genderIndex]?.trim() || 'Unknown',
+              phoneNumber: this.cleanPhoneNumber(phoneNumber),
+              alternatePhoneNumber: fields[altPhoneIndex]?.trim() ? this.cleanPhoneNumber(fields[altPhoneIndex]) : null,
+              address: fields[addressIndex]?.trim() || 'Address not provided',
+              email: fields[emailIndex]?.trim() || null,
+              condition: 'General Follow-up',
+              riskLevel: 'low',
+              customPrompt: fields[masterNoteIndex]?.trim() || null,
+              importedFrom: batchId,
+            };
+
+            const createdPatient = await this.storage.createPatient(patient);
+            patientId = createdPatient.id;
+            imported++;
+          }
+
+          // Create call attempt for this patient (whether new or existing)
           await this.storage.createCallAttempt({
             campaignId: campaign.id,
-            patientId: createdPatient.id,
+            patientId: patientId,
             attemptNumber: 1,
             status: 'pending',
-            phoneNumberUsed: createdPatient.phoneNumber,
+            phoneNumberUsed: this.cleanPhoneNumber(phoneNumber),
             scheduledAt: new Date(),
+            metadata: {
+              batchId,
+              csvRowNumber: i + 1,
+              systemId,
+            },
           });
-
-          imported++;
 
         } catch (error) {
           errors.push(`Row ${i + 1}: ${error instanceof Error ? error.message : 'Processing error'}`);
@@ -141,14 +190,15 @@ export class SimpleCsvImportService {
       }
 
       // Update campaign stats
+      const totalPatients = imported + existingPatients;
       await this.storage.updateCallCampaign(campaign.id, {
-        totalPatients: imported,
+        totalPatients,
       });
 
       return {
-        success: imported > 0,
-        imported,
-        errors,
+        success: totalPatients > 0,
+        imported: totalPatients,
+        errors: errors.concat(existingPatients > 0 ? [`Found ${existingPatients} existing patients, added to campaign`] : []),
         campaignId: campaign.id,
       };
 
