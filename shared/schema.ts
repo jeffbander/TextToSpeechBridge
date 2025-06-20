@@ -96,6 +96,51 @@ export const alerts = pgTable("alerts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// SMS messaging tables
+export const smsMessages = pgTable("sms_messages", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  message: text("message").notNull(),
+  direction: text("direction").notNull(), // outbound, inbound
+  status: text("status").notNull(), // pending, sent, delivered, failed, received
+  twilioSid: text("twilio_sid"),
+  templateId: text("template_id"),
+  sentAt: timestamp("sent_at"),
+  deliveredAt: timestamp("delivered_at"),
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const smsTemplates = pgTable("sms_templates", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  category: text("category").notNull(), // appointment, medication, followup, general
+  message: text("message").notNull(),
+  variables: text("variables").array(), // template variables like patientName, appointmentDate
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const smsCampaigns = pgTable("sms_campaigns", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  templateId: text("template_id").references(() => smsTemplates.id),
+  message: text("message").notNull(),
+  targetPatientIds: integer("target_patient_ids").array(),
+  status: text("status").notNull().default("draft"), // draft, active, completed, paused
+  totalMessages: integer("total_messages").default(0),
+  sentMessages: integer("sent_messages").default(0),
+  deliveredMessages: integer("delivered_messages").default(0),
+  failedMessages: integer("failed_messages").default(0),
+  scheduledAt: timestamp("scheduled_at"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertPatientSchema = createInsertSchema(patients).omit({
   id: true,
   createdAt: true,

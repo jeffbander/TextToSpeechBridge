@@ -461,6 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register prompt template management routes
   registerPromptTemplateRoutes(app);
   registerPatientPromptRoutes(app);
+  registerSMSRoutes(app);
   registerCsvImportRoutes(app);
 
   return httpServer;
