@@ -49,10 +49,12 @@ CardioCare AI is a comprehensive healthcare automation system that enables autom
 - Integrates with database-stored custom prompts
 
 ### 5. CSV Import System (`server/services/simple-csv-import.ts`)
-- Processes bulk patient data imports
-- Creates call campaigns for automated outreach
-- Handles data validation and error reporting
-- Supports campaign-based patient management
+- Processes bulk patient data imports using System ID as unique patient identifier
+- Creates call campaigns for automated outreach with business hours restrictions
+- Handles data validation and flexible field mapping
+- Supports campaign-based patient management with 3-attempt retry logic
+- Business hours enforcement: CSV-imported calls only between 9 AM - 8 PM Eastern, weekdays only
+- Manual calls can be made anytime without business hours restrictions
 
 ## Data Flow
 

@@ -48,12 +48,58 @@ export class CallSchedulerService {
 
       console.log(`[CALL-SCHEDULER] Found ${readyAttempts.length} calls ready to process`);
 
+      // Filter CSV-imported calls for business hours restriction
+      const csvAttempts = [];
+      const manualAttempts = [];
+
       for (const attempt of readyAttempts) {
+        const isCSVImported = attempt.metadata && 
+          (typeof attempt.metadata === 'object') && 
+          'batchId' in attempt.metadata;
+        
+        if (isCSVImported) {
+          csvAttempts.push(attempt);
+        } else {
+          manualAttempts.push(attempt);
+        }
+      }
+
+      // Process manual calls anytime
+      for (const attempt of manualAttempts) {
         await this.initiateCall(attempt);
+      }
+
+      // Process CSV-imported calls only during business hours
+      if (csvAttempts.length > 0) {
+        if (this.isWithinBusinessHours()) {
+          console.log(`[CALL-SCHEDULER] Processing ${csvAttempts.length} CSV-imported calls during business hours`);
+          for (const attempt of csvAttempts) {
+            await this.initiateCall(attempt);
+          }
+        } else {
+          console.log(`[CALL-SCHEDULER] Skipping ${csvAttempts.length} CSV-imported calls - outside business hours (9 AM - 8 PM Eastern)`);
+        }
       }
     } catch (error) {
       console.error('[CALL-SCHEDULER] Error in processScheduledCalls:', error);
     }
+  }
+
+  private isWithinBusinessHours(): boolean {
+    const now = new Date();
+    
+    // Convert current time to Eastern Time
+    const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const hour = easternTime.getHours();
+    const day = easternTime.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    // Check if it's a weekday (Monday-Friday) and within business hours (9 AM - 8 PM)
+    const isWeekday = day >= 1 && day <= 5;
+    const isBusinessHour = hour >= 9 && hour < 20; // 9 AM to 8 PM (20:00 in 24-hour format)
+    
+    console.log(`[CALL-SCHEDULER] Current Eastern time: ${easternTime.toLocaleString()}, Day: ${day}, Hour: ${hour}, Weekday: ${isWeekday}, Business Hour: ${isBusinessHour}`);
+    
+    return isWeekday && isBusinessHour;
   }
 
   async initiateCall(attempt: CallAttempt) {
@@ -130,13 +176,20 @@ export class CallSchedulerService {
 
       // Update campaign failed calls count
       await storage.updateCallCampaign(campaign.id, {
-        failedCalls: campaign.failedCalls + 1,
+        failedCalls: (campaign.failedCalls || 0) + 1,
       });
 
       console.log(`[CALL-SCHEDULER] Call attempt ${attempt.id} failed permanently after ${maxRetries} attempts`);
     } else {
-      // Schedule retry
-      const nextRetryTime = new Date(Date.now() + (retryIntervalHours * 60 * 60 * 1000));
+      // Check if this is a CSV-imported call for business hours scheduling
+      const isCSVImported = attempt.metadata && 
+        (typeof attempt.metadata === 'object') && 
+        'batchId' in attempt.metadata;
+      
+      // Schedule retry - use business hours only for CSV imports
+      const nextRetryTime = isCSVImported 
+        ? this.getNextBusinessHourRetry(retryIntervalHours)
+        : new Date(Date.now() + (retryIntervalHours * 60 * 60 * 1000));
       
       // Create new attempt for retry
       await storage.createCallAttempt({
@@ -148,6 +201,7 @@ export class CallSchedulerService {
         scheduledAt: nextRetryTime,
         nextRetryAt: nextRetryTime,
         metadata: {
+          ...attempt.metadata,
           previousAttemptId: attempt.id,
           previousFailureReason: reason,
         },
@@ -161,8 +215,43 @@ export class CallSchedulerService {
         nextRetryAt: nextRetryTime,
       });
 
-      console.log(`[CALL-SCHEDULER] Call attempt ${attempt.id} failed, retry ${attempt.attemptNumber + 1} scheduled for ${nextRetryTime.toISOString()}`);
+      const scheduleType = isCSVImported ? '(CSV - business hours)' : '(manual)';
+      console.log(`[CALL-SCHEDULER] Call attempt ${attempt.id} failed, retry ${attempt.attemptNumber + 1} scheduled for ${nextRetryTime.toISOString()} ${scheduleType}`);
     }
+  }
+
+  private getNextBusinessHourRetry(intervalHours: number): Date {
+    let nextRetry = new Date(Date.now() + (intervalHours * 60 * 60 * 1000));
+    
+    // Convert to Eastern Time to check business hours
+    let easternTime = new Date(nextRetry.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    let hour = easternTime.getHours();
+    let day = easternTime.getDay();
+    
+    // If outside business hours, move to next business day at 9 AM Eastern
+    while (day === 0 || day === 6 || hour < 9 || hour >= 20) {
+      if (day === 0 || day === 6) {
+        // Weekend - move to Monday 9 AM
+        const daysToMonday = day === 0 ? 1 : 2; // Sunday=1 day, Saturday=2 days
+        nextRetry = new Date(nextRetry);
+        nextRetry.setDate(nextRetry.getDate() + daysToMonday);
+        nextRetry.setHours(9, 0, 0, 0); // 9 AM Eastern
+      } else if (hour < 9) {
+        // Before 9 AM - set to 9 AM same day
+        nextRetry.setHours(9, 0, 0, 0);
+      } else if (hour >= 20) {
+        // After 8 PM - move to next day 9 AM
+        nextRetry.setDate(nextRetry.getDate() + 1);
+        nextRetry.setHours(9, 0, 0, 0);
+      }
+      
+      // Recalculate Eastern time
+      easternTime = new Date(nextRetry.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      hour = easternTime.getHours();
+      day = easternTime.getDay();
+    }
+    
+    return nextRetry;
   }
 
   async handleCallSuccess(attempt: CallAttempt, callId: number) {
