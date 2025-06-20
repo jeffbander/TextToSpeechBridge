@@ -9,9 +9,10 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, Play, Pause, BarChart3, CheckCircle, XCircle, Clock, Users, Download } from "lucide-react";
+import { Upload, FileText, Play, Pause, BarChart3, CheckCircle, XCircle, Clock, Users, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Link } from "wouter";
 
 interface ImportResult {
   success: boolean;
@@ -525,6 +526,12 @@ function CampaignCard({
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Link href={`/campaigns/${campaign.id}`}>
+              <Button variant="outline" size="sm">
+                <Eye className="w-4 h-4 mr-1" />
+                View Details
+              </Button>
+            </Link>
             {campaign.status === 'active' ? (
               <Button
                 variant="outline"

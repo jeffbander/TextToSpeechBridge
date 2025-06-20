@@ -12,6 +12,7 @@ import RealtimePage from "@/pages/realtime";
 import ConversationLogs from "@/pages/conversation-logs";
 import AutomatedCallsPage from "@/pages/automated-calls";
 import CsvImportPage from "@/pages/csv-import";
+import CampaignDetailsPage from "@/pages/campaign-details";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/conversation-logs" component={ConversationLogs} />
       <Route path="/automated-calls" component={AutomatedCallsPage} />
       <Route path="/csv-import" component={CsvImportPage} />
+      <Route path="/campaigns/:id" component={CampaignDetailsPage} />
       <Route component={NotFound} />
     </Switch>
   );

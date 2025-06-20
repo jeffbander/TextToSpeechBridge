@@ -120,6 +120,23 @@ export function registerCsvImportRoutes(app: Express) {
     }
   });
 
+  // Get individual campaign details
+  app.get("/api/campaigns/:id", async (req: Request, res: Response) => {
+    try {
+      const campaignId = parseInt(req.params.id);
+      const campaign = await storage.getCallCampaign(campaignId);
+      
+      if (!campaign) {
+        return res.status(404).json({ error: "Campaign not found" });
+      }
+
+      res.json(campaign);
+    } catch (error) {
+      console.error('Error fetching campaign:', error);
+      res.status(500).json({ error: "Failed to fetch campaign details" });
+    }
+  });
+
   // Get call attempt statistics
   app.get("/api/campaigns/:id/stats", async (req: Request, res: Response) => {
     try {
@@ -139,6 +156,47 @@ export function registerCsvImportRoutes(app: Express) {
     } catch (error) {
       console.error('Error fetching campaign stats:', error);
       res.status(500).json({ error: "Failed to fetch campaign statistics" });
+    }
+  });
+
+  // Get detailed call attempts with patient information
+  app.get("/api/campaigns/:id/attempts", async (req: Request, res: Response) => {
+    try {
+      const campaignId = parseInt(req.params.id);
+      const attempts = await storage.getCallAttemptsByCampaign(campaignId);
+      
+      // Get patient details for each attempt
+      const attemptsWithPatients = await Promise.all(
+        attempts.map(async (attempt) => {
+          const patient = await storage.getPatient(attempt.patientId);
+          return {
+            ...attempt,
+            patient: patient || {
+              id: attempt.patientId,
+              firstName: 'Unknown',
+              lastName: 'Patient',
+              phoneNumber: attempt.phoneNumberUsed,
+              systemId: 'Unknown',
+              mrn: 'Unknown',
+              dateOfBirth: 'Unknown',
+              gender: 'Unknown',
+              address: 'Unknown'
+            }
+          };
+        })
+      );
+
+      // Sort by creation date (newest first)
+      attemptsWithPatients.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      res.json(attemptsWithPatients);
+    } catch (error) {
+      console.error('Error fetching campaign attempts:', error);
+      res.status(500).json({ error: "Failed to fetch campaign attempts" });
     }
   });
 
