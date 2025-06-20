@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AudioRealtime from '@/components/realtime/audio-realtime';
 import { Bot, Phone, User } from 'lucide-react';
-import Navigation from '@/components/navigation';
+
 import type { Patient } from '@/../../shared/schema';
 
 export default function RealtimePage() {

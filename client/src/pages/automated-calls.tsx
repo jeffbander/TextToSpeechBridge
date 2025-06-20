@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Phone, Clock, User, AlertTriangle, CheckCircle, XCircle, MessageSquare, TestTube2 } from 'lucide-react';
 import { format } from 'date-fns';
-import Navigation from '@/components/navigation';
+
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { safeFind, isEmpty } from '@/lib/safe-arrays';
@@ -215,8 +215,6 @@ export default function AutomatedCallsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
       <main className="container mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
