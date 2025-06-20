@@ -12,7 +12,8 @@ interface NavigationItem {
 
 const navigationItems: NavigationItem[] = [
   { label: "Dashboard", path: "/", icon: Home },
-  { label: "Conversation Logs", path: "/conversation-logs", icon: MessageSquare },
+  { label: "SMS Templates", path: "/sms-templates", icon: MessageSquare },
+  { label: "Conversation Logs", path: "/conversation-logs", icon: Activity },
   { label: "Voice Settings", path: "/voice-settings", icon: Settings },
   { label: "Custom Prompts", path: "/custom-prompts", icon: FileText },
   { label: "Real-time Testing", path: "/realtime", icon: Activity },

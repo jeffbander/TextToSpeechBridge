@@ -8,6 +8,7 @@ import Navigation from "@/components/navigation";
 import Dashboard from "@/pages/dashboard";
 import VoiceSettings from "@/pages/voice-settings";
 import CustomPrompts from "@/pages/patient-prompts-manager";
+import SMSTemplates from "@/pages/sms-templates";
 import Patients from "@/pages/patients";
 import RealtimePage from "@/pages/realtime";
 import ConversationLogs from "@/pages/conversation-logs";
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/automated-calls" component={AutomatedCallsPage} />
       <Route path="/csv-import" component={CsvImportPage} />
       <Route path="/campaigns/:id" component={CampaignDetailsPage} />
+      <Route path="/sms-templates" component={SMSTemplates} />
       <Route component={NotFound} />
     </Switch>
   );
