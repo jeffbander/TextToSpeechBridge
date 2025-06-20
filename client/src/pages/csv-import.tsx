@@ -203,36 +203,68 @@ export default function CsvImportPage() {
   // Campaign control mutations
   const startCampaignMutation = useMutation({
     mutationFn: async (campaignId: number) => {
+      console.log('Starting campaign:', campaignId);
       const response = await fetch(`/api/campaigns/${campaignId}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      if (!response.ok) throw new Error('Failed to start campaign');
+      console.log('Start campaign response:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Start campaign failed:', errorText);
+        throw new Error(`Failed to start campaign: ${response.statusText}`);
+      }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Campaign start success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
       toast({
         title: "Campaign Started",
         description: "Call campaign has been activated and calls are being scheduled.",
       });
     },
+    onError: (error) => {
+      console.error('Start campaign error:', error);
+      toast({
+        title: "Failed to Start Campaign",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
   });
 
   const pauseCampaignMutation = useMutation({
     mutationFn: async (campaignId: number) => {
+      console.log('Pausing campaign:', campaignId);
       const response = await fetch(`/api/campaigns/${campaignId}/pause`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      if (!response.ok) throw new Error('Failed to pause campaign');
+      console.log('Pause campaign response:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Pause campaign failed:', errorText);
+        throw new Error(`Failed to pause campaign: ${response.statusText}`);
+      }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Campaign pause success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
       toast({
         title: "Campaign Paused",
         description: "Call campaign has been paused.",
+      });
+    },
+    onError: (error) => {
+      console.error('Pause campaign error:', error);
+      toast({
+        title: "Failed to Pause Campaign",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive",
       });
     },
   });
