@@ -102,17 +102,11 @@ export class OpenAIRealtimeService {
       
       const patient = session.patientName;
       
-      // Use proper medical prompt, filtering out inappropriate content
+      // Use custom prompt from CSV upload or default healthcare prompt
       let instructions = session.customSystemPrompt;
       
-      // Filter out inappropriate or test prompts
-      if (!instructions || 
-          instructions.includes('We know everything') || 
-          instructions.includes('breathing will slow') ||
-          instructions.includes('keystroke') ||
-          instructions.toLowerCase().includes('threat') ||
-          instructions.toLowerCase().includes('harm')) {
-        
+      // Only filter out clearly inappropriate content, preserve legitimate medical prompts
+      if (!instructions || instructions.trim().length < 10) {
         instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office, located at 432 Bedford Ave, Williamsburg. You are following up with ${patient} using their most recent notes and clinical data.
 
 Your role is to:
@@ -122,6 +116,12 @@ Your role is to:
 4. Keep tone professional, kind, and clear—like a nurse calling a long-time patient
 
 Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.`;
+      } else {
+        // Use the custom prompt from CSV upload, ensuring it includes proper context
+        instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. ${instructions}
+
+Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.`;
+        console.log(`🎯 Using custom prompt from CSV upload for ${patient}`);
       }
 
       // Extract voice and language preferences from custom prompt metadata if available

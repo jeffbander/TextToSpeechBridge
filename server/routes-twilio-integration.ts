@@ -334,5 +334,126 @@ Respond as a caring healthcare provider. Ask relevant follow-up questions about 
     }
   });
 
+  // GPT-4o webhook endpoint for automated campaign calls
+  app.post("/twilio-gpt4o-webhook", async (req, res) => {
+    try {
+      const { CallSid, From, To } = req.body;
+      console.log(`[GPT4O-WEBHOOK] Incoming call - CallSid: ${CallSid}, From: ${From}, To: ${To}`);
+
+      // Find the call record and patient by phone number
+      const calls = await storage.getCalls();
+      const activeCall = calls.find(call => 
+        call.twilioCallSid === CallSid || 
+        (call.status === 'in_progress' && !call.twilioCallSid)
+      );
+
+      if (!activeCall) {
+        console.error(`[GPT4O-WEBHOOK] No active call found for CallSid: ${CallSid}`);
+        return res.status(404).type('text/xml').send(`
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Response>
+            <Say>Call not found in system</Say>
+            <Hangup/>
+          </Response>
+        `);
+      }
+
+      // Get patient information
+      const patient = await storage.getPatient(activeCall.patientId);
+      if (!patient) {
+        console.error(`[GPT4O-WEBHOOK] Patient not found for call: ${activeCall.id}`);
+        return res.status(404).type('text/xml').send(`
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Response>
+            <Say>Patient not found</Say>
+            <Hangup/>
+          </Response>
+        `);
+      }
+
+      console.log(`[GPT4O-WEBHOOK] Patient: ${patient.firstName} ${patient.lastName}`);
+      console.log(`[GPT4O-WEBHOOK] Custom prompt exists: ${!!patient.customPrompt}`);
+
+      // Create GPT-4o real-time session with custom prompt
+      const customSystemPrompt = patient.customPrompt || 
+        `Hello, this is Tziporah, Dr. Jeffrey Bander's AI assistant. I'm calling to check on your health and see how you're doing. How are you feeling today?`;
+
+      console.log(`[GPT4O-WEBHOOK] Using custom prompt: ${customSystemPrompt.substring(0, 100)}...`);
+
+      // Create real-time session
+      const sessionId = await openaiRealtimeService.createRealtimeSession(
+        patient.id,
+        `${patient.firstName} ${patient.lastName}`,
+        activeCall.id,
+        customSystemPrompt
+      );
+
+      // Update call with session info
+      await storage.updateCall(activeCall.id, {
+        twilioCallSid: CallSid,
+        status: 'in_progress'
+      });
+
+      console.log(`[GPT4O-WEBHOOK] Created GPT-4o session: ${sessionId} for call: ${activeCall.id}`);
+
+      // Generate TwiML to connect to WebSocket stream
+      const baseUrl = req.get('host');
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Connect>
+    <Stream url="wss://${baseUrl}/ws/realtime/${sessionId}" />
+  </Connect>
+</Response>`;
+
+      console.log(`[GPT4O-WEBHOOK] Connecting to WebSocket stream: wss://${baseUrl}/ws/realtime/${sessionId}`);
+
+      res.type('text/xml').send(twiml);
+
+    } catch (error) {
+      console.error('[GPT4O-WEBHOOK] Error handling webhook:', error);
+      res.status(500).type('text/xml').send(`
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Response>
+          <Say>Connection error occurred</Say>
+          <Hangup/>
+        </Response>
+      `);
+    }
+  });
+
+  // Status callback endpoint for call updates
+  app.post("/twilio-status-callback", async (req, res) => {
+    try {
+      const { CallSid, CallStatus, CallDuration } = req.body;
+      console.log(`[TWILIO-STATUS] CallSid: ${CallSid}, Status: ${CallStatus}, Duration: ${CallDuration}`);
+
+      // Find and update the call record
+      const calls = await storage.getCalls();
+      const call = calls.find(c => c.twilioCallSid === CallSid);
+      
+      if (call) {
+        const updates: any = {};
+        
+        if (CallStatus === 'completed') {
+          updates.status = 'completed';
+          updates.duration = CallDuration ? parseInt(CallDuration) : null;
+        } else if (CallStatus === 'failed' || CallStatus === 'busy' || CallStatus === 'no-answer') {
+          updates.status = 'failed';
+          updates.outcome = CallStatus;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await storage.updateCall(call.id, updates);
+          console.log(`[TWILIO-STATUS] Updated call ${call.id} with status: ${CallStatus}`);
+        }
+      }
+
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error('[TWILIO-STATUS] Error handling status callback:', error);
+      res.status(500).send('Error');
+    }
+  });
+
   console.log("[TWILIO-INTEGRATION] Twilio-to-GPT-4o integration routes registered");
 }

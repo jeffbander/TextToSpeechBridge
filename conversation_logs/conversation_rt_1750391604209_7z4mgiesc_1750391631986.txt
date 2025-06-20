@@ -1,0 +1,23 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750391604209_7z4mgiesc
+Patient: Jeff Bander (ID: 7)
+Call ID: 265
+Duration: 27 seconds
+Date: 2025-06-20T03:53:24.209Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[3:53:51 AM] AI: שלום־עליכם,
+
+
+[3:53:51 AM] PATIENT: Anyone here?
+
+
+
+[3:53:51 AM] AI:  דאָס איז טיפּֿעראַ, די נערס־העלפֿערקע פֿון ד"ר דזשעפֿרי באנדער'ס אָפיס. איך
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
