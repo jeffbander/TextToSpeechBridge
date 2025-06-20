@@ -58,8 +58,7 @@ export default function ConversationLogs() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
@@ -74,8 +73,7 @@ export default function ConversationLogs() {
 
   if (logsError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Card>
             <CardContent className="p-6 text-center">
               <FileText className="h-12 w-12 mx-auto mb-4 text-red-500" />
@@ -94,8 +92,7 @@ export default function ConversationLogs() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0 space-y-6">
           {/* Page Header */}
           <div className="flex items-center justify-between">
@@ -234,6 +231,5 @@ export default function ConversationLogs() {
           </Card>
         </div>
       </main>
-    </div>
   );
 }

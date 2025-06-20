@@ -47,8 +47,7 @@ export default function Dashboard() {
 
   if (statsError || callsError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Card>
             <CardContent className="p-6 text-center">
               <Bell className="h-12 w-12 mx-auto mb-4 text-red-500" />
@@ -65,14 +64,11 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
@@ -187,6 +183,5 @@ export default function Dashboard() {
           </Card>
         </div>
       </main>
-    </div>
   );
 }
