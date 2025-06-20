@@ -131,13 +131,21 @@ export class CallSchedulerService {
         callId: call.id,
       });
 
+      // Get the proper webhook URL
+      const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0]?.trim();
+      const webhookUrl = baseUrl ? `https://${baseUrl}/twilio-gpt4o-webhook` : 'http://localhost:5000/twilio-gpt4o-webhook';
+      const statusCallbackUrl = baseUrl ? `https://${baseUrl}/twilio-status-callback` : 'http://localhost:5000/twilio-status-callback';
+      
+      console.log(`[CALL-SCHEDULER] Using webhook URL: ${webhookUrl}`);
+      console.log(`[CALL-SCHEDULER] Using status callback URL: ${statusCallbackUrl}`);
+
       // Initiate Twilio call
       const twilioCall = await client.calls.create({
         to: attempt.phoneNumberUsed,
         from: process.env.TWILIO_PHONE_NUMBER!,
-        url: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/twilio-gpt4o-webhook`,
+        url: webhookUrl,
         method: 'POST',
-        statusCallback: `${process.env.REPLIT_DOMAINS?.split(',')[0] || 'http://localhost:5000'}/twilio-status-callback`,
+        statusCallback: statusCallbackUrl,
         statusCallbackMethod: 'POST',
         statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
         timeout: 30,
