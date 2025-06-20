@@ -110,7 +110,8 @@ Patient Phone ↔ Twilio ↔ WebSocket Server ↔ OpenAI GPT-4o Real-time API
 - **WebSocket Conflicts**: Manual upgrade handling to preserve both voice functionality and HMR
 
 ## Changelog
-- June 15, 2025. Initial setup
+- June 20, 2025: Fixed webhook URL formatting for proper HTTPS connections, removed business hours restrictions for testing, implemented detailed campaign view with individual call tracking
+- June 15, 2025: Initial setup
 
 ## User Preferences
 
