@@ -941,7 +941,9 @@ export default function Patients() {
                             <span className="ml-2">
                               {msg.status === 'sent' && '✓'}
                               {msg.status === 'delivered' && '✓✓'}
-                              {msg.status === 'failed' && '✗'}
+                              {msg.status === 'undelivered' && '✗ Not delivered'}
+                              {msg.status === 'failed' && '✗ Failed'}
+                              {msg.status === 'sending' && '⏳'}
                             </span>
                           )}
                         </p>

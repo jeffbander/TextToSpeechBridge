@@ -44,6 +44,7 @@ export function registerSmsRoutes(app: Express) {
           body: message,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: patient.phoneNumber,
+          statusCallback: `${process.env.REPLIT_DOMAINS || 'https://localhost:5000'}/twilio-sms-status-webhook`,
         });
 
         // Update message with Twilio SID and status
@@ -108,6 +109,26 @@ export function registerSmsRoutes(app: Express) {
         message: "Failed to fetch messages",
         error: error.message
       });
+    }
+  });
+
+  // Twilio webhook for SMS delivery status updates
+  app.post("/twilio-sms-status-webhook", async (req: Request, res: Response) => {
+    try {
+      const { MessageSid, MessageStatus, ErrorCode } = req.body;
+      
+      console.log(`[SMS] Status update for ${MessageSid}: ${MessageStatus}${ErrorCode ? ` (Error: ${ErrorCode})` : ''}`);
+
+      // Find message by Twilio SID and update status
+      const messages = await storage.getMessagesByPatient(1); // We'll need to search across all messages
+      // For now, just log the status update
+      
+      res.type('text/xml');
+      res.send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
+
+    } catch (error: any) {
+      console.error('[SMS] Error processing status webhook:', error);
+      res.status(500).send('Error processing status update');
     }
   });
 
