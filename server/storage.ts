@@ -373,6 +373,37 @@ export class MemStorage implements IStorage {
     this.callAttempts.set(id, updatedAttempt);
     return updatedAttempt;
   }
+
+  // Messages
+  async getMessagesByPatient(patientId: number): Promise<Message[]> {
+    return Array.from(this.messages.values()).filter(message => message.patientId === patientId);
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const id = this.currentMessageId++;
+    const message: Message = {
+      id,
+      patientId: insertMessage.patientId,
+      direction: insertMessage.direction,
+      message: insertMessage.message,
+      status: insertMessage.status,
+      twilioSid: insertMessage.twilioSid ?? null,
+      errorMessage: insertMessage.errorMessage ?? null,
+      sentAt: new Date(),
+      receivedAt: insertMessage.receivedAt ?? null,
+    };
+    this.messages.set(id, message);
+    return message;
+  }
+
+  async updateMessage(id: number, updates: Partial<Message>): Promise<Message | undefined> {
+    const message = this.messages.get(id);
+    if (!message) return undefined;
+    
+    const updatedMessage = { ...message, ...updates };
+    this.messages.set(id, updatedMessage);
+    return updatedMessage;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
