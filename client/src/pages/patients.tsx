@@ -49,44 +49,41 @@ export default function Patients() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      mrn: "",
+      dateOfBirth: "",
+      gender: "Male" as const,
       phoneNumber: "",
       email: "",
-      dateOfBirth: "",
-      mrn: "",
-      gender: "Female",
       address: "",
+      medicalConditions: "",
+      riskLevel: "low" as const,
       systemId: "",
-      condition: "",
-      riskLevel: "low",
     },
   });
 
   const addPatientMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      return apiRequest("POST", "/api/patients", data);
-    },
+    mutationFn: (data: FormData) => apiRequest('POST', '/api/patients', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/patients'] });
       setIsAddPatientOpen(false);
       form.reset();
       toast({
         title: "Patient Added",
-        description: "New patient has been successfully added to the system.",
+        description: "Patient has been successfully added to the system.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to add patient. Please try again.",
+        description: error.message || "Failed to add patient",
         variant: "destructive",
       });
     },
   });
 
   const editPatientMutation = useMutation({
-    mutationFn: async (data: FormData & { id: number }) => {
-      return apiRequest("PUT", `/api/patients/${data.id}`, data);
-    },
+    mutationFn: ({ id, data }: { id: number; data: FormData }) => 
+      apiRequest('PUT', `/api/patients/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/patients'] });
       setIsEditPatientOpen(false);
@@ -97,27 +94,43 @@ export default function Patients() {
         description: "Patient information has been successfully updated.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update patient. Please try again.",
+        description: error.message || "Failed to update patient",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const startCallMutation = useMutation({
+    mutationFn: (data: { patientId: number; phoneNumber: string }) => 
+      apiRequest('POST', '/api/calls/start', data),
+    onSuccess: () => {
+      toast({
+        title: "Call Started",
+        description: "Patient call has been initiated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Call Failed",
+        description: error.message || "Failed to start call",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: FormData) => {
-    // Generate system ID using firstName/lastName and dateOfBirth
-    if (!data.systemId) {
-      const dobFormatted = data.dateOfBirth.replace(/-/g, "/");
-      data.systemId = `${data.lastName}_${data.firstName}__${dobFormatted}`;
-    }
-    
     if (editingPatient) {
-      editPatientMutation.mutate({ ...data, id: editingPatient.id });
+      editPatientMutation.mutate({ id: editingPatient.id, data });
     } else {
       addPatientMutation.mutate(data);
     }
+  };
+
+  const startCall = async (patientId: number, phoneNumber: string) => {
+    startCallMutation.mutate({ patientId, phoneNumber });
   };
 
   const openEditDialog = (patient: any) => {
@@ -125,55 +138,33 @@ export default function Patients() {
     form.reset({
       firstName: patient.firstName || "",
       lastName: patient.lastName || "",
+      mrn: patient.mrn || "",
+      dateOfBirth: patient.dateOfBirth || "",
+      gender: patient.gender || "Male",
       phoneNumber: patient.phoneNumber || "",
       email: patient.email || "",
-      dateOfBirth: patient.dateOfBirth || "",
-      mrn: patient.mrn || "",
-      gender: patient.gender || "Female",
       address: patient.address || "",
-      systemId: patient.systemId || "",
-      condition: patient.condition || "",
+      medicalConditions: patient.medicalConditions || "",
       riskLevel: patient.riskLevel || "low",
+      systemId: patient.systemId || "",
     });
     setIsEditPatientOpen(true);
   };
 
-  const getRiskLevelColor = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'high': return 'destructive';
-      case 'medium': return 'default';
-      case 'low': return 'secondary';
-      default: return 'outline';
-    }
-  };
-
   const formatPhoneNumber = (phone: string) => {
-    // Remove all non-digits
     const cleaned = phone.replace(/\D/g, '');
-    
-    // Format as (XXX) XXX-XXXX
     if (cleaned.length === 10) {
       return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
     }
     return phone;
   };
 
-  const startCall = async (patientId: number, phoneNumber: string) => {
-    try {
-      const response = await apiRequest('POST', '/api/calls/start', { 
-        patientId, 
-        phoneNumber 
-      });
-      toast({
-        title: "Call Started",
-        description: `Initiating call to ${phoneNumber}`,
-      });
-    } catch (error) {
-      toast({
-        title: "Call Failed",
-        description: "Failed to start call. Please try again.",
-        variant: "destructive",
-      });
+  const getRiskBadgeColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -201,13 +192,13 @@ export default function Patients() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">Patient Management</h1>
-            <p className="text-muted-foreground">
-              Manage patient records and contact information
-            </p>
-          </div>
-          
-          <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
+          <h1 className="text-3xl font-bold tracking-tight">Patient Management</h1>
+          <p className="text-muted-foreground">
+            Manage patient records and contact information
+          </p>
+        </div>
+        
+        <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -281,14 +272,13 @@ export default function Patients() {
                       </FormItem>
                     )}
                   />
-                  
                   <FormField
                     control={form.control}
                     name="gender"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Gender *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select gender" />
@@ -304,9 +294,6 @@ export default function Patients() {
                       </FormItem>
                     )}
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="phoneNumber"
@@ -320,7 +307,6 @@ export default function Patients() {
                       </FormItem>
                     )}
                   />
-                  
                   <FormField
                     control={form.control}
                     name="email"
@@ -341,7 +327,7 @@ export default function Patients() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address *</FormLabel>
+                      <FormLabel>Address</FormLabel>
                       <FormControl>
                         <Input placeholder="440 Berry St Apt 2M, Brooklyn, New York, 11249" {...field} />
                       </FormControl>
@@ -353,10 +339,10 @@ export default function Patients() {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="condition"
+                    name="medicalConditions"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Condition *</FormLabel>
+                        <FormLabel>Medical Conditions</FormLabel>
                         <FormControl>
                           <Input placeholder="Cardiology Follow-up" {...field} />
                         </FormControl>
@@ -364,14 +350,13 @@ export default function Patients() {
                       </FormItem>
                     )}
                   />
-                  
                   <FormField
                     control={form.control}
                     name="riskLevel"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Risk Level *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select risk level" />
@@ -426,7 +411,7 @@ export default function Patients() {
             <DialogHeader>
               <DialogTitle>Edit Patient</DialogTitle>
               <DialogDescription>
-                Update the patient's information.
+                Update patient information in the system.
               </DialogDescription>
             </DialogHeader>
             
@@ -473,7 +458,6 @@ export default function Patients() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="phoneNumber"
@@ -497,17 +481,12 @@ export default function Patients() {
                       <FormItem>
                         <FormLabel>Date of Birth *</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="date" 
-                            {...field} 
-                            value={field.value || ""} 
-                          />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="gender"
@@ -551,7 +530,7 @@ export default function Patients() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address *</FormLabel>
+                      <FormLabel>Address</FormLabel>
                       <FormControl>
                         <Input placeholder="440 Berry St Apt 2M, Brooklyn, New York, 11249" {...field} />
                       </FormControl>
@@ -563,10 +542,10 @@ export default function Patients() {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="condition"
+                    name="medicalConditions"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Condition *</FormLabel>
+                        <FormLabel>Medical Conditions</FormLabel>
                         <FormControl>
                           <Input placeholder="Cardiology Follow-up" {...field} />
                         </FormControl>
@@ -574,7 +553,6 @@ export default function Patients() {
                       </FormItem>
                     )}
                   />
-                  
                   <FormField
                     control={form.control}
                     name="riskLevel"
@@ -652,111 +630,113 @@ export default function Patients() {
             </CardContent>
           </Card>
         ) : (
-          patients.map((patient) => (
+          patients.map((patient: any) => (
             <Card key={patient.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-4">
+                    <div className="bg-blue-100 p-3 rounded-full">
                       <User className="h-5 w-5 text-blue-600" />
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{patient.firstName} {patient.lastName}</CardTitle>
-                      <CardDescription>MRN: {patient.mrn}</CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant={getRiskLevelColor(patient.riskLevel)}>
-                      {patient.riskLevel} risk
-                    </Badge>
-                    <Badge variant="outline">{patient.condition}</Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Date of Birth</div>
-                      <div className="text-sm text-muted-foreground">{patient.dateOfBirth}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Gender</div>
-                      <div className="text-sm text-muted-foreground">{patient.gender}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Phone</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatPhoneNumber(patient.phoneNumber)}
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="text-lg font-semibold">
+                          {patient.firstName} {patient.lastName}
+                        </h3>
+                        <Badge className={getRiskBadgeColor(patient.riskLevel)}>
+                          {patient.riskLevel?.toUpperCase()} RISK
+                        </Badge>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="text-sm font-medium">Email</div>
-                      <div className="text-sm text-muted-foreground">
-                        {patient.email || "Not provided"}
+                      <p className="text-sm text-muted-foreground mb-3">
+                        MRN: {patient.mrn} • {patient.medicalConditions}
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="text-sm font-medium">Date of Birth</div>
+                            <div className="text-sm text-muted-foreground">{patient.dateOfBirth}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="text-sm font-medium">Gender</div>
+                            <div className="text-sm text-muted-foreground">{patient.gender}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="text-sm font-medium">Phone</div>
+                            <div className="text-sm text-muted-foreground">
+                              {formatPhoneNumber(patient.phoneNumber)}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="text-sm font-medium">Email</div>
+                            <div className="text-sm text-muted-foreground">
+                              {patient.email || "Not provided"}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-start space-x-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <div className="text-sm font-medium">Address</div>
-                      <div className="text-sm text-muted-foreground">{patient.address}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      System ID: {patient.systemId}
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => openEditDialog(patient)}
-                      >
-                        <User className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => startCall(patient.id, patient.phoneNumber)}
-                      >
-                        <Heart className="h-4 w-4 mr-1" />
-                        Start Call
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedPatientForPrompt(patient);
-                          setIsPromptDialogOpen(true);
-                        }}
-                      >
-                        Create Prompt
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        View History
-                      </Button>
+                      
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-start space-x-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <div className="text-sm font-medium">Address</div>
+                            <div className="text-sm text-muted-foreground">{patient.address}</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            System ID: {patient.systemId}
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => openEditDialog(patient)}
+                            >
+                              <User className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => startCall(patient.id, patient.phoneNumber)}
+                            >
+                              <Heart className="h-4 w-4 mr-1" />
+                              Start Call
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedPatientForPrompt(patient);
+                                setIsPromptDialogOpen(true);
+                              }}
+                            >
+                              Create Prompt
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              View History
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

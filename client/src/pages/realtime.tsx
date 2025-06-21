@@ -44,8 +44,8 @@ export default function RealtimePage() {
   };
 
   return (
-    <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0 space-y-6">
+    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="px-4 py-6 sm:px-0 space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -201,7 +201,6 @@ export default function RealtimePage() {
           </div>
         </CardContent>
       </Card>
-        </div>
       </main>
     </div>
   );
