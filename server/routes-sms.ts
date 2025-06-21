@@ -39,12 +39,11 @@ export function registerSmsRoutes(app: Express) {
       });
 
       try {
-        // Send SMS via Twilio
+        // Send SMS via Twilio  
         const twilioMessage = await twilioClient.messages.create({
           body: message,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: patient.phoneNumber,
-          statusCallback: `${process.env.REPLIT_DOMAINS || 'https://localhost:5000'}/twilio-sms-status-webhook`,
         });
 
         // Update message with Twilio SID and status
