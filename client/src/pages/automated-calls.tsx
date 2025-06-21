@@ -216,18 +216,18 @@ export default function AutomatedCallsPage() {
   return (
     <main className="container mx-auto px-4 py-8 space-y-6">
       <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Automated Patient Calls</h1>
-            <p className="text-muted-foreground">
-              AI-powered patient follow-up calls using GPT-4o and Twilio integration
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="h-8 w-8 text-blue-600" />
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Automated Patient Calls</h1>
+          <p className="text-muted-foreground">
+            AI-powered patient follow-up calls using GPT-4o and Twilio integration
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Phone className="h-8 w-8 text-blue-600" />
+        </div>
+      </div>
 
-        {/* Quick Actions */}
+      {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Start New Automated Call</CardTitle>

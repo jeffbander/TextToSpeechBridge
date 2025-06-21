@@ -69,7 +69,7 @@ export default function Dashboard() {
 
   return (
     <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+      <div className="px-4 py-6 sm:px-0">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
             <Card>
@@ -181,7 +181,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </main>
+      </div>
+    </main>
   );
 }
