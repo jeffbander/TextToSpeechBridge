@@ -693,6 +693,33 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return attempt || undefined;
   }
+
+  // Messages
+  async getMessagesByPatient(patientId: number): Promise<Message[]> {
+    try {
+      return await db.select().from(messages).where(eq(messages.patientId, patientId)).orderBy(messages.sentAt);
+    } catch (error) {
+      console.error('Database error fetching messages:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
+    return message;
+  }
+
+  async updateMessage(id: number, updates: Partial<Message>): Promise<Message | undefined> {
+    const [message] = await db
+      .update(messages)
+      .set(updates)
+      .where(eq(messages.id, id))
+      .returning();
+    return message || undefined;
+  }
 }
 
 export const storage = new DatabaseStorage();

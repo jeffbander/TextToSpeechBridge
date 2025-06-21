@@ -19,10 +19,13 @@ export function registerSmsRoutes(app: Express) {
   // Send SMS to patient
   app.post("/api/sms/send", async (req: Request, res: Response) => {
     try {
+      console.log('[SMS] Request body:', req.body);
       const { patientId, message } = sendMessageSchema.parse(req.body);
+      console.log('[SMS] Parsed data:', { patientId, message });
       
       // Get patient information
       const patient = await storage.getPatient(patientId);
+      console.log('[SMS] Patient found:', patient ? `${patient.firstName} ${patient.lastName}` : 'null');
       if (!patient) {
         return res.status(404).json({ message: "Patient not found" });
       }
