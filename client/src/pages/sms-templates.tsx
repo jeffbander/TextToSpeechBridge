@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Template, Plus, Edit, MessageSquare, Tag } from "lucide-react";
+import { FileText, Plus, Edit, MessageSquare, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -316,7 +316,7 @@ export default function SMSTemplates() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Template className="h-5 w-5 text-blue-600" />
+                    <FileText className="h-5 w-5 text-blue-600" />
                     <CardTitle className="text-lg">{template.name}</CardTitle>
                   </div>
                   <Badge className={getCategoryColor(template.category)}>
