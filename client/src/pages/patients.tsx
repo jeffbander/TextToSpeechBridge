@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPatientSchema } from "@shared/schema";
 import { z } from "zod";
 import { useState } from "react";
-import { Plus, Phone, Mail, MapPin, Calendar, User, Heart, AlertTriangle, Bell, Volume2 } from "lucide-react";
+import { Plus, Phone, Mail, MapPin, Calendar, User, Heart, AlertTriangle, Bell, Volume2, MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
@@ -36,6 +36,10 @@ export default function Patients() {
   const [isPromptDialogOpen, setIsPromptDialogOpen] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
   const [callType, setCallType] = useState<"initial" | "followUp" | "urgent">("initial");
+  const [selectedPatientForSms, setSelectedPatientForSms] = useState<any>(null);
+  const [isSmsDialogOpen, setIsSmsDialogOpen] = useState(false);
+  const [smsMessage, setSmsMessage] = useState("");
+  const [patientMessages, setPatientMessages] = useState<any[]>([]);
   const { toast } = useToast();
 
   const { data: patients = [], isLoading, error: patientsError } = useQuery<any[]>({
@@ -121,6 +125,29 @@ export default function Patients() {
     },
   });
 
+  const sendSmsMutation = useMutation({
+    mutationFn: (data: { patientId: number; message: string }) => 
+      apiRequest('POST', '/api/sms/send', data),
+    onSuccess: () => {
+      toast({
+        title: "SMS Sent",
+        description: "Text message sent successfully.",
+      });
+      setSmsMessage("");
+      // Refresh messages for this patient
+      if (selectedPatientForSms) {
+        fetchPatientMessages(selectedPatientForSms.id);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "SMS Failed",
+        description: error.message || "Failed to send text message",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: FormData) => {
     if (editingPatient) {
       editPatientMutation.mutate({ id: editingPatient.id, data });
@@ -131,6 +158,36 @@ export default function Patients() {
 
   const startCall = async (patientId: number, phoneNumber: string) => {
     startCallMutation.mutate({ patientId, phoneNumber });
+  };
+
+  const fetchPatientMessages = async (patientId: number) => {
+    try {
+      const response = await fetch(`/api/sms/patient/${patientId}`);
+      if (response.ok) {
+        const messages = await response.json();
+        setPatientMessages(messages);
+      }
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    }
+  };
+
+  const openSmsDialog = (patient: any) => {
+    setSelectedPatientForSms(patient);
+    setSmsMessage("");
+    setPatientMessages([]);
+    setIsSmsDialogOpen(true);
+    // Fetch existing messages for this patient
+    fetchPatientMessages(patient.id);
+  };
+
+  const sendSms = () => {
+    if (!smsMessage.trim() || !selectedPatientForSms) return;
+    
+    sendSmsMutation.mutate({
+      patientId: selectedPatientForSms.id,
+      message: smsMessage.trim()
+    });
   };
 
   const openEditDialog = (patient: any) => {
@@ -731,6 +788,14 @@ export default function Patients() {
                             >
                               Create Prompt
                             </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => openSmsDialog(patient)}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              Send Text Message
+                            </Button>
                             <Button variant="outline" size="sm">
                               View History
                             </Button>
@@ -833,6 +898,91 @@ export default function Patients() {
                 }}
               >
                 Start Custom Call
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* SMS Dialog */}
+      <Dialog open={isSmsDialogOpen} onOpenChange={setIsSmsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Send Text Message to {selectedPatientForSms?.firstName} {selectedPatientForSms?.lastName}</DialogTitle>
+            <DialogDescription>
+              Send a text message to {formatPhoneNumber(selectedPatientForSms?.phoneNumber || "")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 flex flex-col space-y-4 min-h-0">
+            {/* Message History */}
+            <div className="flex-1 border rounded-lg p-4 overflow-y-auto bg-muted/30 min-h-[300px]">
+              <h4 className="font-medium mb-3 text-sm text-muted-foreground">Message History</h4>
+              {patientMessages.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No previous messages</p>
+              ) : (
+                <div className="space-y-3">
+                  {patientMessages.map((msg: any) => (
+                    <div key={msg.id} className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] rounded-lg p-3 ${
+                        msg.direction === 'outbound' 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-white border'
+                      }`}>
+                        <p className="text-sm">{msg.message}</p>
+                        <p className={`text-xs mt-1 ${
+                          msg.direction === 'outbound' 
+                            ? 'text-blue-100' 
+                            : 'text-muted-foreground'
+                        }`}>
+                          {msg.direction === 'outbound' ? 'You' : selectedPatientForSms?.firstName} • {' '}
+                          {new Date(msg.sentAt || msg.receivedAt).toLocaleString()}
+                          {msg.direction === 'outbound' && (
+                            <span className="ml-2">
+                              {msg.status === 'sent' && '✓'}
+                              {msg.status === 'delivered' && '✓✓'}
+                              {msg.status === 'failed' && '✗'}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Send Message */}
+            <div className="space-y-3">
+              <Label htmlFor="smsMessage">New Message</Label>
+              <div className="flex space-x-2">
+                <Textarea 
+                  id="smsMessage"
+                  value={smsMessage}
+                  onChange={(e) => setSmsMessage(e.target.value)}
+                  placeholder="Type your message here..."
+                  rows={3}
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={sendSms}
+                  disabled={!smsMessage.trim() || sendSmsMutation.isPending}
+                  className="self-end"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {smsMessage.length}/160 characters
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsSmsDialogOpen(false)}
+              >
+                Close
               </Button>
             </div>
           </div>
