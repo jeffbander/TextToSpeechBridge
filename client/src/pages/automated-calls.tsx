@@ -442,6 +442,5 @@ export default function AutomatedCallsPage() {
           </CardContent>
         </Card>
       </main>
-    </div>
   );
 }

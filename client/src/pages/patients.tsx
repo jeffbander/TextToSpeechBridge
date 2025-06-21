@@ -764,9 +764,9 @@ export default function Patients() {
             </Card>
           ))
         )}
-        </div>
+      </div>
 
-        {/* Custom Prompt Dialog */}
+      {/* Custom Prompt Dialog */}
         <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>

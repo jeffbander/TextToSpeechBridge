@@ -59,13 +59,12 @@ export default function ConversationLogs() {
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
-              <p className="text-muted-foreground">Healthcare conversation transcripts and recordings</p>
-            </div>
-            <div className="text-center py-8">Loading conversation logs...</div>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
+            <p className="text-muted-foreground">Healthcare conversation transcripts and recordings</p>
           </div>
+          <div className="text-center py-8">Loading conversation logs...</div>
         </div>
       </div>
     );
@@ -74,7 +73,7 @@ export default function ConversationLogs() {
   if (logsError) {
     return (
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <Card>
+        <Card>
             <CardContent className="p-6 text-center">
               <FileText className="h-12 w-12 mx-auto mb-4 text-red-500" />
               <h2 className="text-xl font-semibold mb-2">Failed to Load Logs</h2>
@@ -86,7 +85,6 @@ export default function ConversationLogs() {
               </Button>
             </CardContent>
           </Card>
-        </div>
       </div>
     );
   }
