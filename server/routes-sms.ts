@@ -52,7 +52,7 @@ export function registerSmsRoutes(app: Express) {
           status: 'sent',
         });
 
-        console.log(`[SMS] Message sent to ${patient.firstName} ${patient.lastName}: ${twilioMessage.sid}`);
+        console.log(`[SMS] Message sent to ${patient.firstName} ${patient.lastName} (${patient.phoneNumber}): ${twilioMessage.sid}`);
         
         res.json({
           success: true,
