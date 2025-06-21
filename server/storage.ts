@@ -5,6 +5,7 @@ import {
   alerts,
   callCampaigns,
   callAttempts,
+  messages,
   type Patient, 
   type InsertPatient,
   type Call,
@@ -16,7 +17,9 @@ import {
   type CallCampaign,
   type InsertCallCampaign,
   type CallAttempt,
-  type InsertCallAttempt
+  type InsertCallAttempt,
+  type Message,
+  type InsertMessage
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -61,6 +64,11 @@ export interface IStorage {
   getPendingCallAttempts(): Promise<CallAttempt[]>;
   createCallAttempt(attempt: InsertCallAttempt): Promise<CallAttempt>;
   updateCallAttempt(id: number, updates: Partial<CallAttempt>): Promise<CallAttempt | undefined>;
+
+  // Messages
+  getMessagesByPatient(patientId: number): Promise<Message[]>;
+  createMessage(insertMessage: InsertMessage): Promise<Message>;
+  updateMessage(id: number, updates: Partial<Message>): Promise<Message | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -70,10 +78,12 @@ export class MemStorage implements IStorage {
   private alerts: Map<number, Alert>;
   private callCampaigns: Map<number, CallCampaign>;
   private callAttempts: Map<number, CallAttempt>;
+  private messages: Map<number, Message>;
   private currentPatientId: number;
   private currentCallId: number;
   private currentScheduledCallId: number;
   private currentAlertId: number;
+  private currentMessageId: number;
 
   constructor() {
     this.patients = new Map();
@@ -82,10 +92,12 @@ export class MemStorage implements IStorage {
     this.alerts = new Map();
     this.callCampaigns = new Map();
     this.callAttempts = new Map();
+    this.messages = new Map();
     this.currentPatientId = 1;
     this.currentCallId = 1;
     this.currentScheduledCallId = 1;
     this.currentAlertId = 1;
+    this.currentMessageId = 1;
     
     // Initialize with sample patient data for demonstration
     this.initializeSampleData();

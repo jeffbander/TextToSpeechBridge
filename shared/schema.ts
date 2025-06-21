@@ -96,6 +96,18 @@ export const alerts = pgTable("alerts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  direction: text("direction").notNull(), // outbound, inbound
+  message: text("message").notNull(),
+  status: text("status").notNull(), // sent, delivered, failed, received
+  twilioSid: text("twilio_sid"),
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").defaultNow(),
+  receivedAt: timestamp("received_at"),
+});
+
 export const insertPatientSchema = createInsertSchema(patients).omit({
   id: true,
   createdAt: true,
@@ -127,6 +139,12 @@ export const insertAlertSchema = createInsertSchema(alerts).omit({
   createdAt: true,
 });
 
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  sentAt: true,
+  receivedAt: true,
+});
+
 export type Patient = typeof patients.$inferSelect;
 export type InsertPatient = z.infer<typeof insertPatientSchema>;
 export type Call = typeof calls.$inferSelect;
@@ -139,3 +157,5 @@ export type CallAttempt = typeof callAttempts.$inferSelect;
 export type InsertCallAttempt = z.infer<typeof insertCallAttemptSchema>;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
