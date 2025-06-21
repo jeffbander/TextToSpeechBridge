@@ -14,10 +14,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPatientSchema } from "@shared/schema";
 import { z } from "zod";
 import { useState } from "react";
-import { Plus, Phone, Mail, MapPin, Calendar, User, Heart, AlertTriangle, Bell, Volume2, MessageSquare } from "lucide-react";
+import { Plus, Phone, Mail, MapPin, Calendar, User, Heart, AlertTriangle, Bell, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { SMSInterface } from "@/components/sms-interface";
 
 const formSchema = insertPatientSchema.extend({
   dateOfBirth: z.string().min(1, "Date of birth is required"),
@@ -182,7 +181,7 @@ export default function Patients() {
   if (patientsError) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
+          <Card>
             <CardContent className="p-6 text-center">
               <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-red-500" />
               <h2 className="text-xl font-semibold mb-2">Failed to Load Patients</h2>
@@ -194,21 +193,21 @@ export default function Patients() {
               </Button>
             </CardContent>
           </Card>
-      </div>
+        </div>
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Patient Management</h1>
-          <p className="text-muted-foreground">
-            Manage patient records and contact information
-          </p>
-        </div>
-        
-        <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Patient Management</h1>
+            <p className="text-muted-foreground">
+              Manage patient records and contact information
+            </p>
+          </div>
+          
+          <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -636,13 +635,6 @@ export default function Patients() {
         </Dialog>
       </div>
 
-      {/* Bulk SMS Interface */}
-      {patients.length > 0 && (
-        <div className="mb-6">
-          <SMSInterface patients={patients} mode="bulk" />
-        </div>
-      )}
-
       {/* Patient List */}
       <div className="space-y-4">
         {isLoading ? (
@@ -736,7 +728,6 @@ export default function Patients() {
                       System ID: {patient.systemId}
                     </div>
                     <div className="flex space-x-2">
-                      <SMSInterface patient={patient} mode="single" />
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -773,10 +764,10 @@ export default function Patients() {
             </Card>
           ))
         )}
-      </div>
+        </div>
 
-      {/* Custom Prompt Dialog */}
-      <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
+        {/* Custom Prompt Dialog */}
+        <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create Custom Prompt for {selectedPatientForPrompt?.name}</DialogTitle>
@@ -867,6 +858,7 @@ export default function Patients() {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
     </div>
   );
 }

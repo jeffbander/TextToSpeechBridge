@@ -28,44 +28,50 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
       perMessageDeflate: false // Disable compression to reduce CPU usage for voice
     });
     
-    // Handle upgrade requests with path filtering - only intercept our specific paths
+    // Store original upgrade handler if it exists
+    const originalUpgrade = httpServer.listeners('upgrade');
+    httpServer.removeAllListeners('upgrade');
+    
+    // Handle upgrade requests with path filtering
     httpServer.on('upgrade', (request, socket, head) => {
       const pathname = url.parse(request.url!).pathname;
+      console.log(`[REALTIME] WebSocket upgrade request for: ${pathname}`);
       
-      // Only handle our specific WebSocket paths
-      if (pathname === '/ws/realtime' || pathname?.startsWith('/ws/realtime/') || pathname?.startsWith('/ws/twilio/')) {
-        console.log(`[REALTIME] WebSocket upgrade request for: ${pathname}`);
-        
-        if (pathname === '/ws/realtime') {
-          console.log('[REALTIME] Handling realtime WebSocket upgrade');
-          realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
-            realtimeWss!.emit('connection', websocket, request);
+      if (pathname === '/ws/realtime') {
+        console.log('[REALTIME] Handling realtime WebSocket upgrade');
+        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          realtimeWss!.emit('connection', websocket, request);
+        });
+      } else if (pathname?.startsWith('/ws/realtime/')) {
+        console.log('[REALTIME] Handling GPT-4o realtime WebSocket upgrade');
+        const sessionId = pathname.split('/ws/realtime/')[1];
+        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          openaiRealtimeService.connectClientWebSocket(sessionId, websocket);
+          
+          // Handle Twilio audio messages
+          websocket.on('message', (data) => {
+            try {
+              const message = JSON.parse(data.toString());
+              openaiRealtimeService.handleClientMessage(sessionId, message);
+            } catch (error) {
+              console.error(`[REALTIME-WS] Error parsing Twilio message:`, error);
+            }
           });
-        } else if (pathname?.startsWith('/ws/realtime/')) {
-          console.log('[REALTIME] Handling GPT-4o realtime WebSocket upgrade');
-          const sessionId = pathname.split('/ws/realtime/')[1];
-          realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
-            openaiRealtimeService.connectClientWebSocket(sessionId, websocket);
-            
-            // Handle Twilio audio messages
-            websocket.on('message', (data) => {
-              try {
-                const message = JSON.parse(data.toString());
-                openaiRealtimeService.handleClientMessage(sessionId, message);
-              } catch (error) {
-                console.error(`[REALTIME-WS] Error parsing Twilio message:`, error);
-              }
-            });
-          });
-        } else if (pathname?.startsWith('/ws/twilio/')) {
-          console.log('[REALTIME] Handling Twilio WebSocket upgrade');
-          const sessionId = pathname.split('/ws/twilio/')[1];
-          realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
-            twilioWebSocketHandler.handleTwilioWebSocket(websocket, sessionId);
-          });
+        });
+      } else if (pathname?.startsWith('/ws/twilio/')) {
+        console.log('[REALTIME] Handling Twilio WebSocket upgrade');
+        const sessionId = pathname.split('/ws/twilio/')[1];
+        realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          twilioWebSocketHandler.handleTwilioWebSocket(websocket, sessionId);
+        });
+      } else {
+        // Let other upgrade handlers (like Vite HMR) handle their requests
+        for (const handler of originalUpgrade) {
+          if (typeof handler === 'function') {
+            handler.call(httpServer, request, socket, head);
+          }
         }
       }
-      // Let all other WebSocket requests (like Vite HMR) pass through to default handlers
     });
     
     console.log(`[REALTIME] WebSocket server configured for /ws/realtime path with manual upgrade`);

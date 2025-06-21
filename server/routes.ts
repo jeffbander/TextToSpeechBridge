@@ -12,7 +12,6 @@ import { registerRealtimeRoutes } from "./routes-realtime";
 import { registerTwilioIntegrationRoutes } from "./routes-twilio-integration";
 import { registerPromptTemplateRoutes } from "./routes-prompt-templates";
 import { registerPatientPromptRoutes } from "./routes-patient-prompts";
-import { registerSMSRoutes } from "./routes-sms";
 import { registerCsvImportRoutes } from "./routes-csv-import";
 import { registerWorkingVoiceRoutes } from "./routes-working-voice";
 
@@ -462,7 +461,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register prompt template management routes
   registerPromptTemplateRoutes(app);
   registerPatientPromptRoutes(app);
-  registerSMSRoutes(app);
   registerCsvImportRoutes(app);
 
   return httpServer;

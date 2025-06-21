@@ -59,12 +59,13 @@ export default function ConversationLogs() {
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
-            <p className="text-muted-foreground">Healthcare conversation transcripts and recordings</p>
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
+              <p className="text-muted-foreground">Healthcare conversation transcripts and recordings</p>
+            </div>
+            <div className="text-center py-8">Loading conversation logs...</div>
           </div>
-          <div className="text-center py-8">Loading conversation logs...</div>
         </div>
       </div>
     );
@@ -73,28 +74,29 @@ export default function ConversationLogs() {
   if (logsError) {
     return (
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-red-500" />
-            <h2 className="text-xl font-semibold mb-2">Failed to Load Logs</h2>
-            <p className="text-muted-foreground mb-4">
-              Unable to load conversation logs. Please check your connection and try again.
-            </p>
-            <Button onClick={() => window.location.reload()}>
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardContent className="p-6 text-center">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-semibold mb-2">Failed to Load Logs</h2>
+              <p className="text-muted-foreground mb-4">
+                Unable to load conversation logs. Please check your connection and try again.
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
     <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div className="px-4 py-6 sm:px-0 space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="px-4 py-6 sm:px-0 space-y-6">
+          {/* Page Header */}
+          <div className="flex items-center justify-between">
+        <div>
           <h1 className="text-3xl font-bold tracking-tight">Conversation Logs</h1>
           <p className="text-muted-foreground">
             Healthcare conversation transcripts and recordings
@@ -227,7 +229,7 @@ export default function ConversationLogs() {
               )}
             </CardContent>
           </Card>
-      </div>
-    </main>
+        </div>
+      </main>
   );
 }
