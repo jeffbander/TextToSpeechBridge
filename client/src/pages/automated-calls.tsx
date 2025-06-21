@@ -228,7 +228,7 @@ export default function AutomatedCallsPage() {
       </div>
 
       {/* Quick Actions */}
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle>Start New Automated Call</CardTitle>
           </CardHeader>
@@ -441,7 +441,6 @@ export default function AutomatedCallsPage() {
             )}
           </CardContent>
         </Card>
-      </div>
     </main>
   );
 }
