@@ -767,97 +767,97 @@ export default function Patients() {
       </div>
 
       {/* Custom Prompt Dialog */}
-        <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create Custom Prompt for {selectedPatientForPrompt?.name}</DialogTitle>
-              <DialogDescription>
-                Design a personalized message for the AI to deliver during the call. The AI will say the patient's name and your custom message.
-              </DialogDescription>
-            </DialogHeader>
+      <Dialog open={isPromptDialogOpen} onOpenChange={setIsPromptDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create Custom Prompt for {selectedPatientForPrompt?.name}</DialogTitle>
+            <DialogDescription>
+              Design a personalized message for the AI to deliver during the call. The AI will say the patient's name and your custom message.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="callType">Call Type</Label>
-                <Select value={callType} onValueChange={(value: any) => setCallType(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="initial">Initial Check-in</SelectItem>
-                    <SelectItem value="followUp">Follow-up Call</SelectItem>
-                    <SelectItem value="urgent">Urgent Health Check</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="customMessage">Custom Message</Label>
-                <Textarea 
-                  id="customMessage"
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder={`Example: "Hi ${selectedPatientForPrompt?.name}, this is your CardioCare AI assistant calling to check on your recovery after your recent discharge. How are you feeling today?"`}
-                  rows={4}
-                  className="mt-2"
-                />
-              </div>
-
-              <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Preview</h4>
-                <p className="text-sm text-muted-foreground">
-                  The AI will say: "{customMessage || `Hi ${selectedPatientForPrompt?.name}, this is your CardioCare AI assistant...`}"
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsPromptDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={async () => {
-                    if (!customMessage.trim()) {
-                      toast({
-                        title: "Message Required",
-                        description: "Please enter a custom message for the AI to deliver.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-
-                    try {
-                      await apiRequest('POST', '/api/calls/start', {
-                        patientId: selectedPatientForPrompt.id,
-                        phoneNumber: selectedPatientForPrompt.phoneNumber,
-                        customPrompt: customMessage,
-                        callType: callType
-                      });
-                      
-                      toast({
-                        title: "Custom Call Started",
-                        description: `Calling ${selectedPatientForPrompt.name} with your personalized message.`,
-                      });
-                      
-                      setIsPromptDialogOpen(false);
-                      setCustomMessage("");
-                    } catch (error) {
-                      toast({
-                        title: "Call Failed",
-                        description: "Failed to start custom call. Please try again.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  Start Custom Call
-                </Button>
-              </div>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="callType">Call Type</Label>
+              <Select value={callType} onValueChange={(value: any) => setCallType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="initial">Initial Check-in</SelectItem>
+                  <SelectItem value="followUp">Follow-up Call</SelectItem>
+                  <SelectItem value="urgent">Urgent Health Check</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </DialogContent>
-        </Dialog>
+
+            <div>
+              <Label htmlFor="customMessage">Custom Message</Label>
+              <Textarea 
+                id="customMessage"
+                value={customMessage}
+                onChange={(e) => setCustomMessage(e.target.value)}
+                placeholder={`Example: "Hi ${selectedPatientForPrompt?.name}, this is your CardioCare AI assistant calling to check on your recovery after your recent discharge. How are you feeling today?"`}
+                rows={4}
+                className="mt-2"
+              />
+            </div>
+
+            <div className="bg-muted p-4 rounded-lg">
+              <h4 className="font-medium mb-2">Preview</h4>
+              <p className="text-sm text-muted-foreground">
+                The AI will say: "{customMessage || `Hi ${selectedPatientForPrompt?.name}, this is your CardioCare AI assistant...`}"
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPromptDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={async () => {
+                  if (!customMessage.trim()) {
+                    toast({
+                      title: "Message Required",
+                      description: "Please enter a custom message for the AI to deliver.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  try {
+                    await apiRequest('POST', '/api/calls/start', {
+                      patientId: selectedPatientForPrompt.id,
+                      phoneNumber: selectedPatientForPrompt.phoneNumber,
+                      customPrompt: customMessage,
+                      callType: callType
+                    });
+                    
+                    toast({
+                      title: "Custom Call Started",
+                      description: `Calling ${selectedPatientForPrompt.name} with your personalized message.`,
+                    });
+                    
+                    setIsPromptDialogOpen(false);
+                    setCustomMessage("");
+                  } catch (error) {
+                    toast({
+                      title: "Call Failed",
+                      description: "Failed to start custom call. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Start Custom Call
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
