@@ -10,7 +10,22 @@ interface NavigationItem {
   icon: any;
 }
 
-const navigationItems: NavigationItem[] = [
+// Items to show in top bar (first 3 navigation items)
+const topBarItems: NavigationItem[] = [
+  { label: "Conversation Logs", path: "/conversation-logs", icon: MessageSquare },
+  { label: "Voice Settings", path: "/voice-settings", icon: Settings },
+  { label: "Custom Prompts", path: "/custom-prompts", icon: FileText },
+];
+
+// Items only in hamburger menu
+const hamburgerOnlyItems: NavigationItem[] = [
+  { label: "Dashboard", path: "/", icon: Home },
+  { label: "Real-time Testing", path: "/realtime", icon: Activity },
+  { label: "CSV Import", path: "/csv-import", icon: Upload },
+];
+
+// All items for hamburger menu (complete list)
+const allNavigationItems: NavigationItem[] = [
   { label: "Dashboard", path: "/", icon: Home },
   { label: "Conversation Logs", path: "/conversation-logs", icon: MessageSquare },
   { label: "Voice Settings", path: "/voice-settings", icon: Settings },
@@ -37,7 +52,7 @@ export function HamburgerMenu() {
             CardioCare AI
           </div>
           <nav className="flex flex-col gap-2">
-            {navigationItems.map((item) => {
+            {allNavigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location === item.path;
               
@@ -66,7 +81,7 @@ export function DesktopNavigation() {
 
   return (
     <nav className="flex items-center gap-2">
-      {navigationItems.map((item) => {
+      {topBarItems.map((item) => {
         const Icon = item.icon;
         const isActive = location === item.path;
         
@@ -78,7 +93,7 @@ export function DesktopNavigation() {
               className="gap-2"
             >
               <Icon className="h-4 w-4" />
-              {item.label}
+              <span className="hidden lg:inline">{item.label}</span>
             </Button>
           </Link>
         );

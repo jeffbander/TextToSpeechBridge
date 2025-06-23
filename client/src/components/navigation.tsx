@@ -53,8 +53,8 @@ export default function Navigation() {
             </Link>
           </div>
 
-          {/* Right side - Desktop navigation (hidden on mobile/tablet) */}
-          <div className="hidden xl:block">
+          {/* Right side - Desktop navigation (hidden on mobile) */}
+          <div className="hidden md:block">
             <DesktopNavigation />
           </div>
         </div>
