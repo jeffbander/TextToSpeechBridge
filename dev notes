@@ -22,9 +22,9 @@ File: server/index.ts
 Solution: Ensure server binds to 0.0.0.0 for public accessibility
 
 server.listen({
-  port: 5000,
-  host: "0.0.0.0",  // Critical for Replit public access
-  reusePort: true,
+port: 5000,
+host: "0.0.0.0", // Critical for Replit public access
+reusePort: true,
 });
 Critical Fix #2: Isolated TwiML Endpoint
 File: server/index.ts
@@ -32,12 +32,12 @@ Solution: Register TwiML handler BEFORE Vite setup to prevent HTML responses
 
 // Critical: Must be before registerRoutes() and Vite setup
 app.all('/api/calls/twiml/:id', (req, res) => {
-  res.writeHead(200, {
-    'Content-Type': 'text/xml; charset=utf-8',
-    'Cache-Control': 'no-cache, no-store, must-revalidate'
-  });
-  const twiml = `<?xml version="1.0" encoding="UTF-8"?>...`;
-  res.end(twiml);
+res.writeHead(200, {
+'Content-Type': 'text/xml; charset=utf-8',
+'Cache-Control': 'no-cache, no-store, must-revalidate'
+});
+const twiml = `<?xml version="1.0" encoding="UTF-8"?>...`;
+res.end(twiml);
 });
 Critical Fix #3: Remove Duplicate Handlers
 File: server/routes.ts
