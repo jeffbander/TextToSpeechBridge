@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
 const formSchema = insertPatientSchema.extend({
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required").regex(/^\d{4}-\d{2}-\d{2}$/, "Please enter a valid date"),
   phoneNumber: z.string().min(1, "Phone number is required"),
   gender: z.enum(["Male", "Female", "Other"]),
   firstName: z.string().min(1, "First name is required"),
@@ -27,7 +27,7 @@ const formSchema = insertPatientSchema.extend({
   mrn: z.string().min(1, "Medical Record Number is required"),
   address: z.string().min(1, "Address is required"),
   condition: z.string().min(1, "Medical condition is required"),
-  systemId: z.string().min(1, "System ID is required"),
+  systemId: z.string().optional(), // Make optional for auto-generation
   riskLevel: z.enum(["low", "medium", "high"]),
   email: z.string().optional(),
   alternatePhoneNumber: z.string().optional(),
@@ -338,7 +338,7 @@ export default function Patients() {
                       <FormItem>
                         <FormLabel>Date of Birth *</FormLabel>
                         <FormControl>
-                          <Input placeholder="3/20/1986" {...field} />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -411,7 +411,7 @@ export default function Patients() {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="medicalConditions"
+                    name="condition"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Medical Conditions</FormLabel>
@@ -614,7 +614,7 @@ export default function Patients() {
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="medicalConditions"
+                    name="condition"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Medical Conditions</FormLabel>
@@ -720,7 +720,7 @@ export default function Patients() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3">
-                        MRN: {patient.mrn} • {patient.medicalConditions}
+                        MRN: {patient.mrn} • {patient.condition}
                       </p>
                       
                       <div className="grid grid-cols-2 gap-4">
