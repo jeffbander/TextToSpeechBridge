@@ -24,6 +24,17 @@ const formSchema = insertPatientSchema.extend({
   gender: z.enum(["Male", "Female", "Other"]),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  mrn: z.string().min(1, "Medical Record Number is required"),
+  address: z.string().min(1, "Address is required"),
+  condition: z.string().min(1, "Medical condition is required"),
+  systemId: z.string().min(1, "System ID is required"),
+  riskLevel: z.enum(["low", "medium", "high"]),
+  email: z.string().optional(),
+  alternatePhoneNumber: z.string().optional(),
+  customPrompt: z.string().optional(),
+  promptMetadata: z.any().optional(),
+  importedFrom: z.string().optional(),
+  lastDischarge: z.any().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -59,9 +70,11 @@ export default function Patients() {
       phoneNumber: "",
       email: "",
       address: "",
-      medicalConditions: "",
+      condition: "",
       riskLevel: "low" as const,
       systemId: "",
+      alternatePhoneNumber: "",
+      customPrompt: "",
     },
   });
 
@@ -201,9 +214,11 @@ export default function Patients() {
       phoneNumber: patient.phoneNumber || "",
       email: patient.email || "",
       address: patient.address || "",
-      medicalConditions: patient.medicalConditions || "",
+      condition: patient.condition || "",
       riskLevel: patient.riskLevel || "low",
       systemId: patient.systemId || "",
+      alternatePhoneNumber: patient.alternatePhoneNumber || "",
+      customPrompt: patient.customPrompt || "",
     });
     setIsEditPatientOpen(true);
   };
