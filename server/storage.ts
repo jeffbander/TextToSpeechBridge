@@ -6,6 +6,7 @@ import {
   callCampaigns,
   callAttempts,
   messages,
+  automationLogs,
   type Patient, 
   type InsertPatient,
   type Call,
@@ -19,7 +20,9 @@ import {
   type CallAttempt,
   type InsertCallAttempt,
   type Message,
-  type InsertMessage
+  type InsertMessage,
+  type AutomationLog,
+  type InsertAutomationLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -69,6 +72,12 @@ export interface IStorage {
   getMessagesByPatient(patientId: number): Promise<Message[]>;
   createMessage(insertMessage: InsertMessage): Promise<Message>;
   updateMessage(id: number, updates: Partial<Message>): Promise<Message | undefined>;
+
+  // Automation Logs
+  getAutomationLogs(): Promise<AutomationLog[]>;
+  getAutomationLogsByPatient(patientId: number): Promise<AutomationLog[]>;
+  createAutomationLog(insertLog: InsertAutomationLog): Promise<AutomationLog>;
+  updateAutomationLogWithAgentResponse(chainRunId: string, agentResponse: string, agentName: string, payload: any): Promise<AutomationLog | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -403,6 +412,29 @@ export class MemStorage implements IStorage {
     const updatedMessage = { ...message, ...updates };
     this.messages.set(id, updatedMessage);
     return updatedMessage;
+  }
+
+  // Automation Logs (placeholder - not used in memory storage)
+  async getAutomationLogs(): Promise<AutomationLog[]> {
+    return [];
+  }
+
+  async getAutomationLogsByPatient(patientId: number): Promise<AutomationLog[]> {
+    return [];
+  }
+
+  async createAutomationLog(insertLog: InsertAutomationLog): Promise<AutomationLog> {
+    const log: AutomationLog = {
+      id: Date.now(),
+      ...insertLog,
+      triggeredAt: new Date(),
+      completedAt: null
+    };
+    return log;
+  }
+
+  async updateAutomationLogWithAgentResponse(chainRunId: string, agentResponse: string, agentName: string, payload: any): Promise<AutomationLog | undefined> {
+    return undefined;
   }
 }
 

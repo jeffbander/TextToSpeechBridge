@@ -108,6 +108,22 @@ export const messages = pgTable("messages", {
   receivedAt: timestamp("received_at"),
 });
 
+export const automationLogs = pgTable("automation_logs", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id),
+  chainRunId: text("chain_run_id").notNull(),
+  chainToRun: text("chain_to_run").notNull(),
+  sourceId: text("source_id"),
+  firstStepInput: text("first_step_input"),
+  startingVariables: jsonb("starting_variables"),
+  agentResponse: text("agent_response"),
+  agentName: text("agent_name"),
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  responsePayload: jsonb("response_payload"),
+  triggeredAt: timestamp("triggered_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
 export const insertPatientSchema = createInsertSchema(patients).omit({
   id: true,
   createdAt: true,
@@ -145,6 +161,12 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   receivedAt: true,
 });
 
+export const insertAutomationLogSchema = createInsertSchema(automationLogs).omit({
+  id: true,
+  triggeredAt: true,
+  completedAt: true,
+});
+
 export type Patient = typeof patients.$inferSelect;
 export type InsertPatient = z.infer<typeof insertPatientSchema>;
 export type Call = typeof calls.$inferSelect;
@@ -159,3 +181,5 @@ export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type AutomationLog = typeof automationLogs.$inferSelect;
+export type InsertAutomationLog = z.infer<typeof insertAutomationLogSchema>;
