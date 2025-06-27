@@ -217,7 +217,7 @@ export default function AutomatedCallsPage() {
   if (patientsError || callsError) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
+
         <div className="container mx-auto px-4 py-8">
           <Card>
             <CardContent className="p-6 text-center">
@@ -245,7 +245,17 @@ export default function AutomatedCallsPage() {
               AI-powered patient follow-up calls using GPT-4o and Twilio integration
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="destructive" 
+              size="lg"
+              onClick={() => emergencyStopMutation.mutate()}
+              disabled={emergencyStopMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3"
+            >
+              <StopCircle className="h-5 w-5 mr-2" />
+              {emergencyStopMutation.isPending ? 'Stopping...' : 'EMERGENCY STOP'}
+            </Button>
             <Phone className="h-8 w-8 text-blue-600" />
           </div>
         </div>

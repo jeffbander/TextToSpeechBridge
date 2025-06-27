@@ -205,8 +205,7 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
           
           // Update call status to failed with emergency stop reason
           await storage.updateCall(call.id, { 
-            status: 'failed',
-            endedAt: new Date()
+            status: 'failed'
           });
           
           killResults.push({

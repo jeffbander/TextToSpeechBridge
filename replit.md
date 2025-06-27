@@ -118,6 +118,7 @@ Patient Phone ↔ Twilio ↔ WebSocket Server ↔ OpenAI GPT-4o Real-time API
 - **WebSocket Conflicts**: Manual upgrade handling to preserve both voice functionality and HMR
 
 ## Changelog
+- June 27, 2025: Added emergency kill switch system - implemented comprehensive call termination endpoint `/api/calls/emergency-stop` with prominent red button in automated calls interface for immediate stopping of all active calls during system errors
 - June 27, 2025: Fixed AI agent getting cut off mid-conversation during silent periods - implemented silent audio detection, connection keepalive system, AI speech protection, and automatic session recovery to prevent GPT-4o disconnections when microphones are muted
 - June 27, 2025: Fixed duplicate Twilio/GPT-4o session issue - implemented comprehensive session reuse logic at both GPT-4o realtime level and call initiation level, preventing multiple overlapping audio connections per patient. Added active call status checking with proper database query filtering for all active call states (active, calling, in_progress, initiated).
 - June 27, 2025: Completed bidirectional AIGENTS integration - implemented automatic post-call analysis triggering with proper chain run ID management and AIGENTS response webhook endpoint at `/webhook/aigents-response` for processing analysis results
