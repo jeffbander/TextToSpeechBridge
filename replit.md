@@ -56,6 +56,13 @@ CardioCare AI is a comprehensive healthcare automation system that enables autom
 - Business hours enforcement: CSV-imported calls only between 9 AM - 8 PM Eastern, weekdays only
 - Manual calls can be made anytime without business hours restrictions
 
+### 6. AIGENTS Automation Integration (`server/services/aigents-integration.ts`)
+- Full integration with AIGENTS automation platform for patient workflow processing
+- Automatic triggering of "post call analysis" chain upon successful call completion
+- Submits patient source ID and comprehensive call logs for AI-driven analysis
+- Webhook endpoints for receiving automation responses and status updates
+- Comprehensive logging system for tracking automation triggers and outcomes
+
 ## Data Flow
 
 ### Automated Call Process
@@ -66,6 +73,7 @@ CardioCare AI is a comprehensive healthcare automation system that enables autom
 5. **AI Response**: GPT-4o generates contextual responses based on patient data and conversation
 6. **Transcript Generation**: Complete conversation logged with AI analysis
 7. **Alert Processing**: Critical symptoms trigger automated provider notifications
+8. **Post-Call Analysis**: Automatic AIGENTS automation trigger submits call data for AI analysis
 
 ### Voice Session Architecture
 ```
@@ -110,6 +118,7 @@ Patient Phone ↔ Twilio ↔ WebSocket Server ↔ OpenAI GPT-4o Real-time API
 - **WebSocket Conflicts**: Manual upgrade handling to preserve both voice functionality and HMR
 
 ## Changelog
+- June 27, 2025: Implemented automatic post-call analysis integration - system now automatically triggers "post call analysis" chain in AIGENTS upon successful call completion, submitting source ID and complete call logs for processing
 - June 21, 2025: Fixed SMS messaging functionality - resolved 400 error, added complete database support for messages table, implemented Twilio SMS integration with delivery status tracking and error handling
 - June 20, 2025: System deployed to production - GPT-4o webhook endpoints operational, CSV custom prompts integrated, automated calling campaigns active with real-time voice processing
 - June 20, 2025: Fixed webhook URL formatting for proper HTTPS connections, removed business hours restrictions for testing, implemented detailed campaign view with individual call tracking

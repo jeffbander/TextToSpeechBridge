@@ -447,6 +447,10 @@ export class MemStorage implements IStorage {
       startingVariables: insertLog.startingVariables || null,
       agentResponse: insertLog.agentResponse || null,
       agentName: insertLog.agentName || null,
+      triggerType: insertLog.triggerType || null,
+      callId: insertLog.callId || null,
+      response: insertLog.response || null,
+      metadata: insertLog.metadata || null,
       responsePayload: insertLog.responsePayload || null,
       triggeredAt: new Date(),
       completedAt: null

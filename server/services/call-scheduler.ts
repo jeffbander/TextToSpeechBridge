@@ -345,6 +345,7 @@ export class CallSchedulerService {
         await storage.createAutomationLog({
           patientId: patient.id,
           chainRunId: result.chainRunId || `post-call-${Date.now()}`,
+          chainToRun: "post call analysis",
           status: result.success ? 'triggered' : 'failed',
           triggerType: 'automatic_post_call',
           sourceId: sourceId,
@@ -367,6 +368,7 @@ export class CallSchedulerService {
         await storage.createAutomationLog({
           patientId: attempt.patientId,
           chainRunId: `post-call-error-${Date.now()}`,
+          chainToRun: "post call analysis",
           status: 'error',
           triggerType: 'automatic_post_call',
           callId: callId,
