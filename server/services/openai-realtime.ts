@@ -36,7 +36,11 @@ export class OpenAIRealtimeService {
   async createRealtimeSession(patientId: number, patientName: string, callId: number, customSystemPrompt?: string): Promise<string> {
     // Check if patient already has an active session
     if (this.activePatients.has(patientId)) {
-      throw new Error(`Patient ${patientName} already has an active session`);
+      const existingSession = Array.from(this.sessions.values()).find(s => s.patientId === patientId && s.isActive);
+      if (existingSession) {
+        console.log(`🔄 Reusing existing session ${existingSession.id} for patient ${patientName}`);
+        return existingSession.id;
+      }
     }
 
     const sessionId = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

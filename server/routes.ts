@@ -30,7 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerCallingRoutes(app, httpServer);
   registerRealtimeRoutes(app, httpServer);
   registerTwilioIntegrationRoutes(app);
-  registerWorkingVoiceRoutes(app);
+  // DISABLED: registerWorkingVoiceRoutes(app); - Causes duplicate OpenAI connections
   registerSmsRoutes(app);
   
   // Register AIGENTS automation routes
