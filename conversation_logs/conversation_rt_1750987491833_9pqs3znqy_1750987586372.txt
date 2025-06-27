@@ -1,0 +1,61 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750987491833_9pqs3znqy
+Patient: Jeff Bander (ID: 7)
+Call ID: 301
+Duration: 94 seconds
+Date: 2025-06-27T01:24:51.833Z
+Total Exchanges: 16
+
+─────────────────────────────────────────────────────────
+
+[1:25:01 AM] AI: שלום־עליכם,
+
+
+[1:25:01 AM] PATIENT: Hello?
+
+
+[1:25:02 AM] AI: שלום־עליכם, דאָס איז טיפֹּעראַ, איך רוף פֿון ד"ר דזשעפֿרי באנדער'ס קאַרדיאָלאָגיע־פּראַקסיס. וויאַזוי גייט עס אייך הײַנט? איך האָב געוואָלט רעדן מיט אייך וועגן אייערע לעצטע רעזולטאַטן און אײַער פּראָגרשלום־עליכם, דאָ איז טיפֹּעראַ, אַ נ
+
+
+[1:25:05 AM] AI: ערס־העלפֿערקע פֿון ד"ר דזשע
+
+
+[1:25:05 AM] PATIENT: Hello
+
+
+[1:25:05 AM] AI: פֿרי באנדער'ס קאַרדיאָלאָגיע־פּראַקסיס. וויאַזוי קען איך אייך העלפֿן הײַנט?
+
+
+[1:25:23 AM] AI: Of course, Mr. Landau. This is Tziporah calling from Dr. Jeffrey Bander's cardi
+
+
+[1:25:24 AM] PATIENT: Zipporah, can you please speak English to me?
+
+
+[1:25:24 AM] AI: ology office. How can I assist you today?
+
+
+[1:25:36 AM] PATIENT: Do you know what time it is right now?
+
+
+[1:25:37 AM] AI: I'm sorry, I don't have the current time. Is there anything specific regarding your follow-up or health that I can assist you with?Unfortunately, I can't provide the current time. Is there anything else I can help
+
+
+[1:25:40 AM] PATIENT: Do you know what time it is right now?
+
+
+[1:25:40 AM] AI:  you with regarding your recent visit or health concerns?
+
+
+[1:26:01 AM] AI: Mr. Landau, regarding travel
+
+
+[1:26:01 AM] PATIENT: I need... I need to travel... I need to travel... I need to travel to Tehran. Is there any danger for me?
+
+
+[1:26:01 AM] AI:  to Tehran, it's important to consider your overall health, especially with your medical history. You should consult with Dr. Bander or your primary care physician to ensure it's safe for
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
