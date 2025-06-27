@@ -47,7 +47,9 @@ export class CallSchedulerService {
         (!attempt.scheduledAt || new Date(attempt.scheduledAt) <= now)
       );
 
-      console.log(`[CALL-SCHEDULER] Found ${readyAttempts.length} calls ready to process`);
+      if (readyAttempts.length > 0) {
+        console.log(`[CALL-SCHEDULER] Found ${readyAttempts.length} calls ready to process`);
+      }
 
       // Filter CSV-imported calls for business hours restriction
       const csvAttempts = [];
