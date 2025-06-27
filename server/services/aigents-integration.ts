@@ -41,7 +41,7 @@ const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
       }
 
       // Success response for AIGENTS system
-      const successResponse = {
+      const successResponse: any = {
         message: "Agent response processed successfully",
         chainRunId: chainRunId,
         status: "success",
@@ -76,7 +76,7 @@ const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
       } else {
         res.json({ message: "Log stored successfully" });
       }
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: "Failed to create log" });
     }
   });
