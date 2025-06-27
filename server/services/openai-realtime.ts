@@ -332,10 +332,15 @@ Remember to be professional, empathetic, and identify yourself as calling from D
         // Reset silent periods when AI is speaking to prevent disconnection
         session.silentPeriods = 0;
         
-        // Clear input buffer while AI is speaking to prevent feedback loop
+        // CRITICAL: Clear input buffer while AI is speaking to prevent feedback loop and multiple agents
         if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
           session.openaiWs.send(JSON.stringify({
             type: 'input_audio_buffer.clear'
+          }));
+          
+          // Additional safety: Cancel any ongoing response to prevent overlap
+          session.openaiWs.send(JSON.stringify({
+            type: 'response.cancel'
           }));
         }
         

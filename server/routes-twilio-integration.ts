@@ -140,6 +140,14 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         }
       });
 
+      // FINAL SAFETY CHECK: Ensure no sessions exist before creating new one
+      const finalSessionCheck = openaiRealtimeService.getAllActiveSessionsForPatient(patientId);
+      if (finalSessionCheck.length > 0) {
+        console.log(`🚨 CRITICAL SAFETY STOP - Still found ${finalSessionCheck.length} sessions for patient ${patientId} after cleanup`);
+        await openaiRealtimeService.forceCleanupPatientSessions(patientId);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer for complete cleanup
+      }
+
       // Create GPT-4o realtime session for this call
       const sessionId = await openaiRealtimeService.createRealtimeSession(
         patient.id,

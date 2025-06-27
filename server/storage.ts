@@ -212,12 +212,32 @@ export class MemStorage implements IStorage {
 
   async getActiveCallsByPatientId(patientId: number): Promise<Call[]> {
     return Array.from(this.calls.values()).filter(
-      call => call.patientId === patientId && call.status === 'active'
+      call => call.patientId === patientId && 
+      ['active', 'calling', 'in_progress', 'initiated', 'ringing'].includes(call.status)
     );
   }
 
+  async hasActiveCallForPatient(patientId: number): Promise<boolean> {
+    const activeCalls = await this.getActiveCallsByPatientId(patientId);
+    return activeCalls.length > 0;
+  }
+
+  async forceTerminateAllPatientCalls(patientId: number): Promise<number> {
+    const activeCalls = await this.getActiveCallsByPatientId(patientId);
+    let terminatedCount = 0;
+    
+    for (const call of activeCalls) {
+      await this.updateCall(call.id, { status: 'failed' });
+      terminatedCount++;
+    }
+    
+    return terminatedCount;
+  }
+
   async getActiveCalls(): Promise<Call[]> {
-    return Array.from(this.calls.values()).filter(call => call.status === 'active');
+    return Array.from(this.calls.values()).filter(call => 
+      ['active', 'calling', 'in_progress', 'initiated', 'ringing'].includes(call.status)
+    );
   }
 
   async createCall(insertCall: InsertCall): Promise<Call> {
