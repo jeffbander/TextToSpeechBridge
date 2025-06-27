@@ -119,6 +119,10 @@ export const automationLogs = pgTable("automation_logs", {
   agentResponse: text("agent_response"),
   agentName: text("agent_name"),
   status: text("status").notNull().default("pending"), // pending, completed, failed
+  triggerType: text("trigger_type"), // manual, automatic_post_call, scheduled
+  callId: integer("call_id").references(() => calls.id),
+  response: jsonb("response"),
+  metadata: jsonb("metadata"),
   responsePayload: jsonb("response_payload"),
   triggeredAt: timestamp("triggered_at").defaultNow(),
   completedAt: timestamp("completed_at"),

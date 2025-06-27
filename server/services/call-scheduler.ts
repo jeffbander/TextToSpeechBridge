@@ -1,6 +1,7 @@
 import { storage } from '../storage';
 import { CallAttempt, Patient } from '@shared/schema';
 import twilio from 'twilio';
+import { triggerAutomationForPatient } from './aigents-integration';
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -206,7 +207,7 @@ export class CallSchedulerService {
         scheduledAt: nextRetryTime,
         nextRetryAt: nextRetryTime,
         metadata: {
-          ...attempt.metadata,
+          ...(attempt.metadata as any || {}),
           previousAttemptId: attempt.id,
           previousFailureReason: reason,
         },
@@ -270,12 +271,113 @@ export class CallSchedulerService {
     const campaign = await storage.getCallCampaign(attempt.campaignId);
     if (campaign) {
       await storage.updateCallCampaign(campaign.id, {
-        completedCalls: campaign.completedCalls + 1,
-        successfulCalls: campaign.successfulCalls + 1,
+        completedCalls: (campaign.completedCalls || 0) + 1,
+        successfulCalls: (campaign.successfulCalls || 0) + 1,
       });
     }
 
     console.log(`[CALL-SCHEDULER] Call attempt ${attempt.id} completed successfully`);
+
+    // Trigger post call analysis automation
+    await this.triggerPostCallAnalysis(attempt, callId);
+  }
+
+  async triggerPostCallAnalysis(attempt: CallAttempt, callId: number) {
+    try {
+      // Get patient and call data
+      const patient = await storage.getPatient(attempt.patientId);
+      const call = await storage.getCall(callId);
+      
+      if (!patient || !call) {
+        console.log(`[POST-CALL-ANALYSIS] Missing data - Patient: ${!!patient}, Call: ${!!call}`);
+        return;
+      }
+
+      // Generate source ID for AIGENTS system
+      const generateSourceId = (firstName: string, lastName: string, dob: string) => {
+        if (!firstName || !lastName || !dob) return '';
+        
+        const formattedFirstName = firstName.trim().replace(/\s+/g, '_');
+        const formattedLastName = lastName.trim().replace(/\s+/g, '_');
+        
+        // Convert YYYY-MM-DD to MM_DD_YYYY
+        const dobFormatted = dob.split('-').length === 3 
+          ? `${dob.split('-')[1]}_${dob.split('-')[2]}_${dob.split('-')[0]}`
+          : dob.replace(/\//g, '_');
+        
+        return `${formattedLastName}_${formattedFirstName}__${dobFormatted}`;
+      };
+
+      const sourceId = generateSourceId(patient.firstName, patient.lastName, patient.dateOfBirth);
+
+      // Prepare call logs and data for analysis
+      const callData = {
+        call_id: call.id,
+        patient_name: `${patient.firstName} ${patient.lastName}`,
+        patient_mrn: patient.mrn,
+        call_duration: call.duration || 0,
+        call_status: call.status,
+        call_outcome: call.outcome || 'completed',
+        transcript: call.transcript || 'No transcript available',
+        ai_analysis: call.aiAnalysis || {},
+        alert_level: call.alertLevel || 'none',
+        completion_time: call.completedAt?.toISOString() || new Date().toISOString(),
+        patient_condition: patient.condition,
+        risk_level: patient.riskLevel
+      };
+
+      console.log(`[POST-CALL-ANALYSIS] Triggering automation for patient ${patient.firstName} ${patient.lastName} with source ID: ${sourceId}`);
+
+      // Trigger the "post call analysis" chain in AIGENTS
+      const result = await triggerAutomationForPatient(
+        patient,
+        "post call analysis",
+        JSON.stringify(callData),
+        {
+          call_logs: callData,
+          source_id: sourceId,
+          trigger_type: "automatic_post_call"
+        }
+      );
+
+      // Log the automation trigger
+      if (storage.createAutomationLog) {
+        await storage.createAutomationLog({
+          patientId: patient.id,
+          chainRunId: result.chainRunId || `post-call-${Date.now()}`,
+          status: result.success ? 'triggered' : 'failed',
+          triggerType: 'automatic_post_call',
+          sourceId: sourceId,
+          callId: callId,
+          response: result,
+          metadata: {
+            call_data: callData,
+            automation_result: result
+          }
+        });
+      }
+
+      console.log(`[POST-CALL-ANALYSIS] Automation ${result.success ? 'triggered successfully' : 'failed'} for call ${callId}`);
+
+    } catch (error) {
+      console.error(`[POST-CALL-ANALYSIS] Error triggering automation for call ${callId}:`, error);
+      
+      // Log the failure
+      if (storage.createAutomationLog) {
+        await storage.createAutomationLog({
+          patientId: attempt.patientId,
+          chainRunId: `post-call-error-${Date.now()}`,
+          status: 'error',
+          triggerType: 'automatic_post_call',
+          callId: callId,
+          response: { error: (error as any).message || 'Unknown error' },
+          metadata: {
+            error_details: error,
+            attempt_id: attempt.id
+          }
+        });
+      }
+    }
   }
 
   private buildCustomPrompt(patient: Patient): string {
