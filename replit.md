@@ -118,7 +118,7 @@ Patient Phone ↔ Twilio ↔ WebSocket Server ↔ OpenAI GPT-4o Real-time API
 - **WebSocket Conflicts**: Manual upgrade handling to preserve both voice functionality and HMR
 
 ## Changelog
-- June 27, 2025: Implemented automatic post-call analysis integration - system now automatically triggers "post call analysis" chain in AIGENTS upon successful call completion, submitting source ID and complete call logs for processing
+- June 27, 2025: Completed bidirectional AIGENTS integration - implemented automatic post-call analysis triggering with proper chain run ID management and AIGENTS response webhook endpoint at `/webhook/aigents-response` for processing analysis results
 - June 21, 2025: Fixed SMS messaging functionality - resolved 400 error, added complete database support for messages table, implemented Twilio SMS integration with delivery status tracking and error handling
 - June 20, 2025: System deployed to production - GPT-4o webhook endpoints operational, CSV custom prompts integrated, automated calling campaigns active with real-time voice processing
 - June 20, 2025: Fixed webhook URL formatting for proper HTTPS connections, removed business hours restrictions for testing, implemented detailed campaign view with individual call tracking
