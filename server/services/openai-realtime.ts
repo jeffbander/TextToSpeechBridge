@@ -218,10 +218,18 @@ export class OpenAIRealtimeService {
     try {
       console.log(`[REALTIME] Initializing OpenAI connection for session: ${sessionId}`);
       
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
+      
+      console.log(`[REALTIME] Using API key starting with: ${apiKey.substring(0, 8)}...`);
+      
       const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'realtime=v1'
+          'Authorization': `Bearer ${apiKey}`,
+          'OpenAI-Beta': 'realtime=v1',
+          'User-Agent': 'CardioCare-AI/1.0'
         }
       });
 
@@ -230,22 +238,29 @@ export class OpenAIRealtimeService {
       openaiWs.on('open', () => {
         console.log(`[REALTIME] OpenAI WebSocket connected for session: ${sessionId}`);
         
-        // Send initial configuration
-        const config = {
-          type: 'session.update',
-          session: {
-            modalities: ['text', 'audio'],
-            instructions: session.customSystemPrompt || `You are a healthcare assistant conducting a follow-up call with ${session.patientName}. Be professional, empathetic, and ask about their recovery, medications, and any concerns.`,
-            voice: 'alloy',
-            input_audio_format: 'pcm16',
-            output_audio_format: 'pcm16',
-            input_audio_transcription: {
-              model: 'whisper-1'
-            }
+        // Send initial configuration after a brief delay to ensure connection is stable
+        setTimeout(() => {
+          if (openaiWs.readyState === WebSocket.OPEN) {
+            const config = {
+              type: 'session.update',
+              session: {
+                modalities: ['text', 'audio'],
+                instructions: session.customSystemPrompt || `You are a healthcare assistant conducting a follow-up call with ${session.patientName}. Be professional, empathetic, and ask about their recovery, medications, and any concerns.`,
+                voice: 'alloy',
+                input_audio_format: 'pcm16',
+                output_audio_format: 'pcm16',
+                input_audio_transcription: {
+                  model: 'whisper-1'
+                }
+              }
+            };
+            
+            console.log(`[REALTIME] Sending session configuration for ${sessionId}`);
+            openaiWs.send(JSON.stringify(config));
+          } else {
+            console.warn(`[REALTIME] WebSocket not open when trying to configure session ${sessionId}`);
           }
-        };
-        
-        openaiWs.send(JSON.stringify(config));
+        }, 100);
       });
 
       openaiWs.on('message', (data) => {
@@ -302,13 +317,26 @@ export class OpenAIRealtimeService {
         console.error(`[REALTIME] Error details:`, {
           name: error.name,
           message: error.message,
-          stack: error.stack
+          stack: error.stack,
+          readyState: openaiWs.readyState
         });
         session.openaiWs = null;
       });
 
       openaiWs.on('close', (code, reason) => {
-        console.log(`[REALTIME] OpenAI WebSocket closed for session: ${sessionId}, code: ${code}, reason: ${reason}`);
+        const reasonText = reason.toString();
+        console.log(`[REALTIME] OpenAI WebSocket closed for session: ${sessionId}`);
+        console.log(`[REALTIME] Close details - Code: ${code}, Reason: ${reasonText || 'No reason provided'}`);
+        
+        // Common close codes
+        if (code === 1005) {
+          console.log(`[REALTIME] Normal closure without status code`);
+        } else if (code === 1006) {
+          console.log(`[REALTIME] Abnormal closure - connection lost`);
+        } else if (code === 4000) {
+          console.log(`[REALTIME] OpenAI API error - check authentication`);
+        }
+        
         session.openaiWs = null;
       });
 
