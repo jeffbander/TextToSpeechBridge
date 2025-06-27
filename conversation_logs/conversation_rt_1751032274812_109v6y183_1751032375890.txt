@@ -1,0 +1,67 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1751032274812_109v6y183
+Patient: mills reed (ID: 39)
+Call ID: 323
+Duration: 101 seconds
+Date: 2025-06-27T13:51:14.812Z
+Total Exchanges: 18
+
+─────────────────────────────────────────────────────────
+
+[1:51:26 PM] AI: Hello Mills Reed, this is Tziporah calling from Dr. Jeffrey Bander's office. We're just checking in to see how you're doing. How have you been feeling today?
+
+
+[1:51:28 PM] PATIENT: Hello?
+
+
+[1:51:28 PM] AI: Hello, Mills Reed, this is Tziporah calling from Dr. Jeffrey Bander's office. We're just checking in to see how you're doing. How have you been feeling today?
+
+
+[1:51:40 PM] AI: I'm sorry to hear that, Mills. Can you tell me a bit more about what's been bothering you? Are you experiencing
+
+
+[1:51:40 PM] PATIENT: Bye-bye.
+
+
+[1:51:41 PM] AI:  any specific symptoms that are causing you discomfort?
+
+
+[1:52:02 PM] AI: I'm sorry to hear that you're having back pain,
+
+
+[1:52:03 PM] PATIENT: Spain. 
+
+
+[1:52:03 PM] AI:  Mills. On a scale of 1 to 10, with 10 being the worst pain imaginable, how would you rate your back pain right now? And does anything seem to make it better or
+
+
+[1:52:09 PM] AI: That sounds quite uncomfortable, Mills. Is there anything that helps relieve the pain, like
+
+
+[1:52:10 PM] PATIENT: Bye bye.
+
+
+[1:52:10 PM] AI:  changing positions, applying heat, or taking any medication? Also, have you noticed if the pain
+
+
+[1:52:32 PM] AI: A 10 out of 10 is very concerning,
+
+
+[1:52:33 PM] PATIENT: It's a 10 out of 10.
+
+
+[1:52:33 PM] AI:  Mills. It's important that we address this urgently. I recommend that you seek immediate medical attention, either by going to the nearest emergency room or contacting a
+
+
+[1:52:44 PM] AI: I understand,
+
+
+[1:52:44 PM] PATIENT: on the internet.
+
+
+[1:52:44 PM] AI:  Mills. With back pain at a 10, it's crucial not to delay. Please seek immediate medical attention by going to the nearest emergency room or contacting a healthcare provider
+
+
+─────────────────────────────────────────────────────────
+End of Conversation

@@ -161,9 +161,9 @@ Remember to be professional, empathetic, and identify yourself as calling from D
           },
           turn_detection: {
             type: 'server_vad',
-            threshold: 0.8,
-            prefix_padding_ms: 500,
-            silence_duration_ms: 3000
+            threshold: 0.9,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 2000
           },
           temperature: 0.6,
           max_response_output_tokens: 300
@@ -332,6 +332,13 @@ Remember to be professional, empathetic, and identify yourself as calling from D
         // Reset silent periods when AI is speaking to prevent disconnection
         session.silentPeriods = 0;
         
+        // Clear input buffer while AI is speaking to prevent feedback loop
+        if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+          session.openaiWs.send(JSON.stringify({
+            type: 'input_audio_buffer.clear'
+          }));
+        }
+        
         // Stream audio back to Twilio in proper G.711 chunks (320 bytes = 20ms)
         console.log(`🔊 Sending audio delta to Twilio - payload length: ${message.delta?.length || 0}`);
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN && message.delta) {
@@ -365,11 +372,18 @@ Remember to be professional, empathetic, and identify yourself as calling from D
         break;
         
       case 'response.audio.done':
-        // Signal audio completion to trigger accumulated playback
+        // Signal audio completion and resume listening for patient input
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
           session.websocket.send(JSON.stringify({ type: 'audio_done' }));
           console.log(`✅ Audio response completed for session ${sessionId}`);
         }
+        
+        // Resume listening for patient input after AI finishes speaking
+        setTimeout(() => {
+          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+            console.log(`🎧 Resuming patient audio input for ${sessionId}`);
+          }
+        }, 500);
         break;
         
       case 'response.audio_transcript.delta':
