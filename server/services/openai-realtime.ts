@@ -85,6 +85,9 @@ export class OpenAIRealtimeService {
       this.sessions.set(sessionId, session);
       this.activePatients.add(patientId);
       
+      // Initialize OpenAI connection immediately when session is created
+      await this.initializeOpenAIRealtime(sessionId);
+      
       console.log(`✨ Created realtime session ${sessionId} for patient ${patientName}`);
       return sessionId;
       
@@ -171,9 +174,12 @@ export class OpenAIRealtimeService {
     session.websocket = websocket;
     session.isActive = true;
 
-    // Initialize OpenAI connection if not already connected
-    if (!session.openaiWs) {
+    // OpenAI connection should already be established when session was created
+    if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
+      console.log(`[REALTIME] OpenAI WebSocket not ready for session ${sessionId}, reinitializing...`);
       this.initializeOpenAIRealtime(sessionId);
+    } else {
+      console.log(`[REALTIME] OpenAI WebSocket already connected for session ${sessionId}`);
     }
 
     // Handle WebSocket close
@@ -293,10 +299,16 @@ export class OpenAIRealtimeService {
 
       openaiWs.on('error', (error) => {
         console.error(`[REALTIME] OpenAI WebSocket error for session ${sessionId}:`, error);
+        console.error(`[REALTIME] Error details:`, {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+        session.openaiWs = null;
       });
 
-      openaiWs.on('close', () => {
-        console.log(`[REALTIME] OpenAI WebSocket closed for session: ${sessionId}`);
+      openaiWs.on('close', (code, reason) => {
+        console.log(`[REALTIME] OpenAI WebSocket closed for session: ${sessionId}, code: ${code}, reason: ${reason}`);
         session.openaiWs = null;
       });
 
