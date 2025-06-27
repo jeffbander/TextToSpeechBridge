@@ -60,7 +60,10 @@ export function registerFallbackVoiceRoutes(app: Express) {
           const audioBuffer = await response.arrayBuffer();
           const audioFile = new File([audioBuffer], 'response.wav', { type: 'audio/wav' });
 
-          const transcription = await require('openai').audio.transcriptions.create({
+          const OpenAI = require('openai');
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          
+          const transcription = await openai.audio.transcriptions.create({
             file: audioFile,
             model: 'whisper-1'
           });

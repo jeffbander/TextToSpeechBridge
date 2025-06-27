@@ -3,6 +3,7 @@ import { storage } from "./storage";
 import { twilioService } from "./services/twilio";
 import { patientPromptManager } from "./services/patient-prompt-manager";
 import { openaiRealtimeService } from "./services/openai-realtime";
+import { fallbackVoiceService } from "./services/fallback-voice";
 import OpenAI from "openai";
 
 export function registerTwilioIntegrationRoutes(app: Express) {
@@ -140,32 +141,16 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         }
       });
 
-      // FINAL SAFETY CHECK: Ensure no sessions exist before creating new one
-      const finalSessionCheck = openaiRealtimeService.getAllActiveSessionsForPatient(patientId);
-      if (finalSessionCheck.length > 0) {
-        console.log(`🚨 CRITICAL SAFETY STOP - Still found ${finalSessionCheck.length} sessions for patient ${patientId} after cleanup`);
-        await openaiRealtimeService.forceCleanupPatientSessions(patientId);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait longer for complete cleanup
-      }
-
-      // Create GPT-4o realtime session for this call
-      const sessionId = await openaiRealtimeService.createRealtimeSession(
-        patient.id,
-        `${patient.firstName} ${patient.lastName}`,
-        call.id,
-        systemPrompt
-      );
-
-      // Configure the session with patient-specific prompt
-      console.log(`[TWILIO-INTEGRATION] Created GPT-4o session ${sessionId} for patient ${patient.firstName} ${patient.lastName}`);
-
-      // Generate Twilio webhook URL for this specific session
+      // Create session ID for this call using fallback voice system
+      const sessionId = `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Generate Twilio webhook URL for fallback voice system
       console.log(`[TWILIO-INTEGRATION] REPLIT_DOMAINS env var:`, process.env.REPLIT_DOMAINS);
       const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'https://localhost:5000';
-      const webhookUrl = `${baseUrl}/api/twilio/webhook/${sessionId}`;
+      const webhookUrl = `${baseUrl}/api/twilio/webhook/fallback/${sessionId}`;
       
       console.log(`[TWILIO-INTEGRATION] Base URL: ${baseUrl}`);
-      console.log(`[TWILIO-INTEGRATION] Using webhook URL: ${webhookUrl}`);
+      console.log(`[TWILIO-INTEGRATION] Using fallback voice webhook URL: ${webhookUrl}`);
       
       // Make the Twilio call
       const twilioCallSid = await twilioService.makeCall({
@@ -175,13 +160,23 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
       });
 
+      // Create fallback voice session
+      await fallbackVoiceService.createVoiceSession(
+        sessionId,
+        patient.id,
+        `${patient.firstName} ${patient.lastName}`,
+        call.id,
+        twilioCallSid,
+        systemPrompt
+      );
+
       // Update call with Twilio SID
       await storage.updateCall(call.id, {
         twilioCallSid,
         status: 'calling'
       });
 
-      console.log(`[TWILIO-INTEGRATION] Twilio call initiated: ${twilioCallSid} for session: ${sessionId}`);
+      console.log(`[TWILIO-INTEGRATION] Twilio call initiated: ${twilioCallSid} for fallback session: ${sessionId}`);
 
       res.json({
         success: true,
