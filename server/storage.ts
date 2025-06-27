@@ -25,7 +25,7 @@ import {
   type InsertAutomationLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Patients
