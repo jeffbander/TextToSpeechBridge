@@ -158,6 +158,152 @@ export class OpenAIRealtimeService {
   getAllActiveSessions(): RealtimeSession[] {
     return Array.from(this.sessions.values());
   }
+
+  connectClientWebSocket(sessionId: string, websocket: WebSocket): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      console.error(`[REALTIME] No session found for ID: ${sessionId}`);
+      websocket.close(1000, 'Session not found');
+      return;
+    }
+
+    console.log(`[REALTIME] Connecting client WebSocket for session: ${sessionId}`);
+    session.websocket = websocket;
+    session.isActive = true;
+
+    // Initialize OpenAI connection if not already connected
+    if (!session.openaiWs) {
+      this.initializeOpenAIRealtime(sessionId);
+    }
+
+    // Handle WebSocket close
+    websocket.on('close', () => {
+      console.log(`[REALTIME] Client WebSocket closed for session: ${sessionId}`);
+      session.isActive = false;
+    });
+
+    websocket.on('error', (error) => {
+      console.error(`[REALTIME] Client WebSocket error for session ${sessionId}:`, error);
+    });
+  }
+
+  handleClientMessage(sessionId: string, message: any): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      console.error(`[REALTIME] No session found for message handling: ${sessionId}`);
+      return;
+    }
+
+    // Forward message to OpenAI if connected
+    if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+      session.openaiWs.send(JSON.stringify(message));
+    } else {
+      console.warn(`[REALTIME] OpenAI WebSocket not connected for session: ${sessionId}`);
+    }
+  }
+
+  private async initializeOpenAIRealtime(sessionId: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      console.error(`[REALTIME] Cannot initialize OpenAI - session not found: ${sessionId}`);
+      return;
+    }
+
+    try {
+      console.log(`[REALTIME] Initializing OpenAI connection for session: ${sessionId}`);
+      
+      const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'realtime=v1'
+        }
+      });
+
+      session.openaiWs = openaiWs;
+
+      openaiWs.on('open', () => {
+        console.log(`[REALTIME] OpenAI WebSocket connected for session: ${sessionId}`);
+        
+        // Send initial configuration
+        const config = {
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: session.customSystemPrompt || `You are a healthcare assistant conducting a follow-up call with ${session.patientName}. Be professional, empathetic, and ask about their recovery, medications, and any concerns.`,
+            voice: 'alloy',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: {
+              model: 'whisper-1'
+            }
+          }
+        };
+        
+        openaiWs.send(JSON.stringify(config));
+      });
+
+      openaiWs.on('message', (data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          
+          // Handle different message types
+          if (message.type === 'response.audio.delta' && session.websocket) {
+            // Forward audio to client
+            session.websocket.send(JSON.stringify({
+              type: 'audio_delta',
+              audio: message.delta
+            }));
+          } else if (message.type === 'conversation.item.input_audio_transcription.completed') {
+            // Log patient speech
+            const transcript = message.transcript;
+            session.conversationLog.push({
+              timestamp: new Date(),
+              speaker: 'patient',
+              text: transcript
+            });
+            session.transcript.push(`Patient: ${transcript}`);
+          } else if (message.type === 'response.text.delta') {
+            // Handle AI text responses
+            if (!session.currentResponse) {
+              session.currentResponse = '';
+            }
+            session.currentResponse += message.delta;
+          } else if (message.type === 'response.text.done') {
+            // Complete AI response
+            if (session.currentResponse) {
+              session.conversationLog.push({
+                timestamp: new Date(),
+                speaker: 'ai',
+                text: session.currentResponse
+              });
+              session.transcript.push(`AI: ${session.currentResponse}`);
+              session.currentResponse = '';
+            }
+          }
+
+          // Forward message to client if connected
+          if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
+            session.websocket.send(JSON.stringify(message));
+          }
+
+        } catch (error) {
+          console.error(`[REALTIME] Error processing OpenAI message for session ${sessionId}:`, error);
+        }
+      });
+
+      openaiWs.on('error', (error) => {
+        console.error(`[REALTIME] OpenAI WebSocket error for session ${sessionId}:`, error);
+      });
+
+      openaiWs.on('close', () => {
+        console.log(`[REALTIME] OpenAI WebSocket closed for session: ${sessionId}`);
+        session.openaiWs = null;
+      });
+
+    } catch (error) {
+      console.error(`[REALTIME] Failed to initialize OpenAI connection for session ${sessionId}:`, error);
+    }
+  }
 }
 
 export const openaiRealtimeService = new OpenAIRealtimeService();
