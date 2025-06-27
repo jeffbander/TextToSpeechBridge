@@ -1,0 +1,22 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1750957478192_d4xje5btu
+Patient: max Turner (ID: 10)
+Call ID: 297
+Duration: 38 seconds
+Date: 2025-06-26T17:04:38.192Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[5:05:03 PM] AI: I'm sorry, I didn't quite catch that.
+
+
+[5:05:03 PM] PATIENT: We'll take the wire.
+
+
+[5:05:03 PM] AI:  Could you please say it again?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
