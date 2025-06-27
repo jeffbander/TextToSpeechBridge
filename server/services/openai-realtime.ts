@@ -33,50 +33,65 @@ export interface RealtimeSession {
 export class OpenAIRealtimeService {
   private sessions: Map<string, RealtimeSession> = new Map();
   private activePatients: Set<number> = new Set();
+  private patientLocks: Map<number, boolean> = new Map(); // Prevent concurrent session creation
 
   async createRealtimeSession(patientId: number, patientName: string, callId: number, customSystemPrompt?: string): Promise<string> {
-    // Check if patient already has an active session - prevent duplicate connections
-    const existingSession = Array.from(this.sessions.values()).find(s => 
-      s.patientId === patientId && 
-      (s.isActive || (s.openaiWs && s.openaiWs.readyState !== WebSocket.CLOSED))
-    );
-    
-    if (existingSession) {
-      console.log(`🔄 PREVENTING DUPLICATE SESSION - Found existing session ${existingSession.id} for patient ${patientName}`);
-      
-      // If session exists but is stale, clean it up and create new one
-      if (!existingSession.isActive && (!existingSession.openaiWs || existingSession.openaiWs.readyState === WebSocket.CLOSED)) {
-        console.log(`🧹 Cleaning up stale session ${existingSession.id}`);
-        await this.endSession(existingSession.id);
-      } else {
-        // Session is active, reuse it to prevent duplicates
-        console.log(`✅ Reusing active session ${existingSession.id} - preventing duplicate Twilio/GPT-4o connection`);
-        return existingSession.id;
-      }
+    // CRITICAL: Check for concurrent session creation lock
+    if (this.patientLocks.get(patientId)) {
+      console.log(`🔒 BLOCKING CONCURRENT SESSION - Patient ${patientId} already has session creation in progress`);
+      throw new Error(`Session creation already in progress for patient ${patientId}`);
     }
-
-    const sessionId = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    const session: RealtimeSession = {
-      id: sessionId,
-      patientId,
-      patientName,
-      callId,
-      websocket: null,
-      openaiWs: null,
-      isActive: false,
-      startedAt: new Date(),
-      transcript: [],
-      audioBuffer: [],
-      customSystemPrompt,
-      conversationLog: []
-    };
-
-    this.sessions.set(sessionId, session);
-    this.activePatients.add(patientId);
+    // Lock this patient to prevent concurrent sessions
+    this.patientLocks.set(patientId, true);
     
-    console.log(`✨ Created realtime session ${sessionId} for patient ${patientName}`);
-    return sessionId;
+    try {
+      // CRITICAL: Force cleanup ANY existing sessions for this patient to prevent multiple agents
+      const allPatientSessions = Array.from(this.sessions.values()).filter(s => s.patientId === patientId);
+      
+      if (allPatientSessions.length > 0) {
+        console.log(`🚨 FORCE CLEANUP - Found ${allPatientSessions.length} existing sessions for patient ${patientId}. Terminating all to prevent multiple agents:`);
+        
+        for (const session of allPatientSessions) {
+          console.log(`🧹 Force terminating session ${session.id}`);
+          await this.endSession(session.id);
+        }
+        
+        // Remove from active patients set
+        this.activePatients.delete(patientId);
+        
+        // Wait for cleanup to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log(`✅ All sessions cleaned for patient ${patientId}, creating fresh session`);
+      }
+
+      const sessionId = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const session: RealtimeSession = {
+        id: sessionId,
+        patientId,
+        patientName,
+        callId,
+        websocket: null,
+        openaiWs: null,
+        isActive: false,
+        startedAt: new Date(),
+        transcript: [],
+        audioBuffer: [],
+        customSystemPrompt,
+        conversationLog: []
+      };
+
+      this.sessions.set(sessionId, session);
+      this.activePatients.add(patientId);
+      
+      console.log(`✨ Created realtime session ${sessionId} for patient ${patientName}`);
+      return sessionId;
+      
+    } finally {
+      // Always release the lock
+      this.patientLocks.delete(patientId);
+    }
   }
 
   async initializeOpenAIRealtime(sessionId: string): Promise<WebSocket> {
@@ -338,10 +353,8 @@ Remember to be professional, empathetic, and identify yourself as calling from D
             type: 'input_audio_buffer.clear'
           }));
           
-          // Additional safety: Cancel any ongoing response to prevent overlap
-          session.openaiWs.send(JSON.stringify({
-            type: 'response.cancel'
-          }));
+          // Additional safety: Ensure single voice by clearing any pending inputs
+          // Remove response.cancel to prevent disrupting current AI speech
         }
         
         // Stream audio back to Twilio in proper G.711 chunks (320 bytes = 20ms)
