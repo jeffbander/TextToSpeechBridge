@@ -52,7 +52,7 @@ const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
       // Add all received fields to response for AIGENTS system
       Object.keys(payload).forEach((fieldName) => {
         const cleanFieldName = fieldName.replace(/\s+/g, '_').toLowerCase();
-        successResponse[cleanFieldName] = payload[fieldName];
+        successResponse[cleanFieldName] = (payload as any)[fieldName];
       });
 
       console.log(`[AIGENTS-WEBHOOK-${requestId}] Responding with success`);
@@ -100,7 +100,7 @@ const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
 // ===== FRONTEND INTEGRATION =====
 
 // Automation trigger function
-const triggerAIGENTSAutomation = async (params) => {
+const triggerAIGENTSAutomation = async (params: any) => {
   const {
     email = "jeffrey.Bander@providerloop.com",
     chainToRun,
@@ -145,7 +145,7 @@ const triggerAIGENTSAutomation = async (params) => {
       status: response.ok ? 'success' : 'error'
     };
 
-  } catch (error) {
+  } catch (error: any) {
     return {
       success: false,
       error: error.message,
@@ -155,7 +155,7 @@ const triggerAIGENTSAutomation = async (params) => {
 };
 
 // Generate Source ID from patient data
-const generateSourceId = (firstName, lastName, dob) => {
+const generateSourceId = (firstName: string, lastName: string, dob: string) => {
   if (!firstName || !lastName || !dob) return '';
   
   const formattedFirstName = firstName.trim().replace(/\s+/g, '_');
@@ -170,7 +170,7 @@ const generateSourceId = (firstName, lastName, dob) => {
 };
 
 // Integration with CardioCare patient system
-const triggerAutomationForPatient = async (patient, chainToRun, firstStepInput, additionalVariables = {}) => {
+const triggerAutomationForPatient = async (patient: any, chainToRun: string, firstStepInput: string | null, additionalVariables: any = {}) => {
   const sourceId = generateSourceId(patient.firstName, patient.lastName, patient.dateOfBirth);
   
   const startingVariables = {
