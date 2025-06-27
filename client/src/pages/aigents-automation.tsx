@@ -44,6 +44,7 @@ interface AutomationLog {
 
 const AUTOMATION_CHAINS = [
   { value: "Pre Pre chart", label: "Pre Pre Chart" },
+  { value: "post call analysis", label: "Post Call Analysis" },
   { value: "ATTACHMENT PROCESSING (LABS)", label: "Attachment Processing (Labs)" },
   { value: "ATTACHMENT PROCESSING (SLEEP STUDY)", label: "Attachment Processing (Sleep Study)" },
   { value: "MEDICATION RECONCILIATION", label: "Medication Reconciliation" },
