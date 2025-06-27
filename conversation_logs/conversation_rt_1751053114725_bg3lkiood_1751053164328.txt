@@ -1,0 +1,22 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1751053114725_bg3lkiood
+Patient: Moshe Z Bikel (ID: 42)
+Call ID: 328
+Duration: 49 seconds
+Date: 2025-06-27T19:38:34.725Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[7:38:42 PM] AI: Hello, this message is
+
+
+[7:38:42 PM] PATIENT: Family Bickle, please leave your message after the tone. Thank you.
+
+
+[7:38:42 PM] AI:  for the Bickel family. This is Tziporah calling from Dr. Jeffrey Bander's cardiology office. We wanted to remind you of an upcoming appointment. Please give our office a call at your earliest convenience to confirm.
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
