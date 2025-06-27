@@ -22,6 +22,7 @@ export interface RealtimeSession {
   streamSid?: string;
   outboundChunkCount?: number;
   conversationStarted?: boolean;
+  silentPeriods?: number;
   conversationLog: Array<{
     timestamp: Date;
     speaker: 'ai' | 'patient';
@@ -226,8 +227,19 @@ Remember to be professional, empathetic, and identify yourself as calling from D
       console.log(`🔴 OpenAI WebSocket closed for session ${sessionId} - Code: ${code}, Reason: ${reason}`);
       session.openaiWs = null;
       
-      // End session on unexpected closure to prevent hanging connections
-      if (code !== 1000 && session.isActive) {
+      // Attempt reconnection for unexpected closures during active conversations
+      if (code !== 1000 && session.isActive && session.conversationLog.length > 0) {
+        console.log(`🔄 Attempting to reconnect session ${sessionId} after unexpected closure`);
+        setTimeout(() => {
+          if (session.isActive && !session.openaiWs) {
+            console.log(`🔗 Reconnecting OpenAI session ${sessionId}`);
+            this.initializeOpenAIRealtime(sessionId).catch(error => {
+              console.error(`❌ Failed to reconnect session ${sessionId}:`, error);
+              session.isActive = false;
+            });
+          }
+        }, 1000);
+      } else if (code !== 1000 && session.isActive) {
         console.log(`🛑 Ending session ${sessionId} due to unexpected WebSocket closure`);
         session.isActive = false;
       }
@@ -317,6 +329,9 @@ Remember to be professional, empathetic, and identify yourself as calling from D
         break;
         
       case 'response.audio.delta':
+        // Reset silent periods when AI is speaking to prevent disconnection
+        session.silentPeriods = 0;
+        
         // Stream audio back to Twilio in proper G.711 chunks (320 bytes = 20ms)
         console.log(`🔊 Sending audio delta to Twilio - payload length: ${message.delta?.length || 0}`);
         if (session.websocket && session.websocket.readyState === WebSocket.OPEN && message.delta) {
@@ -436,6 +451,23 @@ Remember to be professional, empathetic, and identify yourself as calling from D
       
       if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
         const audioData = message.media.payload;
+        
+        // Check for silent/muted audio patterns to prevent session timeouts
+        const isSilentAudio = this.detectSilentAudio(audioData);
+        if (isSilentAudio) {
+          // Track silent periods
+          session.silentPeriods = (session.silentPeriods || 0) + 1;
+          
+          // Send keepalive after extended silence (every 30 packets = ~6 seconds)
+          if (session.silentPeriods % 30 === 0) {
+            console.log(`🔇 Detected extended silence for ${sessionId} - sending keepalive`);
+            this.sendKeepalive(sessionId);
+          }
+        } else {
+          // Reset silent period counter on voice activity
+          session.silentPeriods = 0;
+        }
+        
         console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}, WebSocket state: ${session.openaiWs.readyState}`);
         
         const audioMessage = {
@@ -475,6 +507,42 @@ Remember to be professional, empathetic, and identify yourself as calling from D
     
     this.activePatients.delete(session.patientId);
     this.sessions.delete(sessionId);
+  }
+
+  private detectSilentAudio(audioData: string): boolean {
+    // Simple silence detection - check for repeated patterns indicating muted/silent audio
+    const decodedLength = audioData.length;
+    
+    // If audio data is very repetitive or contains mostly padding characters, likely silent
+    const paddingChars = audioData.match(/[fn5+/37]/g)?.length || 0;
+    const repetitiveRatio = paddingChars / decodedLength;
+    
+    return repetitiveRatio > 0.8; // >80% repetitive patterns suggests silence/mute
+  }
+
+  private sendKeepalive(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session?.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) return;
+
+    try {
+      // Send a session update to keep connection alive during silence
+      const keepaliveMessage = {
+        type: 'session.update',
+        session: {
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 1000
+          }
+        }
+      };
+      
+      session.openaiWs.send(JSON.stringify(keepaliveMessage));
+      console.log(`💓 Sent keepalive for session ${sessionId}`);
+    } catch (error) {
+      console.error(`❌ Error sending keepalive for session ${sessionId}:`, error);
+    }
   }
 
   private async saveSessionData(session: RealtimeSession) {
