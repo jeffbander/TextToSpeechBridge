@@ -34,11 +34,22 @@ export class OpenAIRealtimeService {
   private activePatients: Set<number> = new Set();
 
   async createRealtimeSession(patientId: number, patientName: string, callId: number, customSystemPrompt?: string): Promise<string> {
-    // Check if patient already has an active session
-    if (this.activePatients.has(patientId)) {
-      const existingSession = Array.from(this.sessions.values()).find(s => s.patientId === patientId && s.isActive);
-      if (existingSession) {
-        console.log(`🔄 Reusing existing session ${existingSession.id} for patient ${patientName}`);
+    // Check if patient already has an active session - prevent duplicate connections
+    const existingSession = Array.from(this.sessions.values()).find(s => 
+      s.patientId === patientId && 
+      (s.isActive || (s.openaiWs && s.openaiWs.readyState !== WebSocket.CLOSED))
+    );
+    
+    if (existingSession) {
+      console.log(`🔄 PREVENTING DUPLICATE SESSION - Found existing session ${existingSession.id} for patient ${patientName}`);
+      
+      // If session exists but is stale, clean it up and create new one
+      if (!existingSession.isActive && (!existingSession.openaiWs || existingSession.openaiWs.readyState === WebSocket.CLOSED)) {
+        console.log(`🧹 Cleaning up stale session ${existingSession.id}`);
+        await this.endSession(existingSession.id);
+      } else {
+        // Session is active, reuse it to prevent duplicates
+        console.log(`✅ Reusing active session ${existingSession.id} - preventing duplicate Twilio/GPT-4o connection`);
         return existingSession.id;
       }
     }
@@ -73,14 +84,15 @@ export class OpenAIRealtimeService {
       throw new Error(`Session ${sessionId} not found`);
     }
 
-    // Prevent multiple simultaneous connection attempts
+    // CRITICAL: Prevent multiple simultaneous connection attempts per session
     if (session.openaiWs && session.openaiWs.readyState === WebSocket.CONNECTING) {
-      console.log(`⏳ OpenAI connection already in progress for session ${sessionId}`);
+      console.log(`⏳ DUPLICATE PREVENTION - OpenAI connection already in progress for session ${sessionId}`);
       return session.openaiWs;
     }
 
-    // Close existing connection if any
+    // CRITICAL: Close existing connection if any to prevent audio conflicts
     if (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED) {
+      console.log(`🔄 CLOSING EXISTING CONNECTION - Preventing duplicate OpenAI WebSocket for session ${sessionId}`);
       try {
         session.openaiWs.removeAllListeners();
         session.openaiWs.close();
@@ -109,11 +121,6 @@ export class OpenAIRealtimeService {
       // Use custom prompt from CSV upload or default healthcare prompt
       let instructions = session.customSystemPrompt;
       
-      // MEDICAL SAFETY: Always enforce English language for medical calls
-      const englishEnforcement = `
-
-CRITICAL REQUIREMENT: You MUST speak only in English during this medical call. This is a healthcare safety requirement. Do not use any other language including Hebrew, Yiddish, or any non-English language regardless of patient preferences or custom prompts.`;
-      
       // Only filter out clearly inappropriate content, preserve legitimate medical prompts
       if (!instructions || instructions.trim().length < 10) {
         instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office, located at 432 Bedford Ave, Williamsburg. You are following up with ${patient} using their most recent notes and clinical data.
@@ -124,29 +131,13 @@ Your role is to:
 3. Escalate or flag concerning responses that may require provider attention
 4. Keep tone professional, kind, and clear—like a nurse calling a long-time patient
 
-Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.${englishEnforcement}`;
+Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.`;
       } else {
-        // Filter out non-English language preferences and translate core medical instructions
-        let filteredInstructions = instructions;
-        
-        // Remove language preference markers that cause non-English responses
-        filteredInstructions = filteredInstructions.replace(/Language Preference:\s*(Hebrew|Yiddish|Arabic|Spanish|Russian|Chinese)[^\n]*/gi, '');
-        
-        // If the prompt contains significant non-English content, use English default
-        const nonEnglishRegex = /[\u0590-\u05FF\u0600-\u06FF\u4E00-\u9FFF\u0400-\u04FF]/g;
-        const nonEnglishMatches = filteredInstructions.match(nonEnglishRegex);
-        
-        if (nonEnglishMatches && nonEnglishMatches.length > 20) {
-          console.log(`⚠️ Non-English content detected in custom prompt for ${patient} - using English default for medical safety`);
-          instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. You are conducting a medical follow-up call with ${patient}.
+        // Use the custom prompt from CSV upload, ensuring it includes proper context
+        instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. ${instructions}
 
-Be professional, empathetic, and conduct the call in clear English. Ask about their current health status, medications, and any concerns since their last visit.${englishEnforcement}`;
-        } else {
-          instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. ${filteredInstructions}
-
-Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.${englishEnforcement}`;
-        }
-        console.log(`🎯 Using filtered custom prompt for ${patient}`);
+Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.`;
+        console.log(`🎯 Using custom prompt from CSV upload for ${patient}`);
       }
 
       // Extract voice and language preferences from custom prompt metadata if available
