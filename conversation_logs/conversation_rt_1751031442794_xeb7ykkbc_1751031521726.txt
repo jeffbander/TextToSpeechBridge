@@ -1,0 +1,28 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1751031442794_xeb7ykkbc
+Patient: mills reed (ID: 39)
+Call ID: 322
+Duration: 78 seconds
+Date: 2025-06-27T13:37:22.794Z
+Total Exchanges: 5
+
+─────────────────────────────────────────────────────────
+
+[1:37:50 PM] PATIENT: I don't know. I usually only go to voicemail if I'm at work and I don't know who it is. Say hi. Hello?
+
+
+[1:37:52 PM] AI: Hello Mills Reed, this is Tziporah from Dr. Jeffrey Bander's cardiology office. We're just calling to check on how you're feeling today. How have you been doing since your last visit?
+
+
+[1:37:56 PM] AI: I'm glad you received the email, Mills. It's important to stay informed about your heart health. Have you noticed any changesThat's good to hear. Have you been able to keep up with your medications and any
+
+
+[1:37:59 PM] PATIENT: Thank you.
+
+
+[1:37:59 PM] AI:  lifestyle recommendations from Dr. Bander?
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
