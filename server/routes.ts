@@ -15,6 +15,7 @@ import { registerPatientPromptRoutes } from "./routes-patient-prompts";
 import { registerSmsRoutes } from "./routes-sms";
 import { registerCsvImportRoutes } from "./routes-csv-import";
 import { registerWorkingVoiceRoutes } from "./routes-working-voice";
+import { setupAIGENTSRoutes } from "./services/aigents-integration";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -31,6 +32,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerTwilioIntegrationRoutes(app);
   registerWorkingVoiceRoutes(app);
   registerSmsRoutes(app);
+  
+  // Register AIGENTS automation routes
+  setupAIGENTSRoutes(app, storage);
 
   // Shared endpoints that don't belong to calling or realtime modules
   

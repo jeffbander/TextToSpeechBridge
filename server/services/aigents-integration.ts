@@ -1,3 +1,6 @@
+import type { Express } from "express";
+import type { IStorage } from "../storage.js";
+
 /**
  * AIGENTS Platform Integration Package
  * Drop this into any Replit app to add AIGENTS automation capabilities
@@ -6,7 +9,7 @@
 // ===== BACKEND INTEGRATION =====
 
 // Express.js routes to add to your server
-const setupAIGENTSRoutes = (app, storage) => {
+export const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
   const multer = require('multer');
   const upload = multer();
 
@@ -191,7 +194,7 @@ const triggerAutomationForPatient = async (patient, chainToRun, firstStepInput, 
   });
 };
 
-module.exports = {
+export {
   setupAIGENTSRoutes,
   triggerAIGENTSAutomation,
   generateSourceId,

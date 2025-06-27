@@ -752,6 +752,50 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return message || undefined;
   }
+
+  // Automation Logs
+  async getAutomationLogs(): Promise<AutomationLog[]> {
+    try {
+      return await db.select().from(automationLogs).orderBy(automationLogs.triggeredAt);
+    } catch (error) {
+      console.error('Database error fetching automation logs:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async getAutomationLogsByPatient(patientId: number): Promise<AutomationLog[]> {
+    try {
+      return await db.select().from(automationLogs)
+        .where(eq(automationLogs.patientId, patientId))
+        .orderBy(automationLogs.triggeredAt);
+    } catch (error) {
+      console.error('Database error fetching automation logs for patient:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async createAutomationLog(insertLog: InsertAutomationLog): Promise<AutomationLog> {
+    const [log] = await db
+      .insert(automationLogs)
+      .values(insertLog)
+      .returning();
+    return log;
+  }
+
+  async updateAutomationLogWithAgentResponse(chainRunId: string, agentResponse: string, agentName: string, payload: any): Promise<AutomationLog | undefined> {
+    const [log] = await db
+      .update(automationLogs)
+      .set({
+        agentResponse,
+        agentName,
+        status: 'completed',
+        responsePayload: payload,
+        completedAt: new Date()
+      })
+      .where(eq(automationLogs.chainRunId, chainRunId))
+      .returning();
+    return log || undefined;
+  }
 }
 
 export const storage = new DatabaseStorage();
