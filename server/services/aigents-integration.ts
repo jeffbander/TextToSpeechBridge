@@ -67,6 +67,51 @@ const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
     }
   });
 
+  // AIGENTS response webhook endpoint
+  app.post('/webhook/aigents-response', async (req, res) => {
+    try {
+      const { 
+        "Chain Run ID": chainRunId,
+        "Source ID": sourceId,
+        ...responseData 
+      } = req.body;
+
+      console.log(`[AIGENTS-RESPONSE] Received response for Chain Run ID: ${chainRunId}`);
+
+      if (!chainRunId) {
+        return res.status(400).json({ error: "Chain Run ID is required" });
+      }
+
+      // Find the automation log by chain run ID
+      const logs = await storage.getAutomationLogs();
+      const log = logs.find(l => l.chainRunId === chainRunId);
+
+      if (log) {
+        // Update the automation log with AIGENTS response
+        await storage.updateAutomationLogWithAgentResponse(
+          chainRunId,
+          JSON.stringify(responseData),
+          responseData.agentName || "AIGENTS System",
+          responseData
+        );
+
+        console.log(`[AIGENTS-RESPONSE] Updated automation log ${log.id} with response`);
+      } else {
+        console.log(`[AIGENTS-RESPONSE] No automation log found for Chain Run ID: ${chainRunId}`);
+      }
+
+      res.json({ 
+        success: true,
+        message: "Response processed successfully",
+        chainRunId 
+      });
+
+    } catch (error: any) {
+      console.error('[AIGENTS-RESPONSE] Error processing response:', error);
+      res.status(500).json({ error: "Failed to process response", details: error.message });
+    }
+  });
+
   // Automation logs endpoints
   app.post('/api/automation-logs', async (req, res) => {
     try {

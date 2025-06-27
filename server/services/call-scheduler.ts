@@ -344,20 +344,25 @@ export class CallSchedulerService {
 
       // Log the automation trigger
       if (storage.createAutomationLog) {
-        await storage.createAutomationLog({
-          patientId: patient.id,
-          chainRunId: result.chainRunId || `post-call-${Date.now()}`,
-          chainToRun: "post call analysis",
-          status: result.success ? 'triggered' : 'failed',
-          triggerType: 'automatic_post_call',
-          sourceId: sourceId,
-          callId: callId,
-          response: result,
-          metadata: {
-            call_data: callData,
-            automation_result: result
-          }
-        });
+        // Only create log if we got a valid chain run ID from AIGENTS
+        if (result.chainRunId) {
+          await storage.createAutomationLog({
+            patientId: patient.id,
+            chainRunId: result.chainRunId,
+            chainToRun: "post call analysis",
+            status: result.success ? 'triggered' : 'failed',
+            triggerType: 'automatic_post_call',
+            sourceId: sourceId,
+            callId: callId,
+            response: result,
+            metadata: {
+              call_data: callData,
+              automation_result: result
+            }
+          });
+        } else {
+          console.log(`[POST-CALL-ANALYSIS] No chain run ID received from AIGENTS, skipping log creation`);
+        }
       }
 
       console.log(`[POST-CALL-ANALYSIS] Automation ${result.success ? 'triggered successfully' : 'failed'} for call ${callId}`);
