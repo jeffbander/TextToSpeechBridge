@@ -25,7 +25,7 @@ import {
   type InsertAutomationLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 
 export interface IStorage {
   // Patients
@@ -608,7 +608,15 @@ export class DatabaseStorage implements IStorage {
 
   async getActiveCallsByPatientId(patientId: number): Promise<Call[]> {
     return await db.select().from(calls).where(
-      and(eq(calls.patientId, patientId), eq(calls.status, 'in_progress'))
+      and(
+        eq(calls.patientId, patientId), 
+        or(
+          eq(calls.status, 'active'),
+          eq(calls.status, 'calling'), 
+          eq(calls.status, 'in_progress'),
+          eq(calls.status, 'initiated')
+        )
+      )
     );
   }
 

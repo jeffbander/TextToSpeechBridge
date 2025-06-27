@@ -36,6 +36,21 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       
       console.log(`[TWILIO-INTEGRATION] Starting automated call for patient ID: ${patientId}`);
       
+      // CRITICAL: Check for existing active calls to prevent duplicate Twilio sessions
+      const existingActiveCalls = await storage.getActiveCallsByPatientId(patientId);
+      const activeCall = existingActiveCalls.find((call: any) => 
+        call.status === 'active' || call.status === 'calling' || call.status === 'in_progress'
+      );
+      
+      if (activeCall) {
+        console.log(`🚫 PREVENTING DUPLICATE CALL - Patient ${patientId} already has active call ${activeCall.id}`);
+        return res.status(409).json({ 
+          message: "Patient already has an active call",
+          existingCallId: activeCall.id,
+          status: activeCall.status
+        });
+      }
+      
       // Get patient information
       const patient = await storage.getPatient(patientId);
       if (!patient) {
