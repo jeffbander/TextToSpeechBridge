@@ -109,6 +109,11 @@ export class OpenAIRealtimeService {
       // Use custom prompt from CSV upload or default healthcare prompt
       let instructions = session.customSystemPrompt;
       
+      // MEDICAL SAFETY: Always enforce English language for medical calls
+      const englishEnforcement = `
+
+CRITICAL REQUIREMENT: You MUST speak only in English during this medical call. This is a healthcare safety requirement. Do not use any other language including Hebrew, Yiddish, or any non-English language regardless of patient preferences or custom prompts.`;
+      
       // Only filter out clearly inappropriate content, preserve legitimate medical prompts
       if (!instructions || instructions.trim().length < 10) {
         instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office, located at 432 Bedford Ave, Williamsburg. You are following up with ${patient} using their most recent notes and clinical data.
@@ -119,13 +124,29 @@ Your role is to:
 3. Escalate or flag concerning responses that may require provider attention
 4. Keep tone professional, kind, and clear—like a nurse calling a long-time patient
 
-Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.`;
+Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.${englishEnforcement}`;
       } else {
-        // Use the custom prompt from CSV upload, ensuring it includes proper context
-        instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. ${instructions}
+        // Filter out non-English language preferences and translate core medical instructions
+        let filteredInstructions = instructions;
+        
+        // Remove language preference markers that cause non-English responses
+        filteredInstructions = filteredInstructions.replace(/Language Preference:\s*(Hebrew|Yiddish|Arabic|Spanish|Russian|Chinese)[^\n]*/gi, '');
+        
+        // If the prompt contains significant non-English content, use English default
+        const nonEnglishRegex = /[\u0590-\u05FF\u0600-\u06FF\u4E00-\u9FFF\u0400-\u04FF]/g;
+        const nonEnglishMatches = filteredInstructions.match(nonEnglishRegex);
+        
+        if (nonEnglishMatches && nonEnglishMatches.length > 20) {
+          console.log(`⚠️ Non-English content detected in custom prompt for ${patient} - using English default for medical safety`);
+          instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. You are conducting a medical follow-up call with ${patient}.
 
-Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.`;
-        console.log(`🎯 Using custom prompt from CSV upload for ${patient}`);
+Be professional, empathetic, and conduct the call in clear English. Ask about their current health status, medications, and any concerns since their last visit.${englishEnforcement}`;
+        } else {
+          instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. ${filteredInstructions}
+
+Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.${englishEnforcement}`;
+        }
+        console.log(`🎯 Using filtered custom prompt for ${patient}`);
       }
 
       // Extract voice and language preferences from custom prompt metadata if available

@@ -1,0 +1,46 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1751025250491_ga218zgfb
+Patient: Jeff Bander (ID: 7)
+Call ID: 311
+Duration: 87 seconds
+Date: 2025-06-27T11:54:10.491Z
+Total Exchanges: 11
+
+─────────────────────────────────────────────────────────
+
+[11:54:27 AM] AI: שלום־עליכם, הער לאַנדאַו. איך בין טיפּֿעראַ, אַ נערס־העלפֿערקע פֿון ד"
+
+
+[11:54:27 AM] PATIENT: Hello?
+
+
+[11:54:27 AM] AI: ר דזשעפֿרי באנדער׳ס קאַרדיאָלאָגיע־אָפֿיס. איך האָף אַז אַלץ איז אין אָרדנונג מיט אײַך. איך רוף אײַך אָנצופֿרעגן ווי ס׳גייט אײַך נאָך אײַער לעצטער וויזיט אין אונדזער
+
+
+[11:54:46 AM] AI: איך פֿאַרשטיי, עס איז אַ ביסל באַדערינג. מיר האָבן געזען
+
+
+[11:54:48 AM] PATIENT: It's still getting disturbed in the computer right now.
+
+
+[11:54:49 AM] AI: אַקעוואַלדיק, איך פֿאַרשטיי אַז עס קען זײַן אַ ביסל באַדערינג. מיר וועלן דאָס איבערגעבן ד"ר באנדער, כּדי ער זאָל קענען
+
+
+[11:54:51 AM] PATIENT: open and close.
+
+
+[11:54:52 AM] AI: איך פֿאַרשטיי אײַערע חששות. איר זאָלט וויסן אַז מיר נעמען דאָס זייער ערנסט. איך וועל דאָס גלייך איבערגעבן ד"ר באנדער, און מיר וועלן זען וואָס מיר קענען טאָן צו העלפֿן אײַך. 
+
+
+[11:55:14 AM] AI: ער לאַנדאַו, איך פֿאַרשטיי אַז עס קען זײַן אַ ביסל קאָמפּליצירט. אויב איר האָט נאָך פֿראַגעס אָדער דאַרפֿט מער אינפֿאָרמאַציע, ביטע לאָזט מיר וויסן. איך בין דאָ צו העלפֿן.
+
+
+[11:55:17 AM] PATIENT: You should probably put on clothes. Is he going or not to camp? He's not going. Based on my perception. What are you talking about? What are you saying? What are you saying? I'm just not saying. What are you saying? You're going to work and then you're saying you're... I'm saying I'm trying to make... I'm just joking. I'm just saying. You should bring pajamas and you're going to work in pajamas. I'm not going to do that.
+
+
+[11:55:18 AM] AI: שלום־עליכם, הער לאַנדאַו. איך בין טיפּֿעראַ, אַ נערס־העלפֿערקע פֿון ד"ר דזשעפֿרי באנדער׳ס קאַרדיאָלאָגיע־אָפֿיס. איך האָף אַז אַלץ איז אין אָרדנונג מיט אײַך. איך רוף אײַך אָנצופֿרעגן ווי ס׳גייט אײַך נאָך א
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
