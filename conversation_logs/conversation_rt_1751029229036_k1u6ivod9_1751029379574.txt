@@ -1,0 +1,22 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1751029229036_k1u6ivod9
+Patient: Judith  Goldfinger  (ID: 20)
+Call ID: 319
+Duration: 150 seconds
+Date: 2025-06-27T13:00:29.036Z
+Total Exchanges: 3
+
+─────────────────────────────────────────────────────────
+
+[1:00:49 PM] AI: Shalom aleichem, Judy. This is Tziporah calling from Dr. Jeffrey B
+
+
+[1:00:50 PM] PATIENT: Hi, it's Judy Goldfinger. Leave me a message.
+
+
+[1:00:50 PM] AI: ander's cardiology office. I wanted to follow up with you regarding your recent appointment and discuss your treatment plan. Please give us a call back at your
+
+
+─────────────────────────────────────────────────────────
+End of Conversation
