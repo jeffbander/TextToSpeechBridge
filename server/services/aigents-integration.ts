@@ -9,7 +9,7 @@ import type { IStorage } from "../storage.js";
 // ===== BACKEND INTEGRATION =====
 
 // Express.js routes to add to your server
-export const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
+const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
   const multer = require('multer');
   const upload = multer();
 

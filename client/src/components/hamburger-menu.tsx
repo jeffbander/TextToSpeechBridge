@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Home, Settings, MessageSquare, FileText, Users, Activity, Upload } from "lucide-react";
+import { Menu, Home, Settings, MessageSquare, FileText, Users, Activity, Upload, Bot } from "lucide-react";
 
 interface NavigationItem {
   label: string;
@@ -32,6 +32,7 @@ const allNavigationItems: NavigationItem[] = [
   { label: "Custom Prompts", path: "/custom-prompts", icon: FileText },
   { label: "Real-time Testing", path: "/realtime", icon: Activity },
   { label: "CSV Import", path: "/csv-import", icon: Upload },
+  { label: "AIGENTS Automation", path: "/aigents-automation", icon: Bot },
 ];
 
 export function HamburgerMenu() {
