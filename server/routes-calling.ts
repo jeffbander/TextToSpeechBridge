@@ -185,6 +185,81 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
     }
   });
 
+  // EMERGENCY KILL SWITCH - Stop all active calls immediately
+  app.post("/api/calls/emergency-stop", async (req, res) => {
+    try {
+      console.log(`[EMERGENCY-KILL-SWITCH] Emergency stop initiated at ${new Date().toISOString()}`);
+      
+      // Get all active calls
+      const activeCalls = await storage.getActiveCalls();
+      console.log(`[EMERGENCY-KILL-SWITCH] Found ${activeCalls.length} active calls to terminate`);
+      
+      const killResults = [];
+      let successCount = 0;
+      let errorCount = 0;
+      
+      // Terminate each active call
+      for (const call of activeCalls) {
+        try {
+          console.log(`[EMERGENCY-KILL-SWITCH] Terminating call ${call.id} for patient ${call.patientId}`);
+          
+          // Update call status to failed with emergency stop reason
+          await storage.updateCall(call.id, { 
+            status: 'failed',
+            endedAt: new Date()
+          });
+          
+          killResults.push({
+            callId: call.id,
+            patientId: call.patientId,
+            status: 'terminated',
+            reason: 'emergency_stop'
+          });
+          
+          successCount++;
+          
+          // Broadcast call ended update
+          broadcastUpdate('callEnded', { 
+            callId: call.id, 
+            reason: 'emergency_stop',
+            timestamp: new Date().toISOString()
+          });
+          
+        } catch (error) {
+          console.error(`[EMERGENCY-KILL-SWITCH] Failed to terminate call ${call.id}:`, error);
+          killResults.push({
+            callId: call.id,
+            patientId: call.patientId,
+            status: 'error',
+            error: error instanceof Error ? error.message : String(error)
+          });
+          errorCount++;
+        }
+      }
+      
+      console.log(`[EMERGENCY-KILL-SWITCH] Emergency stop completed: ${successCount} terminated, ${errorCount} errors`);
+      
+      res.json({
+        success: true,
+        message: `Emergency stop completed: ${successCount} calls terminated, ${errorCount} errors`,
+        totalCalls: activeCalls.length,
+        successCount,
+        errorCount,
+        timestamp: new Date().toISOString(),
+        results: killResults
+      });
+      
+    } catch (error) {
+      console.error("[EMERGENCY-KILL-SWITCH] Emergency stop failed:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Emergency stop failed", 
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Start a new call
   app.post("/api/calls/start", async (req, res) => {
     try {

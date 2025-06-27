@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Phone, Clock, User, AlertTriangle, CheckCircle, XCircle, MessageSquare, TestTube2 } from 'lucide-react';
+import { Phone, Clock, User, AlertTriangle, CheckCircle, XCircle, MessageSquare, TestTube2, StopCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { useToast } from '@/hooks/use-toast';
@@ -75,6 +75,29 @@ export default function AutomatedCallsPage() {
       toast({
         title: "Call Failed",
         description: error.message || "Failed to start automated call",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Emergency kill switch mutation
+  const emergencyStopMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/calls/emergency-stop', {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Emergency Stop Complete",
+        description: `${data.successCount} calls terminated successfully`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/twilio/automated-calls'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/calls/active'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Emergency Stop Failed",
+        description: error.message || "Failed to stop calls",
         variant: "destructive",
       });
     },
