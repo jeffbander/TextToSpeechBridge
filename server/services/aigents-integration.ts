@@ -77,7 +77,9 @@ const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
         res.json({ message: "Log stored successfully" });
       }
     } catch (error: any) {
-      res.status(500).json({ error: "Failed to create log" });
+      console.error('Error creating automation log:', error);
+      console.error('Request body:', req.body);
+      res.status(500).json({ error: "Failed to create log", details: error.message });
     }
   });
 
