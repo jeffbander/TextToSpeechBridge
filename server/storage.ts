@@ -327,6 +327,14 @@ export class MemStorage implements IStorage {
     const campaign: CallCampaign = {
       ...insertCampaign,
       id,
+      status: insertCampaign.status || 'active',
+      description: insertCampaign.description || null,
+      totalPatients: insertCampaign.totalPatients || null,
+      completedCalls: insertCampaign.completedCalls || null,
+      successfulCalls: insertCampaign.successfulCalls || null,
+      failedCalls: insertCampaign.failedCalls || null,
+      maxRetries: insertCampaign.maxRetries || null,
+      retryIntervalHours: insertCampaign.retryIntervalHours || null,
       createdAt: new Date(),
       completedAt: null
     };
@@ -361,6 +369,8 @@ export class MemStorage implements IStorage {
     const attempt: CallAttempt = {
       ...insertAttempt,
       id,
+      status: insertAttempt.status || 'pending',
+      attemptNumber: insertAttempt.attemptNumber || 1,
       callId: insertAttempt.callId ?? null,
       scheduledAt: insertAttempt.scheduledAt ?? null,
       startedAt: insertAttempt.startedAt ?? null,
@@ -399,7 +409,7 @@ export class MemStorage implements IStorage {
       twilioSid: insertMessage.twilioSid ?? null,
       errorMessage: insertMessage.errorMessage ?? null,
       sentAt: new Date(),
-      receivedAt: insertMessage.receivedAt ?? null,
+      receivedAt: null,
     };
     this.messages.set(id, message);
     return message;
@@ -420,13 +430,26 @@ export class MemStorage implements IStorage {
   }
 
   async getAutomationLogsByPatient(patientId: number): Promise<AutomationLog[]> {
-    return [];
+    return Array.from(this.automationLogs.values()).filter(log => log.patientId === patientId);
+  }
+
+  async getAutomationLogs(): Promise<AutomationLog[]> {
+    return Array.from(this.automationLogs.values());
   }
 
   async createAutomationLog(insertLog: InsertAutomationLog): Promise<AutomationLog> {
     const log: AutomationLog = {
       id: Date.now(),
-      ...insertLog,
+      chainRunId: insertLog.chainRunId,
+      chainToRun: insertLog.chainToRun,
+      patientId: insertLog.patientId || null,
+      status: insertLog.status || 'pending',
+      sourceId: insertLog.sourceId || null,
+      firstStepInput: insertLog.firstStepInput || null,
+      startingVariables: insertLog.startingVariables || null,
+      agentResponse: insertLog.agentResponse || null,
+      agentName: insertLog.agentName || null,
+      responsePayload: insertLog.responsePayload || null,
       triggeredAt: new Date(),
       completedAt: null
     };
