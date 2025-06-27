@@ -222,9 +222,26 @@ export function registerCsvImportRoutes(app: Express) {
     try {
       const { CallSid, CallStatus, CallDuration } = req.body;
       
-      console.log(`[TWILIO-CALLBACK] CallSid: ${CallSid}, Status: ${CallStatus}, Duration: ${CallDuration}`);
+      console.log(`[TWILIO-STATUS] CallSid: ${CallSid}, Status: ${CallStatus}, Duration: ${CallDuration}`);
       
-      await callScheduler.handleTwilioCallback(CallSid, CallStatus, CallDuration);
+      // Find the call by Twilio SID and update it
+      const calls = await storage.getCalls();
+      const call = calls.find(c => c.twilioCallSid === CallSid);
+      
+      if (call) {
+        await storage.updateCall(call.id, {
+          status: CallStatus === 'completed' ? 'completed' : 'failed',
+          duration: CallDuration ? parseInt(CallDuration) : 0,
+          completedAt: new Date(),
+        });
+        
+        console.log(`[TWILIO-STATUS] Updated call ${call.id} with status: ${CallStatus}`);
+        
+        // Trigger post-call analysis for completed calls with sufficient duration
+        if (CallStatus === 'completed' && CallDuration && parseInt(CallDuration) > 10) {
+          await callScheduler.handleTwilioCallback(CallSid, CallStatus, CallDuration);
+        }
+      }
       
       res.status(200).send('OK');
     } catch (error) {
