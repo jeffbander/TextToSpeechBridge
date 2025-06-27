@@ -784,6 +784,36 @@ End of Conversation
     return this.sessions.get(sessionId);
   }
 
+  getActiveSessionByPatient(patientId: number): RealtimeSession | undefined {
+    return Array.from(this.sessions.values()).find(session => 
+      session.patientId === patientId && 
+      (session.isActive || (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED))
+    );
+  }
+
+  getAllActiveSessionsForPatient(patientId: number): RealtimeSession[] {
+    return Array.from(this.sessions.values()).filter(session => 
+      session.patientId === patientId && 
+      (session.isActive || (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED))
+    );
+  }
+
+  async forceCleanupPatientSessions(patientId: number): Promise<number> {
+    const patientSessions = Array.from(this.sessions.values()).filter(session => 
+      session.patientId === patientId
+    );
+    
+    let cleanedCount = 0;
+    for (const session of patientSessions) {
+      console.log(`🧹 Force cleaning session ${session.id} for patient ${patientId}`);
+      await this.endSession(session.id);
+      cleanedCount++;
+    }
+    
+    this.activePatients.delete(patientId);
+    return cleanedCount;
+  }
+
   getAllActiveSessions(): RealtimeSession[] {
     return Array.from(this.sessions.values());
   }

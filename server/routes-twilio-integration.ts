@@ -36,19 +36,64 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       
       console.log(`[TWILIO-INTEGRATION] Starting automated call for patient ID: ${patientId}`);
       
-      // CRITICAL: Check for existing active calls to prevent duplicate Twilio sessions
-      const existingActiveCalls = await storage.getActiveCallsByPatientId(patientId);
-      const activeCall = existingActiveCalls.find((call: any) => 
-        call.status === 'active' || call.status === 'calling' || call.status === 'in_progress'
+      // CRITICAL: Multi-level duplicate call prevention
+      // 1. Check database for ANY active call states
+      const allCalls = await storage.getCalls();
+      const patientActiveCalls = allCalls.filter((call: any) => 
+        call.patientId === patientId && 
+        ['active', 'calling', 'in_progress', 'initiated', 'ringing'].includes(call.status)
       );
       
-      if (activeCall) {
-        console.log(`🚫 PREVENTING DUPLICATE CALL - Patient ${patientId} already has active call ${activeCall.id}`);
-        return res.status(409).json({ 
-          message: "Patient already has an active call",
-          existingCallId: activeCall.id,
-          status: activeCall.status
+      if (patientActiveCalls.length > 0) {
+        console.log(`🚫 PREVENTING DUPLICATE CALL - Patient ${patientId} has ${patientActiveCalls.length} active calls:`, 
+          patientActiveCalls.map(c => `${c.id}(${c.status})`).join(', '));
+        
+        // Clean up stale calls older than 5 minutes
+        const staleCallsToClean = patientActiveCalls.filter((call: any) => {
+          const callAge = Date.now() - (call.startedAt?.getTime() || 0);
+          return callAge > 5 * 60 * 1000; // 5 minutes
         });
+        
+        if (staleCallsToClean.length > 0) {
+          console.log(`🧹 Auto-cleaning ${staleCallsToClean.length} stale calls for patient ${patientId}`);
+          for (const staleCall of staleCallsToClean) {
+            await storage.updateCall(staleCall.id, { status: 'failed' });
+          }
+          
+          // Recheck after cleanup
+          const remainingActiveCalls = patientActiveCalls.filter(call => 
+            !staleCallsToClean.some(stale => stale.id === call.id)
+          );
+          
+          if (remainingActiveCalls.length === 0) {
+            console.log(`✅ All calls cleaned up for patient ${patientId}, proceeding with new call`);
+          } else {
+            return res.status(409).json({ 
+              message: "Patient still has active calls after cleanup",
+              remainingCalls: remainingActiveCalls.length
+            });
+          }
+        } else {
+          return res.status(409).json({ 
+            message: "Patient already has an active call",
+            existingCallId: patientActiveCalls[0].id,
+            status: patientActiveCalls[0].status
+          });
+        }
+      }
+      
+      // 2. Check OpenAI realtime service for existing sessions
+      const allPatientSessions = openaiRealtimeService.getAllActiveSessionsForPatient(patientId);
+      if (allPatientSessions.length > 0) {
+        console.log(`🚫 PREVENTING DUPLICATE SESSION - Patient ${patientId} has ${allPatientSessions.length} active GPT-4o sessions:`, 
+          allPatientSessions.map(s => s.id).join(', '));
+        
+        // Force cleanup all sessions for this patient to prevent multiple agents
+        const cleanedSessions = await openaiRealtimeService.forceCleanupPatientSessions(patientId);
+        console.log(`🧹 Force cleaned ${cleanedSessions} sessions for patient ${patientId}`);
+        
+        // Wait a moment for cleanup to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
       // Get patient information
