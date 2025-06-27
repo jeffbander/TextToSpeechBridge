@@ -88,6 +88,7 @@ export class MemStorage implements IStorage {
   private callCampaigns: Map<number, CallCampaign>;
   private callAttempts: Map<number, CallAttempt>;
   private messages: Map<number, Message>;
+  private automationLogs: Map<number, AutomationLog>;
   private currentPatientId: number;
   private currentCallId: number;
   private currentScheduledCallId: number;
@@ -102,6 +103,7 @@ export class MemStorage implements IStorage {
     this.callCampaigns = new Map();
     this.callAttempts = new Map();
     this.messages = new Map();
+    this.automationLogs = new Map();
     this.currentPatientId = 1;
     this.currentCallId = 1;
     this.currentScheduledCallId = 1;
@@ -424,17 +426,13 @@ export class MemStorage implements IStorage {
     return updatedMessage;
   }
 
-  // Automation Logs (placeholder - not used in memory storage)
+  // Automation Logs
   async getAutomationLogs(): Promise<AutomationLog[]> {
-    return [];
+    return Array.from(this.automationLogs.values());
   }
 
   async getAutomationLogsByPatient(patientId: number): Promise<AutomationLog[]> {
     return Array.from(this.automationLogs.values()).filter(log => log.patientId === patientId);
-  }
-
-  async getAutomationLogs(): Promise<AutomationLog[]> {
-    return Array.from(this.automationLogs.values());
   }
 
   async createAutomationLog(insertLog: InsertAutomationLog): Promise<AutomationLog> {
@@ -453,11 +451,25 @@ export class MemStorage implements IStorage {
       triggeredAt: new Date(),
       completedAt: null
     };
+    this.automationLogs.set(log.id, log);
     return log;
   }
 
   async updateAutomationLogWithAgentResponse(chainRunId: string, agentResponse: string, agentName: string, payload: any): Promise<AutomationLog | undefined> {
-    return undefined;
+    const log = Array.from(this.automationLogs.values()).find(l => l.chainRunId === chainRunId);
+    if (!log) return undefined;
+    
+    const updatedLog = {
+      ...log,
+      agentResponse,
+      agentName,
+      responsePayload: payload,
+      status: 'completed' as const,
+      completedAt: new Date()
+    };
+    
+    this.automationLogs.set(log.id, updatedLog);
+    return updatedLog;
   }
 }
 

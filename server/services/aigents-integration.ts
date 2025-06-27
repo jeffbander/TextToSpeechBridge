@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import type { IStorage } from "../storage.js";
+import multer from "multer";
 
 /**
  * AIGENTS Platform Integration Package
@@ -10,7 +11,6 @@ import type { IStorage } from "../storage.js";
 
 // Express.js routes to add to your server
 const setupAIGENTSRoutes = (app: Express, storage: IStorage) => {
-  const multer = require('multer');
   const upload = multer();
 
   // Webhook endpoint for receiving AIGENTS responses
