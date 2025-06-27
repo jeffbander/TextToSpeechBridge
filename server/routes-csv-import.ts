@@ -240,7 +240,12 @@ export function registerCsvImportRoutes(app: Express) {
         // Trigger post-call analysis for completed calls with sufficient duration
         if (CallStatus === 'completed' && CallDuration && parseInt(CallDuration) > 10) {
           console.log(`[TWILIO-STATUS] Triggering post-call analysis for call ${call.id}`);
-          await callScheduler.handleTwilioCallback(CallSid, CallStatus, CallDuration);
+          try {
+            await callScheduler.handleTwilioCallback(CallSid, CallStatus, CallDuration);
+            console.log(`[TWILIO-STATUS] Post-call analysis triggered successfully for call ${call.id}`);
+          } catch (error) {
+            console.error(`[TWILIO-STATUS] Error triggering post-call analysis for call ${call.id}:`, error);
+          }
         }
       }
       
