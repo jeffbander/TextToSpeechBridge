@@ -73,14 +73,15 @@ export function registerFallbackVoiceRoutes(app: Express) {
         twiml.say({ voice: 'alice' }, greeting);
       }
       
-      // Record patient response
+      // Record patient response with more generous timeouts
       twiml.record({
         action: `/api/twilio/process-response/${sessionId}`,
         method: 'POST',
-        maxLength: 30,
+        maxLength: 60,
         playBeep: false,
         transcribe: false,
-        timeout: 5
+        timeout: 10,
+        finishOnKey: '#'
       });
 
       res.type('text/xml').send(twiml.toString());
@@ -183,14 +184,15 @@ export function registerFallbackVoiceRoutes(app: Express) {
       if (shouldEndCall) {
         twiml.hangup();
       } else {
-        // Continue conversation - record next response
+        // Continue conversation - record next response with better settings
         twiml.record({
           action: `/api/twilio/process-response/${sessionId}`,
           method: 'POST',
-          maxLength: 30,
+          maxLength: 60,
           playBeep: false,
           transcribe: false,
-          timeout: 5
+          timeout: 10,
+          finishOnKey: '#'
         });
       }
 
