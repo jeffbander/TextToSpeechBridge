@@ -8,6 +8,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Serve static audio files
+app.use('/audio', express.static('public/audio'));
+
 app.use((req, res, next) => {
 const start = Date.now();
 const path = req.path;

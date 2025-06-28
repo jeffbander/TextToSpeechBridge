@@ -2,6 +2,50 @@ import type { Express } from "express";
 import { fallbackVoiceService } from "./services/fallback-voice";
 import twilio from 'twilio';
 import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Generate audio file using OpenAI TTS and return public URL
+async function generateAudioForText(text: string): Promise<string | null> {
+  try {
+    console.log(`[FALLBACK-VOICE] Generating audio for text: "${text.substring(0, 50)}..."`);
+    
+    const response = await openai.audio.speech.create({
+      model: 'tts-1',
+      voice: 'alloy',
+      input: text,
+      response_format: 'mp3'
+    });
+
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
+    
+    // Create unique filename
+    const filename = `voice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp3`;
+    const audioPath = path.join(process.cwd(), 'public', 'audio', filename);
+    
+    // Ensure audio directory exists
+    const audioDir = path.dirname(audioPath);
+    if (!fs.existsSync(audioDir)) {
+      fs.mkdirSync(audioDir, { recursive: true });
+    }
+    
+    // Write audio file
+    fs.writeFileSync(audioPath, audioBuffer);
+    
+    // Return public URL
+    const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'https://localhost:5000';
+    const audioUrl = `${baseUrl}/audio/${filename}`;
+    
+    console.log(`[FALLBACK-VOICE] Audio generated: ${audioUrl}`);
+    return audioUrl;
+    
+  } catch (error) {
+    console.error('[FALLBACK-VOICE] Error generating audio:', error);
+    return null;
+  }
+}
 
 export function registerFallbackVoiceRoutes(app: Express) {
   console.log("[FALLBACK-VOICE] Initializing fallback voice routes");
@@ -15,11 +59,19 @@ export function registerFallbackVoiceRoutes(app: Express) {
       // Generate initial greeting
       const greeting = await fallbackVoiceService.generateInitialGreeting(sessionId);
 
+      // Generate audio for the greeting using OpenAI TTS
+      const audioUrl = await generateAudioForText(greeting);
+
       // Create TwiML response for voice interaction
       const twiml = new twilio.twiml.VoiceResponse();
       
-      // Say the greeting
-      twiml.say({ voice: 'alice' }, greeting);
+      // Play the generated audio
+      if (audioUrl) {
+        twiml.play(audioUrl);
+      } else {
+        // Fallback to basic say if audio generation fails
+        twiml.say({ voice: 'alice' }, greeting);
+      }
       
       // Record patient response
       twiml.record({
@@ -109,6 +161,9 @@ export function registerFallbackVoiceRoutes(app: Express) {
       // Generate AI response
       const aiResponse = await fallbackVoiceService.processPatientResponse(sessionId, patientText);
 
+      // Generate audio for the AI response
+      const responseAudioUrl = await generateAudioForText(aiResponse);
+
       // Create TwiML response
       const twiml = new twilio.twiml.VoiceResponse();
       
@@ -117,7 +172,13 @@ export function registerFallbackVoiceRoutes(app: Express) {
                            aiResponse.toLowerCase().includes('take care') ||
                            aiResponse.toLowerCase().includes('goodbye');
 
-      twiml.say({ voice: 'alice' }, aiResponse);
+      // Play the generated audio
+      if (responseAudioUrl) {
+        twiml.play(responseAudioUrl);
+      } else {
+        // Fallback to basic say if audio generation fails
+        twiml.say({ voice: 'alice' }, aiResponse);
+      }
 
       if (shouldEndCall) {
         twiml.hangup();
