@@ -286,11 +286,13 @@ export default function AutomatedCallsPage() {
                         <SelectValue placeholder="Choose a patient" />
                       </SelectTrigger>
                       <SelectContent>
-                        {patients.map((patient) => (
+                        {patients && patients.length > 0 ? patients.map((patient) => (
                           <SelectItem key={patient.id} value={patient.id.toString()}>
                             {patient.firstName} {patient.lastName} - {patient.condition}
                           </SelectItem>
-                        ))}
+                        )) : (
+                          <SelectItem value="" disabled>No patients available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
