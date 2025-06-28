@@ -15,7 +15,6 @@ import { registerPatientPromptRoutes } from "./routes-patient-prompts";
 import { registerSmsRoutes } from "./routes-sms";
 import { registerCsvImportRoutes } from "./routes-csv-import";
 import { registerWorkingVoiceRoutes } from "./routes-working-voice";
-import { registerFallbackVoiceRoutes } from "./routes-fallback-voice";
 import { setupAIGENTSRoutes } from "./services/aigents-integration";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -31,7 +30,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerCallingRoutes(app, httpServer);
   registerRealtimeRoutes(app, httpServer);
   registerTwilioIntegrationRoutes(app);
-  registerFallbackVoiceRoutes(app);
   // DISABLED: registerWorkingVoiceRoutes(app); - Causes duplicate OpenAI connections
   registerSmsRoutes(app);
   

@@ -3,7 +3,6 @@ import { storage } from "./storage";
 import { twilioService } from "./services/twilio";
 import { patientPromptManager } from "./services/patient-prompt-manager";
 import { openaiRealtimeService } from "./services/openai-realtime";
-import { fallbackVoiceService } from "./services/fallback-voice";
 import OpenAI from "openai";
 
 export function registerTwilioIntegrationRoutes(app: Express) {
@@ -37,44 +36,19 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       
       console.log(`[TWILIO-INTEGRATION] Starting automated call for patient ID: ${patientId}`);
       
-      // ENHANCED: Multi-level duplicate call prevention with aggressive cleanup
-      // 1. Check database for ANY active call states
-      const allCalls = await storage.getCalls();
-      const patientActiveCalls = allCalls.filter((call: any) => 
-        call.patientId === patientId && 
-        ['active', 'calling', 'in_progress', 'initiated', 'ringing'].includes(call.status)
+      // CRITICAL: Check for existing active calls to prevent duplicate Twilio sessions
+      const existingActiveCalls = await storage.getActiveCallsByPatientId(patientId);
+      const activeCall = existingActiveCalls.find((call: any) => 
+        call.status === 'active' || call.status === 'calling' || call.status === 'in_progress'
       );
       
-      if (patientActiveCalls.length > 0) {
-        console.log(`🚫 PREVENTING DUPLICATE CALL - Patient ${patientId} has ${patientActiveCalls.length} active calls:`, 
-          patientActiveCalls.map(c => `${c.id}(${c.status})`).join(', '));
-        
-        // Aggressive cleanup - mark all existing calls as completed
-        console.log(`🧹 Force-completing all ${patientActiveCalls.length} active calls for patient ${patientId}`);
-        for (const activeCall of patientActiveCalls) {
-          await storage.updateCall(activeCall.id, { 
-            status: 'completed',
-            outcome: 'force_terminated_duplicate_prevention' 
-          });
-        }
-        
-        // Wait briefly to ensure database consistency
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log(`✅ All calls cleaned up for patient ${patientId}, proceeding with new call`);
-      }
-      
-      // 2. Check OpenAI realtime service for existing sessions
-      const allPatientSessions = openaiRealtimeService.getAllActiveSessionsForPatient(patientId);
-      if (allPatientSessions.length > 0) {
-        console.log(`🚫 PREVENTING DUPLICATE SESSION - Patient ${patientId} has ${allPatientSessions.length} active GPT-4o sessions:`, 
-          allPatientSessions.map(s => s.id).join(', '));
-        
-        // Force cleanup all sessions for this patient to prevent multiple agents
-        const cleanedSessions = await openaiRealtimeService.forceCleanupPatientSessions(patientId);
-        console.log(`🧹 Force cleaned ${cleanedSessions} sessions for patient ${patientId}`);
-        
-        // Wait a moment for cleanup to complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      if (activeCall) {
+        console.log(`🚫 PREVENTING DUPLICATE CALL - Patient ${patientId} already has active call ${activeCall.id}`);
+        return res.status(409).json({ 
+          message: "Patient already has an active call",
+          existingCallId: activeCall.id,
+          status: activeCall.status
+        });
       }
       
       // Get patient information
@@ -121,16 +95,24 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         }
       });
 
-      // Create session ID for this call using fallback voice system
-      const sessionId = `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Generate Twilio webhook URL for fallback voice system
+      // Create GPT-4o realtime session for this call
+      const sessionId = await openaiRealtimeService.createRealtimeSession(
+        patient.id,
+        `${patient.firstName} ${patient.lastName}`,
+        call.id,
+        systemPrompt
+      );
+
+      // Configure the session with patient-specific prompt
+      console.log(`[TWILIO-INTEGRATION] Created GPT-4o session ${sessionId} for patient ${patient.firstName} ${patient.lastName}`);
+
+      // Generate Twilio webhook URL for this specific session
       console.log(`[TWILIO-INTEGRATION] REPLIT_DOMAINS env var:`, process.env.REPLIT_DOMAINS);
       const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'https://localhost:5000';
-      const webhookUrl = `${baseUrl}/api/twilio/webhook/fallback/${sessionId}`;
+      const webhookUrl = `${baseUrl}/api/twilio/webhook/${sessionId}`;
       
       console.log(`[TWILIO-INTEGRATION] Base URL: ${baseUrl}`);
-      console.log(`[TWILIO-INTEGRATION] Using fallback voice webhook URL: ${webhookUrl}`);
+      console.log(`[TWILIO-INTEGRATION] Using webhook URL: ${webhookUrl}`);
       
       // Make the Twilio call
       const twilioCallSid = await twilioService.makeCall({
@@ -140,23 +122,13 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
       });
 
-      // Create fallback voice session
-      await fallbackVoiceService.createVoiceSession(
-        sessionId,
-        patient.id,
-        `${patient.firstName} ${patient.lastName}`,
-        call.id,
-        twilioCallSid,
-        systemPrompt
-      );
-
       // Update call with Twilio SID
       await storage.updateCall(call.id, {
         twilioCallSid,
         status: 'calling'
       });
 
-      console.log(`[TWILIO-INTEGRATION] Twilio call initiated: ${twilioCallSid} for fallback session: ${sessionId}`);
+      console.log(`[TWILIO-INTEGRATION] Twilio call initiated: ${twilioCallSid} for session: ${sessionId}`);
 
       res.json({
         success: true,

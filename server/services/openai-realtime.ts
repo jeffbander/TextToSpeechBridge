@@ -33,316 +33,759 @@ export interface RealtimeSession {
 export class OpenAIRealtimeService {
   private sessions: Map<string, RealtimeSession> = new Map();
   private activePatients: Set<number> = new Set();
-  private patientLocks: Map<number, boolean> = new Map();
 
   async createRealtimeSession(patientId: number, patientName: string, callId: number, customSystemPrompt?: string): Promise<string> {
-    // CRITICAL: Check for concurrent session creation lock
-    if (this.patientLocks.get(patientId)) {
-      console.log(`🔒 BLOCKING CONCURRENT SESSION - Patient ${patientId} already has session creation in progress`);
-      throw new Error(`Session creation already in progress for patient ${patientId}`);
-    }
+    // Check if patient already has an active session - prevent duplicate connections
+    const existingSession = Array.from(this.sessions.values()).find(s => 
+      s.patientId === patientId && 
+      (s.isActive || (s.openaiWs && s.openaiWs.readyState !== WebSocket.CLOSED))
+    );
     
-    // Lock this patient to prevent concurrent sessions
-    this.patientLocks.set(patientId, true);
-    
-    try {
-      // CRITICAL: Force cleanup ANY existing sessions for this patient to prevent multiple agents
-      const allPatientSessions = Array.from(this.sessions.values()).filter(s => s.patientId === patientId);
+    if (existingSession) {
+      console.log(`🔄 PREVENTING DUPLICATE SESSION - Found existing session ${existingSession.id} for patient ${patientName}`);
       
-      if (allPatientSessions.length > 0) {
-        console.log(`🚨 FORCE CLEANUP - Found ${allPatientSessions.length} existing sessions for patient ${patientId}. Terminating all to prevent multiple agents:`);
-        
-        for (const session of allPatientSessions) {
-          console.log(`🧹 Force terminating session ${session.id}`);
-          await this.endSession(session.id);
-        }
-        
-        // Remove from active patients set
-        this.activePatients.delete(patientId);
-        
-        // Wait for cleanup to complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log(`✅ All sessions cleaned for patient ${patientId}, creating fresh session`);
+      // If session exists but is stale, clean it up and create new one
+      if (!existingSession.isActive && (!existingSession.openaiWs || existingSession.openaiWs.readyState === WebSocket.CLOSED)) {
+        console.log(`🧹 Cleaning up stale session ${existingSession.id}`);
+        await this.endSession(existingSession.id);
+      } else {
+        // Session is active, reuse it to prevent duplicates
+        console.log(`✅ Reusing active session ${existingSession.id} - preventing duplicate Twilio/GPT-4o connection`);
+        return existingSession.id;
+      }
+    }
+
+    const sessionId = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const session: RealtimeSession = {
+      id: sessionId,
+      patientId,
+      patientName,
+      callId,
+      websocket: null,
+      openaiWs: null,
+      isActive: false,
+      startedAt: new Date(),
+      transcript: [],
+      audioBuffer: [],
+      customSystemPrompt,
+      conversationLog: []
+    };
+
+    this.sessions.set(sessionId, session);
+    this.activePatients.add(patientId);
+    
+    console.log(`✨ Created realtime session ${sessionId} for patient ${patientName}`);
+    return sessionId;
+  }
+
+  async initializeOpenAIRealtime(sessionId: string): Promise<WebSocket> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+
+    // CRITICAL: Prevent multiple simultaneous connection attempts per session
+    if (session.openaiWs && session.openaiWs.readyState === WebSocket.CONNECTING) {
+      console.log(`⏳ DUPLICATE PREVENTION - OpenAI connection already in progress for session ${sessionId}`);
+      return session.openaiWs;
+    }
+
+    // CRITICAL: Close existing connection if any to prevent audio conflicts
+    if (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED) {
+      console.log(`🔄 CLOSING EXISTING CONNECTION - Preventing duplicate OpenAI WebSocket for session ${sessionId}`);
+      try {
+        session.openaiWs.removeAllListeners();
+        session.openaiWs.close();
+      } catch (error) {
+        console.log(`⚠️ Error closing existing WebSocket: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+      session.openaiWs = null;
+    }
+
+    console.log(`🔗 Attempting OpenAI realtime connection for session ${sessionId}`);
+
+    const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'OpenAI-Beta': 'realtime=v1'
+      }
+    });
+
+    session.openaiWs = openaiWs;
+
+    openaiWs.on('open', () => {
+      console.log(`🔗 OpenAI WebSocket connected for session ${sessionId}`);
+      
+      const patient = session.patientName;
+      
+      // Use custom prompt from CSV upload or default healthcare prompt
+      let instructions = session.customSystemPrompt;
+      
+      // Only filter out clearly inappropriate content, preserve legitimate medical prompts
+      if (!instructions || instructions.trim().length < 10) {
+        instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office, located at 432 Bedford Ave, Williamsburg. You are following up with ${patient} using their most recent notes and clinical data.
+
+Your role is to:
+1. Check in empathetically based on context (recent hospitalization, abnormal labs, medication changes)
+2. Ask relevant follow-up questions or guide patient based on results
+3. Escalate or flag concerning responses that may require provider attention
+4. Keep tone professional, kind, and clear—like a nurse calling a long-time patient
+
+Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.`;
+      } else {
+        // Use the custom prompt from CSV upload, ensuring it includes proper context
+        instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. ${instructions}
+
+Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.`;
+        console.log(`🎯 Using custom prompt from CSV upload for ${patient}`);
       }
 
-      const sessionId = `rt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Extract voice and language preferences from custom prompt metadata if available
+      let selectedVoice = 'alloy'; // default voice
+      let languageInstruction = '';
       
-      const session: RealtimeSession = {
-        id: sessionId,
-        patientId,
-        patientName,
-        callId,
-        websocket: null,
-        openaiWs: null,
-        isActive: false,
-        startedAt: new Date(),
-        transcript: [],
-        audioBuffer: [],
-        customSystemPrompt,
-        conversationLog: []
+      // Language preferences are handled in the system prompt without automatic triggering
+      console.log(`📋 Session configured for patient ${session.patientName} - ready for user interaction`);
+      
+      const sessionConfig = {
+        type: 'session.update',
+        session: {
+          modalities: ['text', 'audio'],
+          instructions,
+          voice: selectedVoice,
+          input_audio_format: 'g711_ulaw',
+          output_audio_format: 'g711_ulaw',
+          input_audio_transcription: {
+            model: 'whisper-1'
+          },
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.9,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 2000
+          },
+          temperature: 0.6,
+          max_response_output_tokens: 300
+        }
       };
+      
+      console.log(`📋 Sending session config for ${sessionId}:`, JSON.stringify(sessionConfig, null, 2));
+      openaiWs.send(JSON.stringify(sessionConfig));
+      console.log(`⚙️ Session configuration sent for ${sessionId}`);
+      
+      if (session.customSystemPrompt) {
+        console.log(`🔴 Using custom system prompt for ${session.patientName}`);
+      } else {
+        console.log(`🔴 Using default system prompt for ${session.patientName}`);
+      }
+      
+      // Flush any buffered audio packets
+      if (session.audioBuffer.length > 0) {
+        console.log(`🔄 Flushing ${session.audioBuffer.length} buffered audio packets`);
+        session.audioBuffer.forEach((audioData, index) => {
+          const audioMessage = {
+            type: 'input_audio_buffer.append',
+            audio: audioData.toString('base64')
+          };
+          openaiWs.send(JSON.stringify(audioMessage));
+          console.log(`📤 Sent buffered audio packet ${index + 1}/${session.audioBuffer.length}`);
+        });
+        session.audioBuffer = []; // Clear the buffer
+      }
 
-      this.sessions.set(sessionId, session);
-      this.activePatients.add(patientId);
+      // Wait for patient to speak first - no automatic conversation starter
+      console.log(`🎧 Session ready - waiting for patient audio input`);
       
-      // Initialize OpenAI connection immediately when session is created
-      await this.initializeOpenAIRealtime(sessionId);
+      session.isActive = true;
+    });
+    
+    openaiWs.on('message', (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        console.log(`📨 OpenAI message for ${sessionId}:`, message.type, message.delta ? `(${message.delta.length} chars)` : '');
+        
+        // Log detailed error information
+        if (message.type === 'error') {
+          console.error(`❌ OpenAI API Error for ${sessionId}:`, JSON.stringify(message, null, 2));
+          return;
+        }
+        
+        this.handleOpenAIMessage(sessionId, message);
+      } catch (error) {
+        console.error(`❌ Error parsing OpenAI message for session ${sessionId}:`, error);
+      }
+    });
+    
+    openaiWs.on('error', (error) => {
+      console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error.message);
+      session.openaiWs = null;
+      // Prevent crash by handling the error gracefully
+    });
+    
+    openaiWs.on('close', (code, reason) => {
+      console.log(`🔴 OpenAI WebSocket closed for session ${sessionId} - Code: ${code}, Reason: ${reason}`);
+      session.openaiWs = null;
       
-      console.log(`✨ Created realtime session ${sessionId} for patient ${patientName}`);
-      return sessionId;
-      
-    } finally {
-      // Always release the lock
-      this.patientLocks.delete(patientId);
+      // Attempt reconnection for unexpected closures during active conversations
+      if (code !== 1000 && session.isActive && session.conversationLog.length > 0) {
+        console.log(`🔄 Attempting to reconnect session ${sessionId} after unexpected closure`);
+        setTimeout(() => {
+          if (session.isActive && !session.openaiWs) {
+            console.log(`🔗 Reconnecting OpenAI session ${sessionId}`);
+            this.initializeOpenAIRealtime(sessionId).catch(error => {
+              console.error(`❌ Failed to reconnect session ${sessionId}:`, error);
+              session.isActive = false;
+            });
+          }
+        }, 1000);
+      } else if (code !== 1000 && session.isActive) {
+        console.log(`🛑 Ending session ${sessionId} due to unexpected WebSocket closure`);
+        session.isActive = false;
+      }
+    });
+    
+    return openaiWs;
+  }
+
+  private handleOpenAIMessage(sessionId: string, message: any) {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      console.log(`❌ No session found for ${sessionId}`);
+      return;
+    }
+    
+    console.log(`📥 OpenAI message for ${sessionId}:`, message.type);
+    
+    switch (message.type) {
+      case 'session.created':
+        console.log(`🎯 OpenAI session created for ${sessionId}`);
+        break;
+        
+      case 'session.updated':
+        console.log(`⚙️ OpenAI session updated for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_started':
+        console.log(`🎙️ Speech started detected for ${sessionId}`);
+        break;
+        
+      case 'input_audio_buffer.speech_stopped':
+        console.log(`🔇 Speech stopped detected for ${sessionId}`);
+        break;
+        
+      case 'conversation.item.input_audio_transcription.completed':
+        if (message.transcript) {
+          console.log(`📝 Patient transcription for ${sessionId}:`, message.transcript);
+          session.transcript.push(`Patient: ${message.transcript}`);
+          session.conversationLog.push({
+            timestamp: new Date(),
+            speaker: 'patient',
+            text: message.transcript
+          });
+          
+          // Manually trigger AI response since turn detection isn't working
+          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+            const responseMessage = {
+              type: 'response.create',
+              response: {
+                modalities: ['text', 'audio']
+              }
+            };
+            console.log(`🎬 Triggering AI response for ${sessionId} after patient speech`);
+            session.openaiWs.send(JSON.stringify(responseMessage));
+          }
+        }
+        break;
+        
+      case 'response.created':
+        console.log(`🎬 Response created for ${sessionId}`);
+        break;
+        
+      case 'response.output_item.added':
+        console.log(`📤 Output item added for ${sessionId}`);
+        break;
+        
+      case 'response.content_part.added':
+        console.log(`📝 Content part added for ${sessionId}`);
+        break;
+        
+      case 'response.text.delta':
+        if (message.delta) {
+          console.log(`🤖 AI text delta for ${sessionId}:`, message.delta);
+        }
+        break;
+        
+      case 'response.text.done':
+        if (message.text) {
+          console.log(`✅ AI text complete for ${sessionId}:`, message.text);
+          session.transcript.push(`AI: ${message.text}`);
+          session.conversationLog.push({
+            timestamp: new Date(),
+            speaker: 'ai',
+            text: message.text
+          });
+        }
+        break;
+        
+      case 'response.audio.delta':
+        // Reset silent periods when AI is speaking to prevent disconnection
+        session.silentPeriods = 0;
+        
+        // Clear input buffer while AI is speaking to prevent feedback loop
+        if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+          session.openaiWs.send(JSON.stringify({
+            type: 'input_audio_buffer.clear'
+          }));
+        }
+        
+        // Stream audio back to Twilio in proper G.711 chunks (320 bytes = 20ms)
+        console.log(`🔊 Sending audio delta to Twilio - payload length: ${message.delta?.length || 0}`);
+        if (session.websocket && session.websocket.readyState === WebSocket.OPEN && message.delta) {
+          // CRITICAL: Proper chunking for Twilio G.711 μ-law compatibility
+          const CHUNK_SIZE = 320; // Standard G.711 chunk size for 20ms audio
+          const audioPayload = message.delta;
+          
+          if (!session.outboundChunkCount) session.outboundChunkCount = 0;
+          
+          for (let i = 0; i < audioPayload.length; i += CHUNK_SIZE) {
+            const chunk = audioPayload.slice(i, i + CHUNK_SIZE);
+            
+            const mediaMessage = {
+              event: 'media',
+              streamSid: session.streamSid || session.id,
+              media: {
+                track: 'outbound',
+                chunk: session.outboundChunkCount.toString(),
+                timestamp: (session.outboundChunkCount * 20).toString(), // 20ms intervals
+                payload: chunk
+              }
+            };
+            
+            session.outboundChunkCount++;
+            session.websocket.send(JSON.stringify(mediaMessage));
+          }
+          console.log(`📤 Sent ${Math.ceil(audioPayload.length / CHUNK_SIZE)} audio chunks to Twilio`);
+        } else {
+          console.log(`❌ Cannot send audio to Twilio - WebSocket not ready. State: ${session.websocket?.readyState}`);
+        }
+        break;
+        
+      case 'response.audio.done':
+        // Signal audio completion and resume listening for patient input
+        if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
+          session.websocket.send(JSON.stringify({ type: 'audio_done' }));
+          console.log(`✅ Audio response completed for session ${sessionId}`);
+        }
+        
+        // Resume listening for patient input after AI finishes speaking
+        setTimeout(() => {
+          if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+            console.log(`🎧 Resuming patient audio input for ${sessionId}`);
+          }
+        }, 500);
+        break;
+        
+      case 'response.audio_transcript.delta':
+        if (message.delta) {
+          session.transcript.push(message.delta);
+          
+          // Log AI response transcripts properly
+          const lastEntry = session.conversationLog[session.conversationLog.length - 1];
+          if (lastEntry && lastEntry.speaker === 'ai' && 
+              (new Date().getTime() - lastEntry.timestamp.getTime()) < 3000) {
+            // Append to existing response if within 3 seconds
+            lastEntry.text += message.delta;
+          } else {
+            // Create new AI response entry
+            session.conversationLog.push({
+              timestamp: new Date(),
+              speaker: 'ai',
+              text: message.delta
+            });
+          }
+        }
+        break;
+
+      case 'conversation.item.input_audio_transcription.completed':
+        if (message.transcript) {
+          console.log(`👤 Patient said: ${message.transcript}`);
+          session.conversationLog.push({
+            timestamp: new Date(),
+            speaker: 'patient',
+            text: message.transcript
+          });
+        }
+        break;
     }
   }
 
-  async endSession(sessionId: string): Promise<void> {
+  connectClientWebSocket(sessionId: string, twilioWs: WebSocket) {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      console.error(`❌ Session ${sessionId} not found for WebSocket connection`);
+      return;
+    }
+    
+    session.websocket = twilioWs;
+    console.log(`🔗 Client WebSocket connected to session ${sessionId}`);
+    
+    twilioWs.on('close', () => {
+      console.log(`🔗 Client disconnected from session ${sessionId}`);
+      this.endSession(sessionId);
+    });
+  }
+
+  handleClientMessage(sessionId: string, message: any) {
     const session = this.sessions.get(sessionId);
     if (!session) return;
-
-    console.log(`🔚 Ending session ${sessionId}`);
-
-    try {
-      if (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED) {
-        session.openaiWs.removeAllListeners();
-        session.openaiWs.close();
+    
+    console.log(`📨 Twilio message for ${sessionId}:`, JSON.stringify(message).substring(0, 200));
+    
+    if (message.event === 'connected') {
+      console.log(`📞 Twilio call connected for session ${sessionId}`);
+      this.initializeOpenAIRealtime(sessionId);
+    } else if (message.event === 'start') {
+      console.log(`🎙️ Audio streaming started for session ${sessionId}`);
+      
+      if (message.streamSid) {
+        session.streamSid = message.streamSid;
+        console.log(`📡 Stream SID: ${message.streamSid}`);
       }
       
-      if (session.websocket && session.websocket.readyState !== WebSocket.CLOSED) {
-        session.websocket.removeAllListeners();
-        session.websocket.close();
+      // Initialize OpenAI connection if not already connected
+      if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
+        console.log(`🔗 Initializing OpenAI connection for session ${sessionId}`);
+        this.initializeOpenAIRealtime(sessionId);
       }
+      
+      console.log(`🎯 Audio streaming ready - GPT-4o will initiate conversation based on system prompt`);
+    } else if (message.event === 'media') {
+      console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);
+      
+      if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
+        const audioData = message.media.payload;
+        
+        // Check for silent/muted audio patterns to prevent session timeouts
+        const isSilentAudio = this.detectSilentAudio(audioData);
+        if (isSilentAudio) {
+          // Track silent periods
+          session.silentPeriods = (session.silentPeriods || 0) + 1;
+          
+          // Send keepalive after extended silence (every 30 packets = ~6 seconds)
+          if (session.silentPeriods % 30 === 0) {
+            console.log(`🔇 Detected extended silence for ${sessionId} - sending keepalive`);
+            this.sendKeepalive(sessionId);
+          }
+        } else {
+          // Reset silent period counter on voice activity
+          session.silentPeriods = 0;
+        }
+        
+        console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}, WebSocket state: ${session.openaiWs.readyState}`);
+        
+        const audioMessage = {
+          type: 'input_audio_buffer.append',
+          audio: audioData
+        };
+        
+        try {
+          session.openaiWs.send(JSON.stringify(audioMessage));
+          console.log(`✅ Audio packet sent to OpenAI successfully`);
+        } catch (error) {
+          console.error(`❌ Failed to send audio to OpenAI:`, error);
+        }
+      } else {
+        console.log(`❌ OpenAI WebSocket not ready - state: ${session.openaiWs?.readyState || 'null'}`);
+        // Buffer audio if OpenAI is not ready yet
+        session.audioBuffer.push(Buffer.from(message.media.payload, 'base64'));
+        console.log(`📦 Buffered audio packet - buffer size: ${session.audioBuffer.length}`);
+      }
+    } else if (message.event === 'stop') {
+      console.log(`🛑 Audio streaming stopped for session ${sessionId}`);
+      this.endSession(sessionId);
+    }
+  }
+
+  async endSession(sessionId: string) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+    
+    console.log(`🔴 Ended realtime session ${sessionId} for patient ${session.patientName}`);
+    
+    if (session.openaiWs) {
+      session.openaiWs.close();
+    }
+    
+    await this.saveSessionData(session);
+    
+    this.activePatients.delete(session.patientId);
+    this.sessions.delete(sessionId);
+  }
+
+  private detectSilentAudio(audioData: string): boolean {
+    // Simple silence detection - check for repeated patterns indicating muted/silent audio
+    const decodedLength = audioData.length;
+    
+    // If audio data is very repetitive or contains mostly padding characters, likely silent
+    const paddingChars = audioData.match(/[fn5+/37]/g)?.length || 0;
+    const repetitiveRatio = paddingChars / decodedLength;
+    
+    return repetitiveRatio > 0.8; // >80% repetitive patterns suggests silence/mute
+  }
+
+  private sendKeepalive(sessionId: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session?.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) return;
+
+    try {
+      // Send a session update to keep connection alive during silence
+      const keepaliveMessage = {
+        type: 'session.update',
+        session: {
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 1000
+          }
+        }
+      };
+      
+      session.openaiWs.send(JSON.stringify(keepaliveMessage));
+      console.log(`💓 Sent keepalive for session ${sessionId}`);
     } catch (error) {
-      console.error(`Error closing WebSocket connections for session ${sessionId}:`, error);
+      console.error(`❌ Error sending keepalive for session ${sessionId}:`, error);
+    }
+  }
+
+  private async saveSessionData(session: RealtimeSession) {
+    const duration = Date.now() - session.startedAt.getTime();
+    const durationSeconds = Math.floor(duration / 1000);
+    
+    console.log(`💾 Saving session data for ${session.id}: {
+  patientId: ${session.patientId},
+  callId: ${session.callId},
+  duration: ${duration},
+  transcriptLength: ${session.transcript.length},
+  conversationLogLength: ${session.conversationLog.length}
+}`);
+    
+    // Evaluate call success using AI
+    const callAssessment = await this.evaluateCallSuccess(session, durationSeconds);
+    
+    await storage.updateCall(session.callId, {
+      status: 'completed',
+      duration: durationSeconds,
+      transcript: session.transcript.join(' '),
+      successRating: callAssessment.successRating,
+      qualityScore: callAssessment.qualityScore,
+      informationGathered: callAssessment.informationGathered,
+      outcome: callAssessment.outcome,
+      aiAnalysis: callAssessment.analysis
+    });
+
+    await this.saveTranscriptToFile(session);
+  }
+
+  private async evaluateCallSuccess(session: RealtimeSession, durationSeconds: number): Promise<{
+    successRating: string;
+    qualityScore: number;
+    informationGathered: boolean;
+    outcome: string;
+    analysis: any;
+  }> {
+    try {
+      // Extract patient responses from conversation log
+      const patientResponses = session.conversationLog
+        .filter(entry => entry.speaker === 'patient')
+        .map(entry => entry.text)
+        .join(' ');
+
+      const conversationText = session.conversationLog
+        .map(entry => `${entry.speaker.toUpperCase()}: ${entry.text}`)
+        .join('\n');
+
+      const evaluationPrompt = `
+Analyze this healthcare follow-up call and determine if it was successful. Consider:
+
+1. DURATION: Call lasted ${durationSeconds} seconds (success threshold: 30+ seconds)
+2. INFORMATION QUALITY: Did the patient provide meaningful health information?
+3. ENGAGEMENT: Did the patient actively participate in the conversation?
+
+CONVERSATION TRANSCRIPT:
+${conversationText}
+
+PATIENT RESPONSES ONLY:
+${patientResponses}
+
+Rate this call on:
+- SUCCESS RATING: "successful" (patient engaged + info gathered OR 30+ seconds), "partially_successful" (some engagement), "unsuccessful" (no engagement, <30 seconds)
+- QUALITY SCORE: 1-10 (conversation quality and information value)
+- INFORMATION GATHERED: true/false (did patient share health status, symptoms, medication compliance, etc.)
+- OUTCOME: "routine" (normal follow-up), "needs_attention" (concerning symptoms), "escalated" (urgent issues)
+
+Respond in JSON format only:
+{
+  "successRating": "successful|partially_successful|unsuccessful",
+  "qualityScore": 1-10,
+  "informationGathered": true/false,
+  "outcome": "routine|needs_attention|escalated",
+  "reasoningNotes": "brief explanation of assessment",
+  "keyFindings": ["list", "of", "important", "health", "information"]
+}`;
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: evaluationPrompt }],
+        temperature: 0.1,
+        max_tokens: 500
+      });
+
+      const analysisText = response.choices[0]?.message?.content || '{}';
+      let analysis;
+      
+      try {
+        analysis = JSON.parse(analysisText);
+      } catch (parseError) {
+        console.error('Failed to parse AI analysis, using fallback assessment');
+        analysis = this.getFallbackAssessment(durationSeconds, patientResponses);
+      }
+
+      // Apply business logic for success determination
+      let successRating = analysis.successRating || 'unsuccessful';
+      
+      // Override AI assessment if duration + basic criteria are met
+      if (durationSeconds >= 30 && patientResponses.trim().length > 20) {
+        if (successRating === 'unsuccessful') {
+          successRating = 'partially_successful';
+        }
+      }
+
+      console.log(`📊 Call assessment for ${session.id}: Rating=${successRating}, Quality=${analysis.qualityScore}, Duration=${durationSeconds}s, InfoGathered=${analysis.informationGathered}`);
+
+      return {
+        successRating,
+        qualityScore: analysis.qualityScore || this.getQualityScoreFromDuration(durationSeconds),
+        informationGathered: analysis.informationGathered || false,
+        outcome: analysis.outcome || 'routine',
+        analysis: {
+          reasoningNotes: analysis.reasoningNotes,
+          keyFindings: analysis.keyFindings || [],
+          durationSeconds,
+          patientResponseLength: patientResponses.length,
+          conversationExchanges: session.conversationLog.length
+        }
+      };
+
+    } catch (error) {
+      console.error('Error evaluating call success:', error);
+      return this.getFallbackAssessment(durationSeconds, session.conversationLog
+        .filter(entry => entry.speaker === 'patient')
+        .map(entry => entry.text)
+        .join(' '));
+    }
+  }
+
+  private getFallbackAssessment(durationSeconds: number, patientResponses: string): {
+    successRating: string;
+    qualityScore: number;
+    informationGathered: boolean;
+    outcome: string;
+    analysis: any;
+  } {
+    const hasSubstantialResponse = patientResponses.trim().length > 50;
+    const meetsDurationThreshold = durationSeconds >= 30;
+    
+    let successRating = 'unsuccessful';
+    if (meetsDurationThreshold && hasSubstantialResponse) {
+      successRating = 'successful';
+    } else if (meetsDurationThreshold || hasSubstantialResponse) {
+      successRating = 'partially_successful';
     }
 
-    session.isActive = false;
-    this.sessions.delete(sessionId);
-    this.activePatients.delete(session.patientId);
+    return {
+      successRating,
+      qualityScore: this.getQualityScoreFromDuration(durationSeconds),
+      informationGathered: hasSubstantialResponse,
+      outcome: 'routine',
+      analysis: {
+        reasoningNotes: 'Fallback assessment due to AI evaluation error',
+        keyFindings: [],
+        durationSeconds,
+        patientResponseLength: patientResponses.length
+      }
+    };
+  }
+
+  private getQualityScoreFromDuration(durationSeconds: number): number {
+    if (durationSeconds >= 120) return 8; // 2+ minutes = high quality
+    if (durationSeconds >= 60) return 6;  // 1+ minute = good quality
+    if (durationSeconds >= 30) return 4;  // 30+ seconds = acceptable
+    return 2; // Less than 30 seconds = poor quality
+  }
+
+  private async saveTranscriptToFile(session: RealtimeSession) {
+    const logsDir = 'conversation_logs';
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
     
-    console.log(`✅ Session ${sessionId} cleaned up successfully`);
+    const timestamp = Date.now();
+    const filename = `conversation_${session.id}_${timestamp}.txt`;
+    const filepath = path.join(logsDir, filename);
+    
+    const duration = Math.floor((Date.now() - session.startedAt.getTime()) / 1000);
+    
+    let content = `HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: ${session.id}
+Patient: ${session.patientName} (ID: ${session.patientId})
+Call ID: ${session.callId}
+Duration: ${duration} seconds
+Date: ${session.startedAt.toISOString()}
+Total Exchanges: ${session.conversationLog.length}
+
+─────────────────────────────────────────────────────────
+
+`;
+
+    session.conversationLog.forEach((entry, index) => {
+      const time = entry.timestamp.toLocaleTimeString();
+      const speaker = entry.speaker === 'ai' ? 'AI' : 'PATIENT';
+      content += `[${time}] ${speaker}: ${entry.text}\n\n\n`;
+    });
+
+    content += `─────────────────────────────────────────────────────────
+End of Conversation
+`;
+
+    fs.writeFileSync(filepath, content);
+    console.log(`📄 Conversation saved to file: ${filename}`);
+
+    // Also log the conversation for debugging
+    console.log(`📞 COMPLETE CONVERSATION LOG - Session ${session.id}
+👤 Patient: ${session.patientName}
+⏱️  Duration: ${duration}s
+📅 Date: ${session.startedAt.toISOString()}
+─────────────────────────────────────────────────────────`);
+    
+    session.conversationLog.forEach((entry) => {
+      const time = entry.timestamp.toLocaleTimeString();
+      const icon = entry.speaker === 'ai' ? '🤖' : '👤';
+      const speaker = entry.speaker === 'ai' ? 'AI' : 'Patient';
+      console.log(`[${time}] ${icon} ${speaker}: ${entry.text}`);
+    });
+    
+    console.log(`─────────────────────────────────────────────────────────`);
   }
 
   getActiveSession(sessionId: string): RealtimeSession | undefined {
     return this.sessions.get(sessionId);
   }
 
-  getActiveSessionByPatient(patientId: number): RealtimeSession | undefined {
-    return Array.from(this.sessions.values()).find(session => 
-      session.patientId === patientId && 
-      (session.isActive || (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED))
-    );
-  }
-
-  getAllActiveSessionsForPatient(patientId: number): RealtimeSession[] {
-    return Array.from(this.sessions.values()).filter(session => 
-      session.patientId === patientId && 
-      (session.isActive || (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED))
-    );
-  }
-
-  async forceCleanupPatientSessions(patientId: number): Promise<number> {
-    const patientSessions = Array.from(this.sessions.values()).filter(session => 
-      session.patientId === patientId
-    );
-    
-    let cleanedCount = 0;
-    for (const session of patientSessions) {
-      console.log(`🧹 Force cleaning session ${session.id} for patient ${patientId}`);
-      await this.endSession(session.id);
-      cleanedCount++;
-    }
-    
-    this.activePatients.delete(patientId);
-    return cleanedCount;
-  }
-
   getAllActiveSessions(): RealtimeSession[] {
     return Array.from(this.sessions.values());
-  }
-
-  connectClientWebSocket(sessionId: string, websocket: WebSocket): void {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      console.error(`[REALTIME] No session found for ID: ${sessionId}`);
-      websocket.close(1000, 'Session not found');
-      return;
-    }
-
-    console.log(`[REALTIME] Connecting client WebSocket for session: ${sessionId}`);
-    session.websocket = websocket;
-    session.isActive = true;
-
-    // OpenAI connection should already be established when session was created
-    if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
-      console.log(`[REALTIME] OpenAI WebSocket not ready for session ${sessionId}, reinitializing...`);
-      this.initializeOpenAIRealtime(sessionId);
-    } else {
-      console.log(`[REALTIME] OpenAI WebSocket already connected for session ${sessionId}`);
-    }
-
-    // Handle WebSocket close
-    websocket.on('close', () => {
-      console.log(`[REALTIME] Client WebSocket closed for session: ${sessionId}`);
-      session.isActive = false;
-    });
-
-    websocket.on('error', (error) => {
-      console.error(`[REALTIME] Client WebSocket error for session ${sessionId}:`, error);
-    });
-  }
-
-  handleClientMessage(sessionId: string, message: any): void {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      console.error(`[REALTIME] No session found for message handling: ${sessionId}`);
-      return;
-    }
-
-    // Forward message to OpenAI if connected
-    if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
-      session.openaiWs.send(JSON.stringify(message));
-    } else {
-      console.warn(`[REALTIME] OpenAI WebSocket not connected for session: ${sessionId}`);
-    }
-  }
-
-  private async initializeOpenAIRealtime(sessionId: string): Promise<void> {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      console.error(`[REALTIME] Cannot initialize OpenAI - session not found: ${sessionId}`);
-      return;
-    }
-
-    try {
-      console.log(`[REALTIME] Initializing OpenAI connection for session: ${sessionId}`);
-      
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) {
-        throw new Error('OPENAI_API_KEY environment variable is not set');
-      }
-      
-      console.log(`[REALTIME] Using API key starting with: ${apiKey.substring(0, 8)}...`);
-      
-      const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'OpenAI-Beta': 'realtime=v1',
-          'User-Agent': 'CardioCare-AI/1.0'
-        }
-      });
-
-      session.openaiWs = openaiWs;
-
-      openaiWs.on('open', () => {
-        console.log(`[REALTIME] OpenAI WebSocket connected for session: ${sessionId}`);
-        
-        // Send initial configuration after a brief delay to ensure connection is stable
-        setTimeout(() => {
-          if (openaiWs.readyState === WebSocket.OPEN) {
-            const config = {
-              type: 'session.update',
-              session: {
-                modalities: ['text', 'audio'],
-                instructions: session.customSystemPrompt || `You are a healthcare assistant conducting a follow-up call with ${session.patientName}. Be professional, empathetic, and ask about their recovery, medications, and any concerns.`,
-                voice: 'alloy',
-                input_audio_format: 'pcm16',
-                output_audio_format: 'pcm16',
-                input_audio_transcription: {
-                  model: 'whisper-1'
-                }
-              }
-            };
-            
-            console.log(`[REALTIME] Sending session configuration for ${sessionId}`);
-            openaiWs.send(JSON.stringify(config));
-          } else {
-            console.warn(`[REALTIME] WebSocket not open when trying to configure session ${sessionId}`);
-          }
-        }, 100);
-      });
-
-      openaiWs.on('message', (data) => {
-        try {
-          const message = JSON.parse(data.toString());
-          
-          // Handle different message types
-          if (message.type === 'response.audio.delta' && session.websocket) {
-            // Forward audio to client
-            session.websocket.send(JSON.stringify({
-              type: 'audio_delta',
-              audio: message.delta
-            }));
-          } else if (message.type === 'conversation.item.input_audio_transcription.completed') {
-            // Log patient speech
-            const transcript = message.transcript;
-            session.conversationLog.push({
-              timestamp: new Date(),
-              speaker: 'patient',
-              text: transcript
-            });
-            session.transcript.push(`Patient: ${transcript}`);
-          } else if (message.type === 'response.text.delta') {
-            // Handle AI text responses
-            if (!session.currentResponse) {
-              session.currentResponse = '';
-            }
-            session.currentResponse += message.delta;
-          } else if (message.type === 'response.text.done') {
-            // Complete AI response
-            if (session.currentResponse) {
-              session.conversationLog.push({
-                timestamp: new Date(),
-                speaker: 'ai',
-                text: session.currentResponse
-              });
-              session.transcript.push(`AI: ${session.currentResponse}`);
-              session.currentResponse = '';
-            }
-          }
-
-          // Forward message to client if connected
-          if (session.websocket && session.websocket.readyState === WebSocket.OPEN) {
-            session.websocket.send(JSON.stringify(message));
-          }
-
-        } catch (error) {
-          console.error(`[REALTIME] Error processing OpenAI message for session ${sessionId}:`, error);
-        }
-      });
-
-      openaiWs.on('error', (error) => {
-        console.error(`[REALTIME] OpenAI WebSocket error for session ${sessionId}:`, error);
-        console.error(`[REALTIME] Error details:`, {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          readyState: openaiWs.readyState
-        });
-        session.openaiWs = null;
-      });
-
-      openaiWs.on('close', (code, reason) => {
-        const reasonText = reason.toString();
-        console.log(`[REALTIME] OpenAI WebSocket closed for session: ${sessionId}`);
-        console.log(`[REALTIME] Close details - Code: ${code}, Reason: ${reasonText || 'No reason provided'}`);
-        
-        // Common close codes
-        if (code === 1005) {
-          console.log(`[REALTIME] Normal closure without status code`);
-        } else if (code === 1006) {
-          console.log(`[REALTIME] Abnormal closure - connection lost`);
-        } else if (code === 4000) {
-          console.log(`[REALTIME] OpenAI API error - check authentication`);
-        }
-        
-        session.openaiWs = null;
-      });
-
-    } catch (error) {
-      console.error(`[REALTIME] Failed to initialize OpenAI connection for session ${sessionId}:`, error);
-    }
   }
 }
 
