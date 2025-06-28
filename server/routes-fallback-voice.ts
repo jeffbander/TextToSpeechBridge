@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { fallbackVoiceService } from "./services/fallback-voice";
 import twilio from 'twilio';
+import OpenAI from 'openai';
 
 export function registerFallbackVoiceRoutes(app: Express) {
   console.log("[FALLBACK-VOICE] Initializing fallback voice routes");
@@ -56,19 +57,38 @@ export function registerFallbackVoiceRoutes(app: Express) {
       // If no transcription, try to get recording and transcribe with OpenAI
       if (!patientText && RecordingUrl) {
         try {
-          const response = await fetch(RecordingUrl + '.wav');
-          const audioBuffer = await response.arrayBuffer();
-          const audioFile = new File([audioBuffer], 'response.wav', { type: 'audio/wav' });
-
-          const OpenAI = require('openai');
-          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          console.log(`[FALLBACK-VOICE] Attempting transcription of recording: ${RecordingUrl}`);
           
-          const transcription = await openai.audio.transcriptions.create({
-            file: audioFile,
-            model: 'whisper-1'
+          // Download the audio file
+          const response = await fetch(RecordingUrl + '.wav');
+          if (!response.ok) {
+            throw new Error(`Failed to fetch audio: ${response.status}`);
+          }
+          
+          const audioBuffer = await response.arrayBuffer();
+          console.log(`[FALLBACK-VOICE] Downloaded audio buffer: ${audioBuffer.byteLength} bytes`);
+          
+          // Create FormData for OpenAI transcription
+          const formData = new FormData();
+          const audioBlob = new Blob([audioBuffer], { type: 'audio/wav' });
+          formData.append('file', audioBlob, 'recording.wav');
+          formData.append('model', 'whisper-1');
+          
+          // Use direct fetch for transcription to avoid File API issues
+          const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+            },
+            body: formData
           });
-
-          patientText = transcription.text;
+          
+          if (!transcriptionResponse.ok) {
+            throw new Error(`Transcription API failed: ${transcriptionResponse.status}`);
+          }
+          
+          const transcriptionData = await transcriptionResponse.json();
+          patientText = transcriptionData.text;
           console.log(`[FALLBACK-VOICE] Transcribed: "${patientText}"`);
 
         } catch (transcribeError) {

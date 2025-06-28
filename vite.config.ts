@@ -29,6 +29,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    port: 5173, // ✅ explicitly set to prevent undefined WebSocket port
     fs: {
       strict: true,
       deny: ["**/.*"],
