@@ -59,8 +59,13 @@ export function registerFallbackVoiceRoutes(app: Express) {
         try {
           console.log(`[FALLBACK-VOICE] Attempting transcription of recording: ${RecordingUrl}`);
           
-          // Download the audio file
-          const response = await fetch(RecordingUrl + '.wav');
+          // Download the audio file with Twilio authentication
+          const twilioAuth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
+          const response = await fetch(RecordingUrl + '.wav', {
+            headers: {
+              'Authorization': `Basic ${twilioAuth}`
+            }
+          });
           if (!response.ok) {
             throw new Error(`Failed to fetch audio: ${response.status}`);
           }
