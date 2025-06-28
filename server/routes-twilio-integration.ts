@@ -37,7 +37,7 @@ export function registerTwilioIntegrationRoutes(app: Express) {
       
       console.log(`[TWILIO-INTEGRATION] Starting automated call for patient ID: ${patientId}`);
       
-      // CRITICAL: Multi-level duplicate call prevention
+      // ENHANCED: Multi-level duplicate call prevention with aggressive cleanup
       // 1. Check database for ANY active call states
       const allCalls = await storage.getCalls();
       const patientActiveCalls = allCalls.filter((call: any) => 
@@ -49,38 +49,18 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         console.log(`🚫 PREVENTING DUPLICATE CALL - Patient ${patientId} has ${patientActiveCalls.length} active calls:`, 
           patientActiveCalls.map(c => `${c.id}(${c.status})`).join(', '));
         
-        // Clean up stale calls older than 5 minutes
-        const staleCallsToClean = patientActiveCalls.filter((call: any) => {
-          const callAge = Date.now() - (call.startedAt?.getTime() || 0);
-          return callAge > 5 * 60 * 1000; // 5 minutes
-        });
-        
-        if (staleCallsToClean.length > 0) {
-          console.log(`🧹 Auto-cleaning ${staleCallsToClean.length} stale calls for patient ${patientId}`);
-          for (const staleCall of staleCallsToClean) {
-            await storage.updateCall(staleCall.id, { status: 'failed' });
-          }
-          
-          // Recheck after cleanup
-          const remainingActiveCalls = patientActiveCalls.filter(call => 
-            !staleCallsToClean.some(stale => stale.id === call.id)
-          );
-          
-          if (remainingActiveCalls.length === 0) {
-            console.log(`✅ All calls cleaned up for patient ${patientId}, proceeding with new call`);
-          } else {
-            return res.status(409).json({ 
-              message: "Patient still has active calls after cleanup",
-              remainingCalls: remainingActiveCalls.length
-            });
-          }
-        } else {
-          return res.status(409).json({ 
-            message: "Patient already has an active call",
-            existingCallId: patientActiveCalls[0].id,
-            status: patientActiveCalls[0].status
+        // Aggressive cleanup - mark all existing calls as completed
+        console.log(`🧹 Force-completing all ${patientActiveCalls.length} active calls for patient ${patientId}`);
+        for (const activeCall of patientActiveCalls) {
+          await storage.updateCall(activeCall.id, { 
+            status: 'completed',
+            outcome: 'force_terminated_duplicate_prevention' 
           });
         }
+        
+        // Wait briefly to ensure database consistency
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`✅ All calls cleaned up for patient ${patientId}, proceeding with new call`);
       }
       
       // 2. Check OpenAI realtime service for existing sessions

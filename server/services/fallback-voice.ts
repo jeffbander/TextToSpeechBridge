@@ -23,6 +23,58 @@ interface VoiceSession {
 
 export class FallbackVoiceService {
   private sessions: Map<string, VoiceSession> = new Map();
+  
+  // Persist session to storage to survive server restarts
+  private async persistSession(session: VoiceSession): Promise<void> {
+    try {
+      await storage.updateCall(session.callId, {
+        metadata: {
+          sessionId: session.id,
+          conversationState: session.conversationState,
+          conversationLog: session.conversationLog,
+          customSystemPrompt: session.customSystemPrompt
+        }
+      });
+    } catch (error) {
+      console.error(`[FALLBACK-VOICE] Error persisting session ${session.id}:`, error);
+    }
+  }
+  
+  // Restore session from storage if it exists
+  private async restoreSession(sessionId: string): Promise<VoiceSession | null> {
+    try {
+      const calls = await storage.getCalls();
+      const call = calls.find(c => {
+        const metadata = c.metadata as any;
+        return metadata && metadata.sessionId === sessionId;
+      });
+      
+      if (call && call.status === 'in-progress') {
+        const patient = await storage.getPatient(call.patientId);
+        if (!patient) return null;
+        
+        const metadata = call.metadata as any;
+        const session: VoiceSession = {
+          id: sessionId,
+          patientId: call.patientId,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          callId: call.id,
+          twilioCallSid: call.twilioCallSid || '',
+          conversationState: metadata?.conversationState || 'greeting',
+          transcript: [],
+          conversationLog: metadata?.conversationLog || [],
+          customSystemPrompt: metadata?.customSystemPrompt
+        };
+        
+        this.sessions.set(sessionId, session);
+        console.log(`[FALLBACK-VOICE] Restored session ${sessionId} from storage`);
+        return session;
+      }
+    } catch (error) {
+      console.error(`[FALLBACK-VOICE] Error restoring session ${sessionId}:`, error);
+    }
+    return null;
+  }
 
   async createVoiceSession(
     sessionId: string,
@@ -45,6 +97,7 @@ export class FallbackVoiceService {
     };
 
     this.sessions.set(sessionId, session);
+    await this.persistSession(session);
     console.log(`[FALLBACK-VOICE] Created voice session ${sessionId} for ${patientName}`);
   }
 
@@ -86,8 +139,14 @@ export class FallbackVoiceService {
   }
 
   async processPatientResponse(sessionId: string, patientText: string): Promise<string> {
-    const session = this.sessions.get(sessionId);
-    if (!session) throw new Error(`Session ${sessionId} not found`);
+    let session = this.sessions.get(sessionId);
+    if (!session) {
+      // Try to restore session from storage
+      session = await this.restoreSession(sessionId);
+      if (!session) {
+        throw new Error(`Session ${sessionId} not found`);
+      }
+    }
 
     // Add patient response to log
     session.conversationLog.push({
