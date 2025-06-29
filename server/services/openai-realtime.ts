@@ -469,6 +469,14 @@ CRITICAL: As soon as the call connects, immediately greet the patient. Do not wa
     session.websocket = twilioWs;
     console.log(`🔗 Client WebSocket connected to session ${sessionId}`);
     
+    // CRITICAL FIX: Initialize OpenAI connection immediately when Twilio WebSocket connects
+    if (!session.openaiWs || session.openaiWs.readyState === WebSocket.CLOSED) {
+      console.log(`🚀 IMMEDIATE INIT: Starting OpenAI connection for session ${sessionId}`);
+      this.initializeOpenAIRealtime(sessionId).catch(error => {
+        console.error(`❌ CRITICAL: Failed to initialize OpenAI for session ${sessionId}:`, error);
+      });
+    }
+    
     twilioWs.on('close', () => {
       console.log(`🔗 Client disconnected from session ${sessionId}`);
       this.endSession(sessionId);
