@@ -105,6 +105,11 @@ export class OpenAIRealtimeService {
 
     console.log(`🔗 Attempting OpenAI realtime connection for session ${sessionId}`);
 
+    if (!process.env.OPENAI_API_KEY) {
+      console.error(`❌ OPENAI_API_KEY not found for session ${sessionId}`);
+      throw new Error('OpenAI API key not configured');
+    }
+
     const openaiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -114,8 +119,27 @@ export class OpenAIRealtimeService {
 
     session.openaiWs = openaiWs;
 
+    // Add connection timeout
+    const connectionTimeout = setTimeout(() => {
+      if (openaiWs.readyState === WebSocket.CONNECTING) {
+        console.error(`❌ OpenAI WebSocket connection timeout for session ${sessionId}`);
+        openaiWs.close();
+      }
+    }, 10000); // 10 second timeout
+
+    openaiWs.on('error', (error) => {
+      console.error(`❌ OpenAI WebSocket error for session ${sessionId}:`, error);
+      clearTimeout(connectionTimeout);
+    });
+
+    openaiWs.on('close', (code, reason) => {
+      console.log(`🔗 OpenAI WebSocket closed for session ${sessionId}, code: ${code}, reason: ${reason?.toString()}`);
+      clearTimeout(connectionTimeout);
+    });
+
     openaiWs.on('open', () => {
       console.log(`🔗 OpenAI WebSocket connected for session ${sessionId}`);
+      clearTimeout(connectionTimeout);
       
       const patient = session.patientName;
       
@@ -461,7 +485,10 @@ CRITICAL: As soon as the call connects, immediately greet the patient. Do not wa
       console.log(`📞 Twilio call connected for session ${sessionId}`);
       // CRITICAL FIX: Only initialize once when call connects
       if (!session.openaiWs || session.openaiWs.readyState === WebSocket.CLOSED) {
-        this.initializeOpenAIRealtime(sessionId);
+        console.log(`🔗 INITIATING OpenAI connection for session ${sessionId}`);
+        this.initializeOpenAIRealtime(sessionId).catch(error => {
+          console.error(`❌ FAILED to initialize OpenAI for session ${sessionId}:`, error);
+        });
       } else {
         console.log(`🔄 PREVENTING DUPLICATE - OpenAI already connected for session ${sessionId}`);
       }
@@ -477,7 +504,9 @@ CRITICAL: As soon as the call connects, immediately greet the patient. Do not wa
       // CRITICAL FIX: Do NOT re-initialize if already connected
       if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
         console.log(`🔗 OpenAI not ready, initializing for session ${sessionId}`);
-        this.initializeOpenAIRealtime(sessionId);
+        this.initializeOpenAIRealtime(sessionId).catch(error => {
+          console.error(`❌ FAILED to initialize OpenAI during start for session ${sessionId}:`, error);
+        });
       } else {
         console.log(`✅ OpenAI already ready for session ${sessionId} - streaming can begin`);
       }

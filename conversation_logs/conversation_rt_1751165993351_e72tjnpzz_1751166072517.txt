@@ -1,0 +1,13 @@
+HEALTHCARE CONVERSATION TRANSCRIPT
+=====================================
+Session ID: rt_1751165993351_e72tjnpzz
+Patient: Jeff Bander (ID: 7)
+Call ID: 348
+Duration: 79 seconds
+Date: 2025-06-29T02:59:53.351Z
+Total Exchanges: 0
+
+─────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────
+End of Conversation
