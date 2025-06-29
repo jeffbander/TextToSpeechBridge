@@ -190,13 +190,36 @@ export function registerCallingRoutes(app: Express, httpServer: Server) {
     try {
       console.log(`[EMERGENCY-KILL-SWITCH] Emergency stop initiated at ${new Date().toISOString()}`);
       
+      // Import openai realtime service for session termination
+      const { openaiRealtimeService } = await import('./services/openai-realtime');
+      
       // Get all active calls
       const activeCalls = await storage.getActiveCalls();
       console.log(`[EMERGENCY-KILL-SWITCH] Found ${activeCalls.length} active calls to terminate`);
       
+      // CRITICAL FIX: Also terminate all active GPT-4o sessions
+      const activeSessions = openaiRealtimeService.getAllActiveSessions();
+      console.log(`[EMERGENCY-KILL-SWITCH] Found ${activeSessions.length} active GPT-4o sessions to terminate`);
+      
       const killResults = [];
       let successCount = 0;
       let errorCount = 0;
+      
+      // Terminate GPT-4o sessions first
+      for (const session of activeSessions) {
+        try {
+          console.log(`[EMERGENCY-KILL-SWITCH] Terminating GPT-4o session ${session.id} for patient ${session.patientName}`);
+          await openaiRealtimeService.endSession(session.id);
+          killResults.push({
+            sessionId: session.id,
+            patientId: session.patientId,
+            status: 'session_terminated',
+            reason: 'emergency_stop'
+          });
+        } catch (error) {
+          console.error(`[EMERGENCY-KILL-SWITCH] Failed to terminate session ${session.id}:`, error);
+        }
+      }
       
       // Terminate each active call
       for (const call of activeCalls) {

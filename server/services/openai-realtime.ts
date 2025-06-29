@@ -132,12 +132,12 @@ Your role is to:
 3. Escalate or flag concerning responses that may require provider attention
 4. Keep tone professional, kind, and clear—like a nurse calling a long-time patient
 
-Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office.`;
+CRITICAL: As soon as the call connects, immediately greet the patient. Start the conversation with a warm greeting and identify yourself as calling from Dr. Bander's office. Do not wait for the patient to speak first.`;
       } else {
         // Use the custom prompt from CSV upload, ensuring it includes proper context
         instructions = `You are Tziporah, a nurse assistant for Dr. Jeffrey Bander's cardiology office. ${instructions}
 
-Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.`;
+CRITICAL: As soon as the call connects, immediately greet the patient. Do not wait for the patient to speak first. Remember to be professional, empathetic, and identify yourself as calling from Dr. Bander's office.`;
         console.log(`🎯 Using custom prompt from CSV upload for ${patient}`);
       }
 
@@ -194,10 +194,25 @@ Remember to be professional, empathetic, and identify yourself as calling from D
         session.audioBuffer = []; // Clear the buffer
       }
 
-      // Wait for patient to speak first - no automatic conversation starter
-      console.log(`🎧 Session ready - waiting for patient audio input`);
+      // CRITICAL FIX: Start conversation immediately for fast interaction
+      console.log(`🎧 Session ready - AI will greet patient immediately`);
       
       session.isActive = true;
+      
+      // Start conversation immediately after session setup
+      setTimeout(() => {
+        if (openaiWs.readyState === WebSocket.OPEN) {
+          const startConversation = {
+            type: 'response.create',
+            response: {
+              modalities: ['audio'],
+              instructions: 'Start the call by greeting the patient warmly and identifying yourself.'
+            }
+          };
+          openaiWs.send(JSON.stringify(startConversation));
+          console.log(`🚀 FAST START: Triggered immediate AI greeting for ${sessionId}`);
+        }
+      }, 1000); // 1 second delay to ensure session is fully established
     });
     
     openaiWs.on('message', (data) => {
@@ -795,7 +810,9 @@ End of Conversation
   }
 
   getAllActiveSessions(): RealtimeSession[] {
-    return Array.from(this.sessions.values());
+    return Array.from(this.sessions.values()).filter(session => 
+      session.isActive || (session.openaiWs && session.openaiWs.readyState !== WebSocket.CLOSED)
+    );
   }
 }
 
