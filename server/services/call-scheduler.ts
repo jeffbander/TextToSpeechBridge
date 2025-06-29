@@ -130,11 +130,14 @@ export class CallSchedulerService {
         callId: call.id,
       });
 
+      // Generate session ID for voice pipeline
+      const sessionId = `voice_${call.id}_${Date.now()}`;
+      
       // Get the proper webhook URL - clean the domain name
       const baseUrl = process.env.REPLIT_DOMAINS?.split(',')[0]?.trim();
       const cleanDomain = baseUrl?.replace(/^https?:\/\//, ''); // Remove protocol if present
-      const webhookUrl = cleanDomain ? `https://${cleanDomain}/twilio-gpt4o-webhook` : 'http://localhost:5000/twilio-gpt4o-webhook';
-      const statusCallbackUrl = cleanDomain ? `https://${cleanDomain}/twilio-status-callback` : 'http://localhost:5000/twilio-status-callback';
+      const webhookUrl = cleanDomain ? `https://${cleanDomain}/api/twilio/voice-pipeline/${sessionId}` : `http://localhost:5000/api/twilio/voice-pipeline/${sessionId}`;
+      const statusCallbackUrl = cleanDomain ? `https://${cleanDomain}/api/twilio/voice-pipeline-status/${call.id}` : `http://localhost:5000/api/twilio/voice-pipeline-status/${call.id}`;
       
       console.log(`[CALL-SCHEDULER] Using webhook URL: ${webhookUrl}`);
       console.log(`[CALL-SCHEDULER] Using status callback URL: ${statusCallbackUrl}`);
