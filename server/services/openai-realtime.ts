@@ -161,12 +161,12 @@ Remember to be professional, empathetic, and identify yourself as calling from D
           },
           turn_detection: {
             type: 'server_vad',
-            threshold: 0.9,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 2000
+            threshold: 0.7,           // PERFORMANCE FIX: Lower threshold for faster detection
+            prefix_padding_ms: 200,   // PERFORMANCE FIX: Reduce padding for faster response
+            silence_duration_ms: 1200 // PERFORMANCE FIX: Shorter silence for faster AI response
           },
-          temperature: 0.6,
-          max_response_output_tokens: 300
+          temperature: 0.4,                 // PERFORMANCE FIX: Lower temperature for faster, more focused responses
+          max_response_output_tokens: 150   // PERFORMANCE FIX: Shorter responses for faster audio generation
         }
       };
       
@@ -444,25 +444,32 @@ Remember to be professional, empathetic, and identify yourself as calling from D
     
     if (message.event === 'connected') {
       console.log(`📞 Twilio call connected for session ${sessionId}`);
-      this.initializeOpenAIRealtime(sessionId);
+      // CRITICAL FIX: Only initialize once when call connects
+      if (!session.openaiWs || session.openaiWs.readyState === WebSocket.CLOSED) {
+        this.initializeOpenAIRealtime(sessionId);
+      } else {
+        console.log(`🔄 PREVENTING DUPLICATE - OpenAI already connected for session ${sessionId}`);
+      }
     } else if (message.event === 'start') {
       console.log(`🎙️ Audio streaming started for session ${sessionId}`);
       
       if (message.streamSid) {
         session.streamSid = message.streamSid;
+        session.outboundChunkCount = 0; // Reset chunk counter
         console.log(`📡 Stream SID: ${message.streamSid}`);
       }
       
-      // Initialize OpenAI connection if not already connected
+      // CRITICAL FIX: Do NOT re-initialize if already connected
       if (!session.openaiWs || session.openaiWs.readyState !== WebSocket.OPEN) {
-        console.log(`🔗 Initializing OpenAI connection for session ${sessionId}`);
+        console.log(`🔗 OpenAI not ready, initializing for session ${sessionId}`);
         this.initializeOpenAIRealtime(sessionId);
+      } else {
+        console.log(`✅ OpenAI already ready for session ${sessionId} - streaming can begin`);
       }
       
-      console.log(`🎯 Audio streaming ready - GPT-4o will initiate conversation based on system prompt`);
+      console.log(`🎯 Audio streaming ready - GPT-4o will respond to patient input`);
     } else if (message.event === 'media') {
-      console.log(`🎵 Received audio payload from Twilio - length: ${message.media?.payload?.length || 0}`);
-      
+      // PERFORMANCE FIX: Reduce logging noise for media packets
       if (session.openaiWs && session.openaiWs.readyState === WebSocket.OPEN) {
         const audioData = message.media.payload;
         
@@ -482,8 +489,6 @@ Remember to be professional, empathetic, and identify yourself as calling from D
           session.silentPeriods = 0;
         }
         
-        console.log(`🔄 Forwarding audio to OpenAI - payload length: ${audioData?.length || 0}, WebSocket state: ${session.openaiWs.readyState}`);
-        
         const audioMessage = {
           type: 'input_audio_buffer.append',
           audio: audioData
@@ -491,7 +496,10 @@ Remember to be professional, empathetic, and identify yourself as calling from D
         
         try {
           session.openaiWs.send(JSON.stringify(audioMessage));
-          console.log(`✅ Audio packet sent to OpenAI successfully`);
+          // PERFORMANCE FIX: Log only every 50th packet to reduce noise
+          if (Math.random() < 0.02) { // 2% chance = ~1 log per 50 packets
+            console.log(`📤 Audio forwarded to OpenAI (payload: ${audioData?.length || 0})`);
+          }
         } catch (error) {
           console.error(`❌ Failed to send audio to OpenAI:`, error);
         }
@@ -499,7 +507,9 @@ Remember to be professional, empathetic, and identify yourself as calling from D
         console.log(`❌ OpenAI WebSocket not ready - state: ${session.openaiWs?.readyState || 'null'}`);
         // Buffer audio if OpenAI is not ready yet
         session.audioBuffer.push(Buffer.from(message.media.payload, 'base64'));
-        console.log(`📦 Buffered audio packet - buffer size: ${session.audioBuffer.length}`);
+        if (session.audioBuffer.length % 10 === 0) { // Log every 10th buffered packet
+          console.log(`📦 Buffered audio packets - buffer size: ${session.audioBuffer.length}`);
+        }
       }
     } else if (message.event === 'stop') {
       console.log(`🛑 Audio streaming stopped for session ${sessionId}`);
