@@ -43,9 +43,11 @@ export function registerRealtimeRoutes(app: Express, httpServer: Server) {
           realtimeWss!.emit('connection', websocket, request);
         });
       } else if (pathname?.startsWith('/ws/realtime/')) {
-        console.log('[REALTIME] Handling GPT-4o realtime WebSocket upgrade');
+        console.log(`[REALTIME] Handling GPT-4o realtime WebSocket upgrade for path: ${pathname}`);
         const sessionId = pathname.split('/ws/realtime/')[1];
+        console.log(`[REALTIME] Extracted session ID: ${sessionId}`);
         realtimeWss!.handleUpgrade(request, socket, head, (websocket) => {
+          console.log(`[REALTIME] WebSocket upgraded successfully for session: ${sessionId}`);
           openaiRealtimeService.connectClientWebSocket(sessionId, websocket);
           
           // Handle Twilio audio messages
