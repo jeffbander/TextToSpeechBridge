@@ -389,19 +389,11 @@ Respond as a caring healthcare provider. Ask relevant follow-up questions about 
       console.log(`[GPT4O-WEBHOOK] Patient: ${patient.firstName} ${patient.lastName}`);
       console.log(`[GPT4O-WEBHOOK] Custom prompt exists: ${!!patient.customPrompt}`);
 
-      // Create GPT-4o real-time session with custom prompt
-      const customSystemPrompt = patient.customPrompt || 
-        `Hello, this is Tziporah, Dr. Jeffrey Bander's AI assistant. I'm calling to check on your health and see how you're doing. How are you feeling today?`;
+      // REDIRECTING TO VOICE PIPELINE - Updated workflow: Twilio → Whisper → GPT-4o → TTS
+      console.log(`[GPT4O-WEBHOOK] Redirecting to voice pipeline for better reliability`);
 
-      console.log(`[GPT4O-WEBHOOK] Using custom prompt: ${customSystemPrompt.substring(0, 100)}...`);
-
-      // Create real-time session
-      const sessionId = await openaiRealtimeService.createRealtimeSession(
-        patient.id,
-        `${patient.firstName} ${patient.lastName}`,
-        activeCall.id,
-        customSystemPrompt
-      );
+      // Create voice pipeline session ID
+      const voiceSessionId = `voice_${activeCall.id}_${Date.now()}`;
 
       // Update call with session info
       await storage.updateCall(activeCall.id, {
@@ -409,18 +401,18 @@ Respond as a caring healthcare provider. Ask relevant follow-up questions about 
         status: 'in_progress'
       });
 
-      console.log(`[GPT4O-WEBHOOK] Created GPT-4o session: ${sessionId} for call: ${activeCall.id}`);
+      console.log(`[GPT4O-WEBHOOK] Created voice pipeline session: ${voiceSessionId} for call: ${activeCall.id}`);
 
-      // Generate TwiML to connect to WebSocket stream
+      // Generate TwiML to connect to voice pipeline WebSocket
       const baseUrl = req.get('host');
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="wss://${baseUrl}/ws/realtime/${sessionId}" />
+    <Stream url="wss://${baseUrl}/ws/voice-pipeline/${voiceSessionId}" />
   </Connect>
 </Response>`;
 
-      console.log(`[GPT4O-WEBHOOK] Connecting to WebSocket stream: wss://${baseUrl}/ws/realtime/${sessionId}`);
+      console.log(`[GPT4O-WEBHOOK] Connecting to voice pipeline stream: wss://${baseUrl}/ws/voice-pipeline/${voiceSessionId}`);
 
       res.type('text/xml').send(twiml);
 
