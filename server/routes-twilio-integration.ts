@@ -95,24 +95,26 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         }
       });
 
-      // Create GPT-4o realtime session for this call
-      const sessionId = await openaiRealtimeService.createRealtimeSession(
-        patient.id,
-        `${patient.firstName} ${patient.lastName}`,
-        call.id,
-        systemPrompt
-      );
+      // Skip realtime session creation - using voice pipeline instead
+      // const sessionId = await openaiRealtimeService.createRealtimeSession(
+      //   patient.id,
+      //   `${patient.firstName} ${patient.lastName}`,
+      //   call.id,
+      //   systemPrompt
+      // );
+      
+      // For voice pipeline, we don't need a session ID upfront - it's created during the webhook call
 
-      // Configure the session with patient-specific prompt
-      console.log(`[TWILIO-INTEGRATION] Created GPT-4o session ${sessionId} for patient ${patient.firstName} ${patient.lastName}`);
+      // Configure voice pipeline call
+      console.log(`[TWILIO-INTEGRATION] Setting up voice pipeline call for patient ${patient.firstName} ${patient.lastName}`);
 
-      // Generate Twilio webhook URL for this specific session
+      // Generate Twilio webhook URL that will redirect to voice pipeline
       console.log(`[TWILIO-INTEGRATION] REPLIT_DOMAINS env var:`, process.env.REPLIT_DOMAINS);
       const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'https://localhost:5000';
-      const webhookUrl = `${baseUrl}/api/twilio/webhook/${sessionId}`;
+      const webhookUrl = `${baseUrl}/twilio-gpt4o-webhook`; // This will redirect to voice pipeline
       
       console.log(`[TWILIO-INTEGRATION] Base URL: ${baseUrl}`);
-      console.log(`[TWILIO-INTEGRATION] Using webhook URL: ${webhookUrl}`);
+      console.log(`[TWILIO-INTEGRATION] Using webhook URL: ${webhookUrl} (redirects to voice pipeline)`);
       
       // Make the Twilio call
       const twilioCallSid = await twilioService.makeCall({
@@ -128,14 +130,13 @@ export function registerTwilioIntegrationRoutes(app: Express) {
         status: 'calling'
       });
 
-      console.log(`[TWILIO-INTEGRATION] Twilio call initiated: ${twilioCallSid} for session: ${sessionId}`);
+      console.log(`[TWILIO-INTEGRATION] Twilio call initiated: ${twilioCallSid} for voice pipeline call`);
 
       res.json({
         success: true,
         callId: call.id,
-        sessionId,
         twilioCallSid,
-        message: `Automated call initiated for ${patient.firstName} ${patient.lastName}`
+        message: `Voice pipeline call initiated for ${patient.firstName} ${patient.lastName}`
       });
 
     } catch (error) {
