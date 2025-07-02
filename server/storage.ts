@@ -6,6 +6,7 @@ import {
   callCampaigns,
   callAttempts,
   messages,
+  patientDocuments,
   automationLogs,
   type Patient, 
   type InsertPatient,
@@ -21,6 +22,8 @@ import {
   type InsertCallAttempt,
   type Message,
   type InsertMessage,
+  type PatientDocument,
+  type InsertPatientDocument,
   type AutomationLog,
   type InsertAutomationLog
 } from "@shared/schema";
@@ -72,6 +75,13 @@ export interface IStorage {
   getMessagesByPatient(patientId: number): Promise<Message[]>;
   createMessage(insertMessage: InsertMessage): Promise<Message>;
   updateMessage(id: number, updates: Partial<Message>): Promise<Message | undefined>;
+
+  // Patient Documents
+  getPatientDocuments(patientId: number): Promise<PatientDocument[]>;
+  getActivePatientDocuments(patientId: number): Promise<PatientDocument[]>;
+  createPatientDocument(document: InsertPatientDocument): Promise<PatientDocument>;
+  updatePatientDocument(id: number, updates: Partial<PatientDocument>): Promise<PatientDocument | undefined>;
+  deletePatientDocument(id: number): Promise<boolean>;
 
   // Automation Logs
   getAutomationLogs(): Promise<AutomationLog[]>;
@@ -424,6 +434,27 @@ export class MemStorage implements IStorage {
     const updatedMessage = { ...message, ...updates };
     this.messages.set(id, updatedMessage);
     return updatedMessage;
+  }
+
+  // Patient Documents (placeholder for MemStorage - not fully implemented)
+  async getPatientDocuments(patientId: number): Promise<PatientDocument[]> {
+    return []; // MemStorage placeholder
+  }
+
+  async getActivePatientDocuments(patientId: number): Promise<PatientDocument[]> {
+    return []; // MemStorage placeholder
+  }
+
+  async createPatientDocument(document: InsertPatientDocument): Promise<PatientDocument> {
+    throw new Error("PatientDocument operations not implemented in MemStorage - use DatabaseStorage");
+  }
+
+  async updatePatientDocument(id: number, updates: Partial<PatientDocument>): Promise<PatientDocument | undefined> {
+    throw new Error("PatientDocument operations not implemented in MemStorage - use DatabaseStorage");
+  }
+
+  async deletePatientDocument(id: number): Promise<boolean> {
+    throw new Error("PatientDocument operations not implemented in MemStorage - use DatabaseStorage");
   }
 
   // Automation Logs
@@ -798,6 +829,61 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.id, id))
       .returning();
     return message || undefined;
+  }
+
+  // Patient Documents
+  async getPatientDocuments(patientId: number): Promise<PatientDocument[]> {
+    try {
+      return await db.select().from(patientDocuments)
+        .where(eq(patientDocuments.patientId, patientId))
+        .orderBy(patientDocuments.priority, patientDocuments.createdAt);
+    } catch (error) {
+      console.error('Database error fetching patient documents:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async getActivePatientDocuments(patientId: number): Promise<PatientDocument[]> {
+    try {
+      return await db.select().from(patientDocuments)
+        .where(and(
+          eq(patientDocuments.patientId, patientId),
+          eq(patientDocuments.isActive, true)
+        ))
+        .orderBy(patientDocuments.priority, patientDocuments.createdAt);
+    } catch (error) {
+      console.error('Database error fetching active patient documents:', error);
+      throw new Error('Database connection failed. Please try again.');
+    }
+  }
+
+  async createPatientDocument(insertDocument: InsertPatientDocument): Promise<PatientDocument> {
+    const [document] = await db
+      .insert(patientDocuments)
+      .values(insertDocument)
+      .returning();
+    return document;
+  }
+
+  async updatePatientDocument(id: number, updates: Partial<PatientDocument>): Promise<PatientDocument | undefined> {
+    const [document] = await db
+      .update(patientDocuments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(patientDocuments.id, id))
+      .returning();
+    return document || undefined;
+  }
+
+  async deletePatientDocument(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(patientDocuments)
+        .where(eq(patientDocuments.id, id));
+      return result.rowCount !== null && result.rowCount > 0;
+    } catch (error) {
+      console.error('Database error deleting patient document:', error);
+      return false;
+    }
   }
 
   // Automation Logs

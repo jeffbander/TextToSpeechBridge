@@ -96,6 +96,20 @@ export const alerts = pgTable("alerts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Patient documents and notes for Hume AI to read during calls
+export const patientDocuments = pgTable("patient_documents", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(), // Full text content to be read by Hume AI
+  documentType: text("document_type").notNull(), // discharge_summary, medication_list, care_instructions, lab_results
+  priority: integer("priority").default(1), // 1-5, determines reading order
+  isActive: boolean("is_active").default(true), // Whether to include in calls
+  metadata: jsonb("metadata"), // Additional document info
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   patientId: integer("patient_id").references(() => patients.id).notNull(),
@@ -165,6 +179,12 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   receivedAt: true,
 });
 
+export const insertPatientDocumentSchema = createInsertSchema(patientDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertAutomationLogSchema = createInsertSchema(automationLogs).omit({
   id: true,
   triggeredAt: true,
@@ -185,5 +205,7 @@ export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type PatientDocument = typeof patientDocuments.$inferSelect;
+export type InsertPatientDocument = z.infer<typeof insertPatientDocumentSchema>;
 export type AutomationLog = typeof automationLogs.$inferSelect;
 export type InsertAutomationLog = z.infer<typeof insertAutomationLogSchema>;

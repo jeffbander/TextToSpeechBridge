@@ -15,6 +15,7 @@ import AutomatedCallsPage from "@/pages/automated-calls";
 import CsvImportPage from "@/pages/csv-import";
 import CampaignDetailsPage from "@/pages/campaign-details";
 import AIGENTSAutomation from "@/pages/aigents-automation";
+import HumeIntegration from "@/pages/hume-integration";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/csv-import" component={CsvImportPage} />
       <Route path="/campaigns/:id" component={CampaignDetailsPage} />
       <Route path="/aigents-automation" component={AIGENTSAutomation} />
+      <Route path="/hume-integration" component={HumeIntegration} />
       <Route component={NotFound} />
     </Switch>
   );

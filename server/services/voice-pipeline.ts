@@ -2,9 +2,17 @@ import OpenAI from 'openai';
 import { Buffer } from 'buffer';
 import fetch from 'node-fetch';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+let openai: OpenAI | null = null;
+
+// Initialize OpenAI only if API key is available
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
+  console.log('[VOICE-PIPELINE] OpenAI initialized with API key');
+} else {
+  console.log('[VOICE-PIPELINE] OpenAI API key not provided, voice pipeline will be disabled');
+}
 
 export interface VoicePipelineSession {
   sessionId: string;

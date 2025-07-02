@@ -4,7 +4,15 @@ import { storage } from '../storage';
 import fs from 'fs';
 import path from 'path';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+
+// Initialize OpenAI only if API key is available
+if (process.env.OPENAI_API_KEY) {
+  openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  console.log('[OPENAI-REALTIME] Service initialized with API key');
+} else {
+  console.log('[OPENAI-REALTIME] API key not provided, realtime services will be disabled');
+}
 
 export interface RealtimeSession {
   id: string;

@@ -1,9 +1,17 @@
 import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR 
-});
+let openai: OpenAI | null = null;
+
+// Initialize OpenAI only if API key is available
+if (process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR) {
+  openai = new OpenAI({ 
+    apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR 
+  });
+  console.log('[OPENAI] Service initialized with API key');
+} else {
+  console.log('[OPENAI] API key not provided, OpenAI services will be disabled');
+}
 
 export interface PatientCallAnalysis {
   urgencyLevel: 'low' | 'medium' | 'high' | 'critical';
