@@ -1,0 +1,110 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "Start Legacy Development Server",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "type": "shell",
+      "label": "Start New OOP Development Server",
+      "command": "tsx",
+      "args": ["server/index-new.ts"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "type": "shell",
+      "label": "Build Production",
+      "command": "npm",
+      "args": ["run", "build"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "type": "shell",
+      "label": "TypeScript Check",
+      "command": "tsc",
+      "args": ["--noEmit"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "type": "shell",
+      "label": "Push Database Schema",
+      "command": "npm",
+      "args": ["run", "db:push"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "type": "shell",
+      "label": "Open Database Studio",
+      "command": "npm",
+      "args": ["run", "db:studio"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "type": "shell",
+      "label": "Clean Build Files",
+      "command": "rm",
+      "args": ["-rf", "dist", ".cache", "node_modules/.cache"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ]
+}

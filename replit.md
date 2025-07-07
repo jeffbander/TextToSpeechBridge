@@ -7,19 +7,37 @@ CardioCare AI is a comprehensive healthcare automation system that enables autom
 ## System Architecture
 
 ### Core Technology Stack
-- **Backend**: Node.js with Express server
+- **Backend**: Node.js with Express server (Object-Oriented Architecture)
 - **Database**: PostgreSQL with Drizzle ORM
 - **Frontend**: React with TypeScript and Vite
-- **AI Integration**: OpenAI GPT-4o real-time API
+- **AI Integration**: Hume AI EVI (primary) + OpenAI GPT-4o (optional)
 - **Voice Communications**: Twilio Voice API
 - **Styling**: Tailwind CSS with Shadcn/ui components
 - **Email Service**: SendGrid for alert notifications
 
+### Object-Oriented Architecture (NEW)
+
+**Core Classes & Interfaces**: Complete separation of concerns with interface-driven development:
+- `CardioCareApp`: Main application factory orchestrating all services
+- `HumeAIService`: AI service implementation with emotional intelligence (implements `IAIService`)
+- `TwilioCallProvider`: Call provider for phone integration (implements `ICallProvider`)
+- `CallOrchestrator`: Coordinates AI services and call providers (implements `ICallOrchestrator`)
+- `DocumentManager`: Patient document management with strict data isolation (implements `IDocumentManager`)
+- `SystemEventHandler`: Event-driven system for alerts and monitoring (implements `IEventHandler`)
+
+**Dependency Injection**: Services are injected into the main application for easy testing, swapping, and scaling.
+
+**Event-Driven Architecture**: System-wide events for call monitoring, urgent alerts, AI analysis completion, and error handling.
+
+**Strict Data Isolation**: Patient documents are completely isolated with access control and audit trails.
+
 ### Key Architectural Decisions
 
-**Modular Route Structure**: The system uses a modular routing approach with separate files for different functionalities (calling, real-time audio, Twilio integration, CSV import) to maintain code organization and scalability.
+**Object-Oriented Design**: Complete refactoring from functional to OOP approach for better separation of concerns, testability, and maintainability.
 
-**Real-time Audio Processing**: Integration with GPT-4o real-time API enables natural conversational AI that can process audio streams directly without transcription delays, providing more fluid patient interactions.
+**Interface-First Development**: All core services implement well-defined interfaces, allowing easy swapping of AI providers or call services.
+
+**Real-time Audio Processing**: Integration with Hume AI EVI enables natural conversational AI with emotional intelligence and low-latency processing.
 
 **WebSocket Management**: Dual WebSocket server configuration - one for standard application updates and another for real-time audio streaming, preventing conflicts with Vite's HMR system.
 
@@ -118,6 +136,7 @@ Patient Phone ↔ Twilio ↔ WebSocket Server ↔ OpenAI GPT-4o Real-time API
 - **WebSocket Conflicts**: Manual upgrade handling to preserve both voice functionality and HMR
 
 ## Changelog
+- July 7, 2025: COMPLETE OOP ARCHITECTURE REFACTOR - Transformed entire system to object-oriented design as requested: (1) Created comprehensive interface-driven architecture with CardioCareApp main class, (2) Separated AI services (HumeAIService) and call providers (TwilioCallProvider) into independent classes, (3) Built CallOrchestrator for coordinating between AI and call services, (4) Implemented strict data isolation in DocumentManager with patient-specific access control, (5) Added event-driven architecture with SystemEventHandler for alerts and monitoring, (6) Created complete VS Code standalone setup with debug configurations, (7) Generated comprehensive flowcharts showing high-level functionality and system flow, (8) Maintained Hume AI + Twilio pipeline as core technology stack
 - July 2, 2025: MAJOR SYSTEM UPGRADE - Implemented comprehensive Hume AI EVI integration as requested: (1) Added patient document storage system for AI to read specific content during calls, (2) Created patient-specific data isolation ensuring each patient only receives their own information, (3) Implemented Hume AI service with normal male voice (ITO), (4) Built complete frontend interface for managing patient documents and initiating Hume AI calls, (5) Made OpenAI services optional to support Hume-only workflow, (6) Added new `/hume-integration` page with full patient document management
 - June 29, 2025: MAJOR PERFORMANCE OPTIMIZATION - Fixed multiple critical issues causing slow voice interactions and duplicate sessions: (1) Prevented duplicate GPT-4o session initialization by adding proper connection state checking, (2) Optimized voice activity detection with faster response times (threshold 0.7, silence 1.2s vs 2s), (3) Reduced audio logging noise by 95% for better performance, (4) Added immediate AI greeting system to eliminate call start delays, (5) Enhanced emergency kill switch to properly terminate GPT-4o WebSocket sessions, (6) Shortened AI response tokens (150 vs 300) and reduced temperature (0.4 vs 0.6) for faster, more focused conversations
 - June 28, 2025: Enhanced emergency kill switch system - implemented comprehensive call termination endpoint `/api/calls/emergency-stop` with prominent red button in automated calls interface for immediate stopping of all active calls during system errors, added detailed reporting capabilities and proper error handling
